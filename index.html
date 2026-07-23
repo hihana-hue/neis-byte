@@ -33,7 +33,8 @@ function cleanPaste(t){return norm(t)
 .replace(/ {2,}/g," ")
 .replace(/ *\n */g,"\n")
 .replace(/\n{3,}/g,"\n\n")}
-const size=c=>c==="\n"?1:(c.codePointAt(0)<=127?1:3), bytes=t=>[...norm(t)].reduce((n,c)=>n+size(c),0);\nconst safePunctuation=/^[.,!?;:'"()\-]$/u,emoji=/\p{Extended_Pictographic}/u;
+const size=c=>c==="\n"?1:(c.codePointAt(0)<=127?1:3), bytes=t=>[...norm(t)].reduce((n,c)=>n+size(c),0);
+const safePunctuation=/^[.,!?;:'"()\-]$/u,emoji=/\p{Extended_Pictographic}/u;
 function attentionChars(t){return [...t].flatMap((c,i)=>emoji.test(c)?[{c,p:i+1,k:"이모지"}]:/^[\p{L}\p{N}\s]$/u.test(c)||safePunctuation.test(c)?[]:[{c,p:i+1,k:"지양 문자"}])}
 function removeAttention(t){const positions=new Set(attentionChars(t).map(x=>x.p));return [...t].filter((_,i)=>!positions.has(i+1)).join("")}
 function fit(t,l){let n=0,s="";for(const c of [...norm(t)]){if(n+size(c)>l)break;n+=size(c);s+=c}return s}
