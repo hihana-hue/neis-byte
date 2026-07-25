@@ -24,10 +24,10 @@ const fields=[
 ["행동특성 및 종합의견 · 행동특성 및 종합의견","300","900",""]];
 const $=id=>document.getElementById(id), field=$("field"), input=$("content");fields.forEach((f,i)=>field.add(new Option(f[0]+" ("+Number(f[2]).toLocaleString()+"B)",i)));field.value=4;
 const norm=t=>t.replace(/\r\n?/g,"\n");
-const tracePattern=/[\u00AD\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\uFE00-\uFE0F\uE0100-\uE01EF\u00A0\u2000-\u200A\u202F\u205F\u3000]|\t| {2,}|\n{3,}/gu;
+const tracePattern=/[\u00AD\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\uFE00-\uFE0F\u{E0100}-\u{E01EF}\u00A0\u2000-\u200A\u202F\u205F\u3000]|\t| {2,}|\n{3,}/gu;
 function traceCount(t){const m=t.match(tracePattern);return m?m.length:0}
 function cleanPaste(t){return norm(t)
-.replace(/[\u00AD\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\uFE00-\uFE0F\uE0100-\uE01EF]/gu,"")
+.replace(/[\u00AD\u061C\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\uFE00-\uFE0F\u{E0100}-\u{E01EF}]/gu,"")
 .replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g," ")
 .replace(/\t/g," ")
 .replace(/ {2,}/g," ")
