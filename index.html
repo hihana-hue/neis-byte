@@ -36,7 +36,7 @@ function cleanPaste(t){return norm(t)
 const size=c=>c==="\n"?2:(c.codePointAt(0)<=127?1:3), bytes=t=>[...norm(t)].reduce((n,c)=>n+size(c),0);
 const typoRules=[[/안되요/g,"안 돼요"],[/(?<!안)되요/g,"돼요"],[/할려고/g,"하려고"],[/볼려고/g,"보려고"],[/갈려고/g,"가려고"],[/몇일/g,"며칠"],[/금새/g,"금세"],[/역활/g,"역할"],[/어의없/g,"어이없"],[/설겆이/g,"설거지"],[/오랫만/g,"오랜만"],[/희안/g,"희한"],[/웬지/g,"왠지"],[/깨닳/g,"깨달"]];
 function typoMatches(t){const out=[];for(const [re,to] of typoRules){re.lastIndex=0;let m;while((m=re.exec(t))!==null){out.push({from:m[0],to,p:m.index+1});if(!m[0].length)re.lastIndex++}}return out.sort((a,b)=>a.p-b.p)}
-const safePunctuationBase=/^[.,!?;:'"()\-]$/u,safePunctuation=c=>safePunctuationBase.test(c)||c==="˚",emoji=/\p{Extended_Pictographic}/u;
+const safePunctuation=c=>(c.codePointAt(0)>=0x21&&c.codePointAt(0)<=0x7E)||c==="˚",emoji=/\p{Extended_Pictographic}/u;
 function attentionChars(t){return [...t].flatMap((c,i)=>c==="·"?[]:c==="『"||c==="』"||c==="‘"||c==="’"?[{c,p:i+1,k:"작은따옴표로 변경"}]:c==="℃"?[{c,p:i+1,k:"˚C로 변경"}]:emoji.test(c)?[{c,p:i+1,k:"이모지"}]:/^[\p{L}\p{N}\s]$/u.test(c)||safePunctuation(c)?[]:[{c,p:i+1,k:"지양 문자"}])}
 function removeAttention(t){return [...t].map(c=>c==="『"||c==="』"||c==="‘"||c==="’"?"'":c==="℃"?"˚C":c==="·"||/^[\p{L}\p{N}\s]$/u.test(c)||safePunctuation(c)?c:"").join("")}
 function highlightedInput(t){return [...t].map(c=>attentionChars(c).length?"<mark>"+esc(c)+"</mark>":esc(c)).join("")+(t.endsWith("\n")?"\n":"")}
