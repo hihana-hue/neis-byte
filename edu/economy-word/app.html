@@ -79,13 +79,13 @@ function definitionText(d){
  if(conciseDefinitions[d.id])return conciseDefinitions[d.id];
  let text=String(d.def||'').trim();
  const aliases=String(d.word||'').split(/[()·/]/).map(x=>x.trim()).filter(Boolean);
- for(const alias of aliases){const safe=alias.replace(/[.*+?^${}()|[\]\\]/g,'\\const data=window.MARI_DATA;');text=text.replace(new RegExp('^'+safe+'(?:은|는|이란|란)\\s*'),'');}
+ for(const alias of aliases){const safe=alias.replace(/[.*+?^${}()|[\]\\]/g,'\\'\\const data=window.MARI_DATA;'');text=text.replace(new RegExp('^'+safe+'(?:은|는|이란|란)\\s*'),'');}
  for(const alias of aliases){const suffix=new RegExp('(?:을|를)?\\s*'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:이라고|라고)\\s*합니다\\.$');text=text.replace(suffix,'');}
  text=text.replace(/(?:을|를)\s*(?:말합니다|뜻합니다|가리킵니다)\.$/,'');
  text=text.replace(/(?:입니다|을 뜻합니다|를 뜻합니다|을 말합니다|를 말합니다|을 가리킵니다|를 가리킵니다)\.$/,'');
  const endings={'역할을 합니다.':'역할','좌우됩니다.':'좌우됨','가리키기도 합니다.':'가리키기도 함','이자를 받습니다.':'이자를 받는 증서','여기에 해당합니다.':'여기에 해당하는 대가','표시합니다.':'표시','나타냅니다.':'나타냄','수익이 됩니다.':'수익이 됨','여기 속합니다.':'여기에 속하는 돈','차익을 얻습니다.':'차익을 얻는 행위'};
  for(const [ending,value] of Object.entries(endings))if(text.endsWith(ending))text=text.slice(0,-ending.length)+value;
- return text.replace(/\.$/,'');
+ return text.replace(/(?:입니다|이다)\s*[.!。]?\s*$/,'').replace(/[.!。]\s*$/,'').trim();
 }
 
 const data=window.MARI_DATA.map(d=>({...d,def:definitionText(d)}));
