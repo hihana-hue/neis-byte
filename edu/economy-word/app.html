@@ -79,7 +79,7 @@ function definitionText(d){
  if(conciseDefinitions[d.id])return conciseDefinitions[d.id];
  let text=String(d.def||'').trim();
  const aliases=String(d.word||'').split(/[()·/]/).map(x=>x.trim()).filter(Boolean);
- for(const alias of aliases){const safe=alias.replace(/[.*+?^${}()|[\]\\]/g,'\\'\\const data=window.MARI_DATA;'');text=text.replace(new RegExp('^'+safe+'(?:은|는|이란|란)\\s*'),'');}
+ for(const alias of aliases){const safe=alias; text=text.replace(new RegExp('^'+safe+'(?:은|는|이란|란)\\s*'),'');}
  for(const alias of aliases){const suffix=new RegExp('(?:을|를)?\\s*'+alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:이라고|라고)\\s*합니다\\.$');text=text.replace(suffix,'');}
  text=text.replace(/(?:을|를)\s*(?:말합니다|뜻합니다|가리킵니다)\.$/,'');
  text=text.replace(/(?:입니다|을 뜻합니다|를 뜻합니다|을 말합니다|를 말합니다|을 가리킵니다|를 가리킵니다)\.$/,'');
