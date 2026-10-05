@@ -1,6 +1,8 @@
 const SHEET_ID=PropertiesService.getScriptProperties().getProperty('SHEET_ID');
 function doGet(){return HtmlService.createHtmlOutputFromFile('Login').setTitle('2027 수능 고전 어휘 개념어').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
-function db_(){return SpreadsheetApp.openById(SHEET_ID);}
+let requestBooks_={};
+function book_(id){if(!requestBooks_[id])requestBooks_[id]=SpreadsheetApp.openById(id);return requestBooks_[id];}
+function db_(){return book_(SHEET_ID);}
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(20000);try{return fn();}finally{l.releaseLock();}}
 function hash_(v){const p=PropertiesService.getScriptProperties();let key=p.getProperty('AUTH_SECRET');if(!key){key=Utilities.getUuid()+Utilities.getUuid();p.setProperty('AUTH_SECRET',key);}return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(String(v),key));}
 function literal_(v){return /^[=+@-]/.test(String(v))?"'"+v:String(v);}
@@ -15,12 +17,12 @@ function session_(token,touch){if(typeof token!=='string'||token.length>100)thro
 function loadApp(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return {id:a.id,html:appHtml_(),completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(a.id))||'[]')};});}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
 function heartbeat(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return true;});}
-function recordProgress(token,event){return lock_(()=>{const {a,s}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(corpus_().allIds);const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));const p=PropertiesService.getScriptProperties(),m=daily_(s,a);const ek='event:'+hash_(a.id+':'+event.eventId);if(p.getProperty(ek))return {ok:true};if(event.type==='answer'){if(!valid.has(String(event.cardId))||typeof event.correct!=='boolean')throw Error('문항 오류');m.v.tested++;if(event.correct)m.v.correct++;}if(event.type==='finish')m.v.tests++;p.setProperty('state:'+hash_(a.id),JSON.stringify(ids));p.setProperty(m.key,JSON.stringify(m.v));p.setProperty(ek,String(Date.now()+7*86400000));writeDay_(s,a,m.v,true);return {ok:true};});}
+function recordProgress(token,event){return lock_(()=>{const {a,s}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));const p=PropertiesService.getScriptProperties(),m=daily_(s,a);const ek='event:'+hash_(a.id+':'+event.eventId);if(p.getProperty(ek))return {ok:true};if(event.type==='answer'){if(!valid.has(String(event.cardId))||typeof event.correct!=='boolean')throw Error('문항 오류');m.v.tested++;if(event.correct)m.v.correct++;}if(event.type==='finish')m.v.tests++;p.setProperty('state:'+hash_(a.id),JSON.stringify(ids));p.setProperty(m.key,JSON.stringify(m.v));p.setProperty(ek,String(Date.now()+7*86400000));writeDay_(s,a,m.v,true);return {ok:true};});}
 
 function corpus_(){
  const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');if(!id)throw Error('DATA_SHEET_ID 설정이 필요합니다.');
- const sheet=SpreadsheetApp.openById(id).getSheetByName('어휘자료');if(!sheet)throw Error('어휘자료 탭이 없습니다.');
- const rows=sheet.getDataRange().getDisplayValues(),h=rows.shift(),get=(r,n)=>String(r[h.indexOf(n)]||'').trim();
+ const sheet=book_(id).getSheetByName('어휘자료');if(!sheet)throw Error('어휘자료 탭이 없습니다.');
+ const rows=sheet.getRange(1,1,sheet.getLastRow(),13).getDisplayValues(),h=rows.shift(),get=(r,n)=>String(r[h.indexOf(n)]||'').trim();
  for(const name of ['어휘ID','단어','갈래','분류','뜻','원문 예문','현대어 풀이','작품명','교재','쪽수','주의','한자 설명','사용'])if(!h.includes(name))throw Error('어휘자료 헤더 누락: '+name);
  const data=[],seen=new Set(),groups=new Map();
  rows.forEach((r,index)=>{
@@ -40,3 +42,7 @@ function corpus_(){
  return {data,allIds:rows.map(r=>get(r,'어휘ID')).filter(Boolean),coverage:{cardCount:data.length,works:[...groups.values()].filter(w=>w.book==='수능특강'),suwanWorks:[...groups.values()].filter(w=>w.book==='수능완성 수록작')}};
 }
 function appHtml_(){const c=corpus_();const json=v=>JSON.stringify(v).replace(/</g,'\\u003c');return HtmlService.createHtmlOutputFromFile('App').getContent().replace('__MARI_DATA_JSON__',()=>json(c.data)).replace('__MARI_COVERAGE_JSON__',()=>json(c.coverage));}
+
+// One client RPC for PIN verification and the initial learning screen.
+function loginAndLoad(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);return {...auth,html:appHtml_(),completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(auth.id))||'[]')};}
+function cardIds_(){const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');const s=book_(id).getSheetByName('어휘자료');if(!s)throw Error('어휘자료 탭이 없습니다.');return s.getLastRow()>1?s.getRange(2,1,s.getLastRow()-1,1).getDisplayValues().flat().filter(Boolean):[];}
