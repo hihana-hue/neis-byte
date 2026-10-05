@@ -1,5 +1,6 @@
 const SHEET_ID=PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-function doGet(){return HtmlService.createHtmlOutputFromFile('Login').setTitle('2027 수능 고전 어휘 개념어').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);}
+function doGet(e){const nonce=String(e&&e.parameter&&e.parameter.nonce||'');if(!/^[a-zA-Z0-9-]{20,100}$/.test(nonce))return HtmlService.createHtmlOutput('학습 사이트에서 접속해주세요.');return HtmlService.createHtmlOutputFromFile('Bridge').setTitle('MariEdu authentication').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).setContent(HtmlService.createHtmlOutputFromFile('Bridge').getContent().replace('__BRIDGE_NONCE__',nonce));}
+
 let requestBooks_={};
 function book_(id){if(!requestBooks_[id])requestBooks_[id]=SpreadsheetApp.openById(id);return requestBooks_[id];}
 function db_(){return book_(SHEET_ID);}
@@ -14,7 +15,6 @@ function writeDay_(s,a,metrics,touch){const now=new Date();const state=Propertie
 function login(id,pin,remember,device,label){id=String(id||'').trim();pin=String(pin||'');if(!id||id.length>70||pin.length>100||!/^[a-zA-Z0-9-]{20,100}$/.test(device||''))throw Error('로그인 입력을 확인하세요.');return lock_(()=>{const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,6).getValues(),dh=hash_(device);const registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);let slot=rows.findIndex(r=>r[4]===dh&&r[3]==='등록');const now=new Date();if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 기기 해제를 요청하세요.');if(slot<0){if(registered.length>=a.limit)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');slot=rows.findIndex(r=>r[3]!=='등록');if(slot<0)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');rows[slot]=[literal_(String(label||'브라우저').slice(0,80)),now,now,'등록',dh,Utilities.getUuid()];}else rows[slot][2]=now;s.getRange(5+slot,1,1,6).setValues([rows[slot]]);const token=Utilities.getUuid()+Utilities.getUuid(),p=PropertiesService.getScriptProperties();cleanSessions_();p.setProperty('session:'+hash_(token),JSON.stringify({id:a.id,device:dh,generation:rows[slot][5],version:a.version,expiry:Date.now()+(remember?30:1)*86400000}));writeDay_(s,a,daily_(s,a).v,true);return {token,id:a.id};});}
 function cleanSessions_(){const p=PropertiesService.getScriptProperties(),all=p.getProperties();for(const k of Object.keys(all)){if(k.startsWith('event:')&&Number(all[k])<Date.now())p.deleteProperty(k);if(k.startsWith('session:')){try{if(JSON.parse(all[k]).expiry<Date.now())p.deleteProperty(k);}catch{p.deleteProperty(k);}}}}
 function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,6).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&r[4]===v.device&&r[5]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s};}
-function loadApp(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return {id:a.id,html:appHtml_(),completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(a.id))||'[]')};});}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
 function heartbeat(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return true;});}
 function recordProgress(token,event){return lock_(()=>{const {a,s}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));const p=PropertiesService.getScriptProperties(),m=daily_(s,a);const ek='event:'+hash_(a.id+':'+event.eventId);if(p.getProperty(ek))return {ok:true};if(event.type==='answer'){if(!valid.has(String(event.cardId))||typeof event.correct!=='boolean')throw Error('문항 오류');m.v.tested++;if(event.correct)m.v.correct++;}if(event.type==='finish')m.v.tests++;p.setProperty('state:'+hash_(a.id),JSON.stringify(ids));p.setProperty(m.key,JSON.stringify(m.v));p.setProperty(ek,String(Date.now()+7*86400000));writeDay_(s,a,m.v,true);return {ok:true};});}
@@ -41,10 +41,8 @@ function corpus_(){
  });
  return {data,allIds:rows.map(r=>get(r,'어휘ID')).filter(Boolean),coverage:{cardCount:data.length,works:[...groups.values()].filter(w=>w.book==='수능특강'),suwanWorks:[...groups.values()].filter(w=>w.book==='수능완성 수록작')}};
 }
-function appHtml_(){const c=corpus_();const json=v=>JSON.stringify(v).replace(/</g,'\\u003c');return HtmlService.createHtmlOutputFromFile('App').getContent().replace('__MARI_DATA_JSON__',()=>json(c.data)).replace('__MARI_COVERAGE_JSON__',()=>json(c.coverage));}
 
 // One client RPC for PIN verification and the initial learning screen.
-function loginAndLoad(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);return {...auth,html:appHtml_(),completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(auth.id))||'[]')};}
 function cardIds_(){const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');const s=book_(id).getSheetByName('어휘자료');if(!s)throw Error('어휘자료 탭이 없습니다.');return s.getLastRow()>1?s.getRange(2,1,s.getLastRow()-1,1).getDisplayValues().flat().filter(Boolean):[];}
 
 function deviceLayout_(s,a){
@@ -53,3 +51,10 @@ function deviceLayout_(s,a){
  if(capacity<a.limit){const extra=a.limit-capacity;s.insertRowsBefore(5+capacity,extra);capacity=a.limit;dailyRow+=extra;s.getRange(5,4,capacity,1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange(5,2,capacity,2).setNumberFormat('yyyy-mm-dd hh:mm:ss');s.setFrozenRows(dailyRow);}
  s.getRange('A3:B3').setValues([['기기한도',a.limit]]);return {capacity,dailyRow};
 }
+
+function studentPayload_(id){const c=corpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(id))||'[]')};}
+function signIn(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);return {...studentPayload_(auth.id),token:auth.token};}
+function restoreSession(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return studentPayload_(a.id);});}
+function saveLearning(token,event){return recordProgress(token,event);}
+function signOut(token){return logout(token);}
+function checkSession(token){return heartbeat(token);}
