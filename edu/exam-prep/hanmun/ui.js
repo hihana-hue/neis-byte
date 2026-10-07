@@ -7,11 +7,12 @@ function rpc(method,args){return new Promise((resolve,reject)=>{if(!endpoint){re
 function fail(error){document.body.classList.remove('authenticated');token='';$('loading').hidden=true;$('login').hidden=false;$('status').textContent=error.message||'연결 실패';frame.hidden=true;busy=false;}
 function clearSession(){try{localStorage.removeItem('mari-session');sessionStorage.removeItem('mari-session')}catch{}}
 
-let examVisit='',examQueue=[],examSending=false;
+let examVisit='',examQueue=[],examSending=false,examFlushPromise=null;
 try{examQueue=JSON.parse(sessionStorage.getItem('mari-exam-queue')||'[]')}catch{}
 function persistExam(){try{sessionStorage.setItem('mari-exam-queue',JSON.stringify(examQueue))}catch{}}
 function examStatus(msg){let el=$('examSync');if(!el){el=document.createElement('div');el.id='examSync';el.setAttribute('role','status');el.style.cssText='position:fixed;bottom:6px;right:8px;z-index:4000;font:11px system-ui;color:#9d3125;background:white;padding:4px 8px;border-radius:4px';document.body.appendChild(el)}el.textContent=msg;el.hidden=!msg}
-async function flushExam(){if(examSending||!endpoint)return;examSending=true;try{while(examQueue.length){const item=examQueue[0];await rpc('saveExam',[item.token,item.event]);examQueue.shift();persistExam()}examStatus('')}catch(error){examStatus('학습 기록 전송 대기 중')}finally{examSending=false}}
+function flushExam(){if(examFlushPromise)return examFlushPromise;examFlushPromise=sendExamQueue().finally(()=>examFlushPromise=null);return examFlushPromise}
+async function sendExamQueue(){if(examSending||!endpoint)return;examSending=true;try{while(examQueue.length){const item=examQueue[0];await rpc('saveExam',[item.token,item.event]);examQueue.shift();persistExam()}examStatus('')}catch(error){examStatus('학습 기록 전송 대기 중')}finally{examSending=false}}
 function queueExam(type,extra={}){if(!token||!examVisit)return;examQueue.push({token,event:{...extra,type,visitId:examVisit,eventId:extra.eventId||crypto.randomUUID()}});persistExam();void flushExam()}
 async function startExamVisit(){try{await rpc('examRecordingReady',[]);examVisit=crypto.randomUUID();queueExam('start')}catch{examStatus('학습 기록 서버 배포가 필요합니다')}}
 window.addEventListener('pagehide',()=>queueExam('end'));
