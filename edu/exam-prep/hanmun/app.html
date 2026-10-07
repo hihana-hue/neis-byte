@@ -198,6 +198,8 @@ footer{margin-top:40px;font-size:13px;color:var(--muted);border-top:1px solid va
 <script>
 (function(){
 const $=s=>document.querySelector(s);
+function examEvent(type,extra={}){parent.postMessage({channel:'mari-exam',event:{type,eventId:crypto.randomUUID(),...extra}},location.origin);}
+
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -387,10 +389,11 @@ function startMode(k,title){
 let Q=null;
 function startQuiz(pairs,title){
   if(!pairs.length)return;
-  Q={pairs,list:shuffle(pairs).map(([qt,it])=>make(qt,it)),i:0,score:0,miss:[],title};
+  Q={testId:crypto.randomUUID(),pairs,list:shuffle(pairs).map(([qt,it])=>make(qt,it)),i:0,score:0,miss:[],title};
+  examEvent('test-start',{testId:Q.testId,title:Q.title,total:Q.list.length,score:0});
   $('#main').hidden=true;$('#stage').hidden=false;window.scrollTo(0,0);renderQ();
 }
-function exitQuiz(){Q=null;$('#stage').hidden=true;$('#main').hidden=false}
+function exitQuiz(){if(Q&&Q.i<Q.list.length)examEvent('abort',{testId:Q.testId,title:Q.title,total:Q.list.length,score:Q.score});Q=null;$('#stage').hidden=true;$('#main').hidden=false}
 $('#quit').onclick=()=>{exitQuiz();renderPanel()};
 function renderQ(){
   const q=Q.list[Q.i];Q.done=false;
@@ -422,16 +425,17 @@ function renderQ(){
 function finish(ok,detail,canOverride){
   const q=Q.list[Q.i];Q.done=true;
   if(ok){Q.score++;markRight(q)}else{Q.miss.push(q);markWrong(q)}
+  examEvent('answer',{testId:Q.testId,title:Q.title,question:q.label,correct:ok,total:Q.list.length,score:Q.score});
   const fb=$('#fb');fb.hidden=false;fb.className='fb'+(ok?'':' bad');
   const last=Q.i===Q.list.length-1;
   fb.innerHTML=`<span class="v" id="verd">${ok?'맞았어요':'틀렸어요'}</span><p>${detail}</p>${q.explain?`<p class="k">${esc(q.explain)}</p>`:''}<div class="row">${(!ok&&canOverride)?'<button class="btn" id="ovr">내 답도 맞아요</button>':''}<button class="btn primary" id="nxt">${last?'결과 보기':'다음 문제'}</button></div>`;
   $('#scoret').textContent=`맞힘 ${Q.score}`;
-  const ov=$('#ovr');if(ov)ov.onclick=()=>{Q.score++;Q.miss=Q.miss.filter(x=>x!==q);markRight(q);fb.className='fb';$('#verd').textContent='맞은 걸로 처리했어요';ov.remove();$('#scoret').textContent=`맞힘 ${Q.score}`};
+  const ov=$('#ovr');if(ov)ov.onclick=()=>{Q.score++;examEvent('override',{testId:Q.testId,title:Q.title,question:q.label,correct:true,total:Q.list.length,score:Q.score});Q.miss=Q.miss.filter(x=>x!==q);markRight(q);fb.className='fb';$('#verd').textContent='맞은 걸로 처리했어요';ov.remove();$('#scoret').textContent=`맞힘 ${Q.score}`};
   const nx=$('#nxt');nx.onclick=()=>{Q.i++;if(Q.i>=Q.list.length)endQuiz();else{renderQ();}};nx.focus({preventScroll:true});
   fb.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
 function endQuiz(){
-  const n=Q.list.length,s=Q.score;$('#bari').style.width='100%';$('#progt').textContent=`${n} / ${n}`;
+  const n=Q.list.length,s=Q.score;examEvent('finish',{testId:Q.testId,title:Q.title,total:n,score:s});$('#bari').style.width='100%';$('#progt').textContent=`${n} / ${n}`;
   const rate=s/n;const msg=rate===1?'모두 맞혔어요.':rate>=.8?'거의 다 왔어요. 틀린 것만 한 번 더 풀어 보세요.':rate>=.5?'틀린 문제를 외우기 탭에서 다시 확인하고 풀어 보세요.':'외우기 탭에서 먼저 훑어본 뒤 다시 도전해 보세요.';
   $('#qbox').innerHTML=`<div class="end"><p class="eyebrow">${esc(Q.title)}</p><p class="score"><b>${s}</b> / ${n}</p><p>${msg}</p>${Q.miss.length?`<div class="misslist">${Q.miss.map(q=>`<div><b style="font-family:var(--f-han)">${q.label}</b> · ${esc(q.ansText)}</div>`).join('')}</div>`:''}<div class="row">${Q.miss.length?'<button class="btn primary" id="rmiss">틀린 것만 다시</button>':''}<button class="btn" id="rall">처음부터 다시</button><button class="btn" id="rback">돌아가기</button></div></div>`;
   const pairs=Q.pairs,miss=Q.miss.map(q=>q.pair),title=Q.title;
@@ -457,7 +461,7 @@ function renderLearn(m){
 }
 
 /* ---------- 쓰기 연습 ---------- */
-let wIdx=0,wBlind=false;
+let wIdx=0,wBlind=false,wTestId=crypto.randomUUID();
 function renderWrite(m){
   m.innerHTML=`<section class="panel"><h2>쓰기 연습</h2><p class="desc">손가락이나 펜으로 칸에 써 보세요. 자동 채점은 하지 않아요. 정답과 비교해 스스로 판정하면 틀린 글자는 오답노트로 가요.</p>
   <div class="row" style="margin-bottom:14px"><div class="seg" id="wSeg"><button data-b="0" aria-pressed="${!wBlind}">보고 따라 쓰기</button><button data-b="1" aria-pressed="${wBlind}">안 보고 쓰기</button></div>
@@ -482,8 +486,8 @@ function renderWrite(m){
   $('#wSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;wBlind=b.dataset.b==='1';$('#wSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));load()};
   $('#wSel').onchange=e=>{wIdx=+e.target.value;load()};
   const next=()=>{wIdx=wBlind?Math.floor(Math.random()*CHARS.length):(wIdx+1)%CHARS.length;load()};
-  $('#wGood').onclick=()=>{markRight({id:'pk:'+CHARS[wIdx].h});next()};
-  $('#wBad').onclick=()=>{const c=CHARS[wIdx];markWrong({id:'pk:'+c.h,label:c.h,ansText:`${c.h} (${c.readings[0]})`});ghost.style.visibility='visible';ghost.classList.add('reveal');$('#wMsg').textContent='오답노트에 넣었어요. 정답을 보고 한 번 더 써 보세요.'};
+  $('#wGood').onclick=()=>{examEvent('writing',{testId:wTestId,title:'쓰기 연습',question:CHARS[wIdx].h,correct:true,total:1,score:1});markRight({id:'pk:'+CHARS[wIdx].h});next()};
+  $('#wBad').onclick=()=>{const c=CHARS[wIdx];examEvent('writing',{testId:wTestId,title:'쓰기 연습',question:c.h,correct:false,total:1,score:0});markWrong({id:'pk:'+c.h,label:c.h,ansText:`${c.h} (${c.readings[0]})`});ghost.style.visibility='visible';ghost.classList.add('reveal');$('#wMsg').textContent='오답노트에 넣었어요. 정답을 보고 한 번 더 써 보세요.'};
   let rt;window.onresize=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(cur==='write'&&$('#cv'))setup()},150)};
   load();
 }
