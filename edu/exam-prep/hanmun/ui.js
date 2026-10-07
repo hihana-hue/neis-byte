@@ -13,7 +13,7 @@ function persistExam(){try{sessionStorage.setItem('mari-exam-queue',JSON.stringi
 function examStatus(msg){let el=$('examSync');if(!el){el=document.createElement('div');el.id='examSync';el.setAttribute('role','status');el.style.cssText='position:fixed;bottom:6px;right:8px;z-index:4000;font:11px system-ui;color:#9d3125;background:white;padding:4px 8px;border-radius:4px';document.body.appendChild(el)}el.textContent=msg;el.hidden=!msg}
 async function flushExam(){if(examSending||!endpoint)return;examSending=true;try{while(examQueue.length){const item=examQueue[0];await rpc('saveExam',[item.token,item.event]);examQueue.shift();persistExam()}examStatus('')}catch(error){examStatus('학습 기록 전송 대기 중')}finally{examSending=false}}
 function queueExam(type,extra={}){if(!token||!examVisit)return;examQueue.push({token,event:{...extra,type,visitId:examVisit,eventId:extra.eventId||crypto.randomUUID()}});persistExam();void flushExam()}
-function startExamVisit(){if(window.MARI_EXAM_RECORDING!==true)return;examVisit=crypto.randomUUID();queueExam('start')}
+async function startExamVisit(){try{await rpc('examRecordingReady',[]);examVisit=crypto.randomUUID();queueExam('start')}catch{examStatus('학습 기록 서버 배포가 필요합니다')}}
 window.addEventListener('pagehide',()=>queueExam('end'));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')queueExam('pulse');else if(token)queueExam('pulse')});
 setInterval(()=>{if(token)queueExam('pulse');else void flushExam()},60000);
