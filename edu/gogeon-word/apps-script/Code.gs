@@ -88,3 +88,5 @@ function saveExam(token,e){return lock_(()=>{
  s.appendRow(['한문',literal_(a.id),literal_(a.name),types[e.type],rows[vi]?.[4]||stamp,e.type==='finish'||e.type==='abort'?stamp:'',stamp,'',literal_(String(e.title||'').slice(0,100)),literal_(String(e.question||'').slice(0,250)),typeof e.correct==='boolean'?(e.correct?'정답':'오답'):'',total,correct,e.testId,e.visitId,e.eventId]);
  return {ok:true};
  });}
+
+function examRecordingReady(){return {ok:true,version:1};}
