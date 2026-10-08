@@ -58,35 +58,3 @@ function restoreSession(token){return lock_(()=>{const {a,s}=session_(token,true
 function saveLearning(token,event){return recordProgress(token,event);}
 function signOut(token){return logout(token);}
 function checkSession(token){return heartbeat(token);}
-
-/* Exam logs use verified account identity; never accept a client user name. */
-function examSheet_(){
- const headers=["과목","아이디","사용자 이름","기록 종류","접속시간","나간시간","최근 확인시간","종료 상태","테스트 종류","문항","결과","문제 수","정답 수","테스트 번호","접속 번호","기록 번호"];
- let s=db_().getSheetByName('시험학습기록');
- if(!s){s=db_().insertSheet('시험학습기록');s.getRange(1,1,1,headers.length).setValues([headers]);s.setFrozenRows(1);}
- if(s.getRange(1,1,1,headers.length).getDisplayValues()[0].join('|')!==headers.join('|'))throw Error('시험학습기록 헤더를 확인하세요.');
- return s;
-}
-function examTime_(v){return Utilities.formatDate(new Date(v),'Asia/Seoul','yyyy-MM-dd HH:mm:ss');}
-function saveExam(token,e){return lock_(()=>{
- const {a}=session_(token,false);
- if(!e||!['start','pulse','end','test-start','answer','override','finish','abort','writing'].includes(e.type)||!/^[-a-zA-Z0-9]{8,100}$/.test(e.visitId||'')||!/^[-a-zA-Z0-9]{8,100}$/.test(e.eventId||''))throw Error('시험 기록 형식 오류');
- const s=examSheet_(),n=s.getLastRow()-1,rows=n?s.getRange(2,1,n,16).getDisplayValues():[],now=Date.now(),stamp=examTime_(now);
- if(rows.some(r=>r[15]===e.eventId&&r[1]===a.id))return {ok:true};
- let vi=rows.findIndex(r=>r[14]===e.visitId&&r[1]===a.id&&r[3]==='접속');
- // The last confirmed time is an estimate, not a fabricated exact close time.
- rows.forEach((r,i)=>{if(r[3]==='접속'&&r[7]==='접속 중'&&r[6]){const last=Date.parse(r[6].replace(' ','T')+'+09:00');if(Number.isFinite(last)&&now-last>180000){s.getRange(i+2,6).setValue(r[6]);s.getRange(i+2,8).setValue('연결 종료 추정');}}});
- if(vi<0){s.appendRow(['한문',literal_(a.id),literal_(a.name),'접속',stamp,'',stamp,'접속 중','','','','','','',e.visitId,e.eventId]);vi=s.getLastRow()-2;}
- const row=vi+2;s.getRange(row,7).setValue(stamp);
- if(e.type==='end'){s.getRange(row,6).setValue(stamp);s.getRange(row,8).setValue('정상 종료');return {ok:true};}
- if(e.type==='pulse'||e.type==='start'){s.getRange(row,8).setValue('접속 중');s.getRange(row,6).clearContent();return {ok:true};}
- const types={'test-start':'테스트 시작',answer:'문항 채점',override:'정답 정정',finish:'테스트 완료',abort:'테스트 중단',writing:'쓰기 연습'};
- if(!/^[-a-zA-Z0-9]{8,100}$/.test(e.testId||''))throw Error('테스트 번호 오류');
- if(['answer','override','writing'].includes(e.type)&&typeof e.correct!=='boolean')throw Error('채점 결과 오류');
- const total=Number(e.total||0),correct=Number(e.score||0);
- if(!Number.isInteger(total)||!Number.isInteger(correct)||total<0||total>1000||correct<0||correct>total)throw Error('문제 수 오류');
- s.appendRow(['한문',literal_(a.id),literal_(a.name),types[e.type],rows[vi]?.[4]||stamp,e.type==='finish'||e.type==='abort'?stamp:'',stamp,'',literal_(String(e.title||'').slice(0,100)),literal_(String(e.question||'').slice(0,250)),typeof e.correct==='boolean'?(e.correct?'정답':'오답'):'',total,correct,e.testId,e.visitId,e.eventId]);
- return {ok:true};
- });}
-
-function examRecordingReady(){return {ok:true,version:1};}
