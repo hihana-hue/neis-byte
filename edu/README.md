@@ -1,7 +1,12 @@
-# MARI EDU LAB
+# MARI EDU LAB 학습 프로그램
 
-- `/edu/neis-byte/`: 기존 계산기 복사본. 상위 링크는 `/edu/`로 연결됩니다.
-- `/edu/gogeon-word/`: 비공개 인증 서버 연결 준비 화면. 전체 어휘 데이터나 ID/PIN은 이 공개 저장소에 저장하지 않습니다.
-- 면접 앱은 준비되면 `/edu/interview/`에 추가합니다.
+- `neis-byte/`: 독립 HTML 기반 나이스 바이트 계산기
+- `gogeon-word/`: 고전 어휘 학습, 로그인 UI 및 어휘 데이터
+- `economy-word/`: 경제 어휘 학습, 로그인 UI
+- `exam-prep/hanmun/`: 한문시험준비, 로그인 UI
+- `index.html`: 루트 홈페이지로 이동
 
-기존 주소, 루트 메인, CNAME은 유지합니다. 로그인, 기기 제한, 구글 시트 학습 기록은 아직 배포되지 않았습니다.
+## 주의
+`gogeon-word/config.js`는 경제 어휘와 한문시험준비도 사용하는 공통 인증 서버 주소 설정입니다. 위치나 이름을 바꿀 때는 세 프로그램의 참조를 함께 수정해야 합니다.
+
+로그인, 기기 제한, 학습 기록의 실제 작동 여부는 Google Apps Script 배포와 브라우저 환경에서 검증해야 합니다.
