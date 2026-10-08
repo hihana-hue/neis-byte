@@ -1,11 +1,19 @@
 # MARI EDU LAB 앱 구성
 
-- /: 학습 도구 선택
-- /neis-byte/: 기존 정적 바이트 계산기
-- /gogeon-word/: 현재 비공개 Sites 고전 어휘 앱으로 연결
+| 주소 | 파일 | 역할 |
+| --- | --- | --- |
+| `/` | `index.html` | 메인 홈페이지 |
+| `/edu/` | `edu/index.html` | 메인으로 이동 |
+| `/edu/neis-byte/` | `edu/neis-byte/index.html` | 나이스 바이트 계산기 |
+| `/edu/gogeon-word/` | `edu/gogeon-word/index.html` | 수능 고전 어휘 |
+| `/edu/economy-word/` | `edu/economy-word/index.html` | 수능 경제 어휘 |
+| `/edu/exam-prep/hanmun/` | `edu/exam-prep/hanmun/index.html` | 한문시험준비 |
+| `/edu/interview/gyodae/` | `edu/interview/gyodae/index.html` | 교대 면접 연습 |
 
-고전 앱은 기존 owner-private 접근을 유지합니다. 아이디/PIN 인증은 아직 구현하지 않았습니다. 기존 학습 데이터는 현재 Sites 앱의 브라우저 저장소에 남아 있습니다.
+## 의존성
+`edu/gogeon-word/config.js`는 경제 어휘와 한문시험준비 등에서도 참조하는 공통 설정 파일입니다. 앱의 개별 `ui.js`, `app.html`과 데이터 파일을 유지해야 합니다.
 
-아이디/PIN과 계정별 학습 동기화를 추가하려면 서버 인증, PIN 해시 저장, 로그인 시도 제한, 만료되는 세션, 계정별 학습 데이터 저장이 필요합니다. GitHub Pages의 정적 HTML에 계정이나 PIN을 기록하지 않습니다.
+## 이전 개발 환경 정리
+과거 React/Next.js·Cloudflare Worker 관련 `app/`, `worker/`, `build/`, `db/`, `drizzle/`, `scripts/`, `tests/` 및 설정 파일을 제거했습니다. 홈페이지와 `edu/`, `CNAME`은 보존했습니다.
 
-루트 CNAME 및 기존 개발 소스는 유지했습니다.
+백업: `backup-main-before-cleanup-20261008`. 실제 로그인 및 학습 기록 기능은 운영 환경 테스트가 필요합니다.
