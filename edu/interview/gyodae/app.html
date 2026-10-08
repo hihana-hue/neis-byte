@@ -23,7 +23,7 @@ p{margin:6px 0}
 .chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
 @media (prefers-color-scheme:dark){.chip.on{color:#0e1520}}
 .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--pri2);color:var(--pri);font-weight:600;white-space:nowrap}
-.tag.g{background:var(--okbg);color:var(--ok)}.tag.r{background:var(--pubg);color:var(--pu)}.tag.i{background:var(--line);color:var(--sub)}
+.tag.g{background:var(--okbg);color:var(--ok)}.tag.r{background:var(--pubg);color:var(--pu)}.tag.i{background:var(--line);color:var(--sub)} .tag.x{background:#fdeee2;color:#b4541a} .chip.s-x{border-color:#b4541a;color:#b4541a} .chip.s-x.on{background:#b4541a;border-color:#b4541a;color:#fff} .fbox .chip{padding:3px 10px;min-height:30px;font-size:13px} .fbox .row{gap:6px}
 .tag.ar{background:transparent;border:1px solid var(--pri);color:var(--pri);padding:1px 8px}
 .fbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .frow{display:flex;gap:10px;align-items:flex-start}.frow+.frow{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px}
@@ -83,8 +83,8 @@ const D=window.MARI_DATA;
 if(!D||!Array.isArray(D.questions)){document.getElementById('main').innerHTML='<div class="card"><b>로그인 후 이용할 수 있습니다.</b><p class="sub">MARI EDU LAB에서 로그인해 주세요.</p></div>';throw Error('no data')}
 const QUESTIONS=D.questions,CARDS=D.cards,CORE=D.core,META=D.meta||{};
 const WHO=META.name||'본인';
-const SRC={g:['공식 2026','g'],gj:['공식 2026(정시)','g'],r:['작년 후기','r'],i:['생기부 기반 예상','i']};
-const AREAS=['활동','교직관','미래교육·AI','지원동기'];
+const SRC={g:['공식 2026','g'],gj:['공식 2026(정시)','g'],r:['작년 후기','r'],x:['기출 예제','x'],i:['생기부 기반 예상','i']};
+const AREAS=['활동','교직관','미래교육·AI','지원동기','시사·교육정책'];
 const KEY='mari-interview-'+(META.app||'app')+':'+(window.MARI_ACCOUNT||'local');
 let STORE_OK=true;
 function blank(){return{my:{},cards:{},core:{},log:[],cnt:{},notice:{essay:'미확인',qn:'3',time:'8',memo:''}}}
@@ -190,8 +190,8 @@ let QF={a:'',s:''};
 function vQs(){const list=QUESTIONS.filter(q=>(!QF.a||q.a===QF.a)&&(!QF.s||(QF.s==='g'?q.s[0]==='g':q.s===QF.s)));
 return `<h1>질문 ${QUESTIONS.length}</h1>
 <div class="fbox"><div class="frow"><span class="flbl ar">주제</span><div class="row">${['',...AREAS].map(a=>`<button class="chip ${QF.a===a?'on':''}" data-act="qfa" data-v="${a}">${a||'전체'}</button>`).join('')}</div></div>
-<div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
-<p class="sub"><b>주제</b>는 무엇을 묻는 질문인지, <b>출처</b>는 어디서 온 질문인지입니다. 두 줄을 함께 골라 좁힐 수 있어요.<br><span class="tag g">공식 2026</span> 대학이 공개한 작년 실제 문항 · <span class="tag r">작년 후기</span> 수험생 후기 · <span class="tag i">생기부 기반 예상</span> ${esc(WHO)} 기록으로 만든 예상 질문</p>
+<div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['x','기출 예제','s-x'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
+
 <div class="list">${list.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}<span class="tag ar">${q.a}</span>${S.cnt[q.id]?`<span class="sub">연습 ${S.cnt[q.id]}회</span>`:''}${S.my[q.id]?'<span class="sub">· 내 답변 있음</span>':''}</div></button>`).join('')}</div>`}
 function vQ(id){const q=QM[id];const c=q.c?CM[q.c]:null;
 return `<button class="back" data-act="close">← 질문 목록</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
