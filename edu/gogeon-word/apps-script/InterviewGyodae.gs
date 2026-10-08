@@ -22,3 +22,12 @@ function gyodaeData_(){
  return {meta,questions,cards,core};
 }
 function gyodaePayload_(id){return {id,data:gyodaeData_()};}
+/* 처음 한 번만: 설정 화면의 스크립트 속성 칸이 꽉 찼을 때 코드로 시트 ID를 저장합니다.
+   아래 따옴표 안에 시트 ID를 넣고 setupGyodaeSheet를 실행하세요. (공개 저장소에는 ID를 넣지 마세요) */
+function setupGyodaeSheet(){
+ const id='';
+ if(!id)throw Error('setupGyodaeSheet 안의 따옴표에 시트 ID를 넣고 다시 실행하세요.');
+ const name=SpreadsheetApp.openById(id).getName();
+ PropertiesService.getScriptProperties().setProperty('GYODAE_SHEET_ID',id);
+ Logger.log('저장 완료: '+name+' 시트를 읽습니다. 질문 '+gyodaeData_().questions.length+'개');
+}
