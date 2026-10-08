@@ -116,7 +116,7 @@ function vHome(){const d=dday();const tq=pickToday();const cDone=CORE.filter(c=>
 const recent=S.log.slice(-3).reverse().map(l=>`<div class="sub">${new Date(l.t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})} · ${l.m==='mock'?'8분 모의면접':esc((QM[l.q]||{}).q||'').slice(0,28)+'…'} · ${mmss(l.sec)}</div>`).join('')||'<div class="sub">아직 연습 기록이 없습니다.</div>';
 const sCards=CARDS.filter(c=>c.r==='S'),sDone=sCards.filter(c=>cardSt(c.id)===2).length,seenRules=!!S.seenRules;
 const step=(ok,n,t,d,btn)=>`<li class="${ok?'ok':''}"><b>${ok?'✓':n}</b><div><div class="st">${t}</div><div class="sub">${d}</div>${btn}</div></li>`;
-const guide=`<details class="card start" ${cDone>=5&&sDone>=sCards.length?'':'open'}><summary>처음이라면 이 순서로</summary><ol class="steps">
+const guide=`<details class="card start"><summary>처음이라면 이 순서로</summary><ol class="steps">
 ${step(seenRules,1,'답변 형식 읽기 (5분)','자료 탭의 답변 형식·답변 원칙. 결론 → 이유 → 내 경험 → 교사가 되면','<button class="btn sm" data-act="readrules">읽으러 가기</button>')}
 ${step(sDone>=sCards.length,2,'중요 활동 카드 '+sCards.length+'개 채우기 ('+sDone+'/'+sCards.length+')','카드 탭에서 S 카드부터. 생기부 기록을 읽고 내가 직접 한 일, 어려웠던 점, 배운 점을 실제 있었던 일로 적기','<button class="btn sm" data-tab="cards">카드로 가기</button>')}
 ${step(cDone>=5,3,'기본 답변 5개 내 말로 쓰기 ('+cDone+'/5)','카드 탭 아래 기본 답변. AI 예시 초안을 참고해 노란 칸을 채우고 내 말로 고치기','<button class="btn sm" data-tab="cards">기본 답변으로</button>')}
