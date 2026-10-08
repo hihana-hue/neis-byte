@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>면접 연습 | MARI EDU LAB</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1b2430;--sub:#5d6876;--line:#dfe3ea;--pri:#1f4e8c;--pri2:#e8eef8;--ok:#2e7d4f;--okbg:#e6f3eb;--warn:#a35a00;--warnbg:#fff4e0;--ph:#fff1a8;--phink:#5a4500;--red:#b3261e;--pu:#6d3fc0;--pubg:#f0eafb}
+@media (prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b2129;--ink:#e8ecf1;--sub:#9aa5b3;--line:#2c3440;--pri:#7fa8e8;--pri2:#1f2b3d;--ok:#7cc79a;--okbg:#18291f;--warn:#f0b35b;--warnbg:#2e2412;--ph:#4a3f12;--phink:#ffe58a;--red:#f28b82;--pu:#b99bf0;--pubg:#2a2140}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:22px;margin:4px 0 12px}h2{font-size:18px;margin:20px 0 8px}h3{font-size:16px;margin:14px 0 6px}
+p{margin:6px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sub{color:var(--sub);font-size:14px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 16px;font-size:16px;font-weight:600;min-height:48px;cursor:pointer;font-family:inherit}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+@media (prefers-color-scheme:dark){.btn.pri{color:#0e1520}}
+.btn.wide{width:100%}
+.btn.sm{min-height:40px;padding:8px 12px;font-size:14px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px;min-height:36px;cursor:pointer;font-family:inherit}
+.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+@media (prefers-color-scheme:dark){.chip.on{color:#0e1520}}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--pri2);color:var(--pri);font-weight:600;white-space:nowrap}
+.tag.g{background:var(--okbg);color:var(--ok)}.tag.r{background:var(--pubg);color:var(--pu)}.tag.i{background:var(--line);color:var(--sub)}
+.tag.ar{background:transparent;border:1px solid var(--pri);color:var(--pri);padding:1px 8px}
+.fbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
+.frow{display:flex;gap:10px;align-items:flex-start}.frow+.frow{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px}
+.flbl{flex:none;width:40px;font-size:13px;font-weight:800;padding-top:7px}
+.flbl.ar{color:var(--pri)}.flbl.src{color:var(--ok)}
+.frow .row{flex:1}
+.chip.s-all.on{background:var(--sub);border-color:var(--sub);color:#fff}
+.chip.s-g.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.chip.s-r.on{background:var(--pu);border-color:var(--pu);color:#fff}
+.chip.s-i.on{background:var(--sub);border-color:var(--sub);color:#fff}
+.chip.s-g{border-color:var(--ok);color:var(--ok)}.chip.s-r{border-color:var(--pu);color:var(--pu)}.chip.s-i{border-color:var(--sub);color:var(--sub)}
+.tag.S{background:var(--red);color:#fff}.tag.A{background:var(--warn);color:#fff}.tag.B{background:var(--sub);color:#fff}
+mark.ph{background:var(--ph);color:var(--phink);border-radius:4px;padding:0 3px}
+.ans{white-space:pre-wrap}
+.tip{background:var(--warnbg);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
+.list .item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;color:var(--ink);font-size:15px;cursor:pointer;font-family:inherit}
+.item .meta{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+textarea,input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:110px;resize:vertical}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+.qbig{font-size:22px;font-weight:700;line-height:1.45;margin:8px 0 16px}
+.timer{font-size:56px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:10px 0}
+.timer.low{color:var(--red)}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pri)}
+.stat{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:15px}
+.dday{font-size:40px;font-weight:800;color:var(--pri);line-height:1.1}
+.back{appearance:none;background:none;border:none;color:var(--pri);font-size:15px;padding:8px 0;cursor:pointer;font-family:inherit}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav .in{display:flex;max-width:640px;width:100%}
+nav button{flex:1;appearance:none;background:none;border:none;color:var(--sub);font-size:13px;padding:8px 0 10px;min-height:58px;cursor:pointer;font-family:inherit}
+nav button b{display:block;font-size:20px;line-height:1.2}
+nav button.on{color:var(--pri);font-weight:700}
+nav.hide{display:none}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
+summary{font-weight:700;cursor:pointer;min-height:32px}
+ul{padding-left:20px;margin:6px 0}
+.notice{background:var(--warnbg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0}
+.hide-ans{filter:blur(6px);user-select:none}
+.check{display:flex;gap:8px;align-items:flex-start;font-weight:500}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin:-6px 0 6px;font-size:13px}.topbar a{color:var(--pri);text-decoration:none;font-weight:600}
+.check input{width:22px;height:22px;flex:none;margin-top:2px}
+.ov{position:fixed;inset:0;background:rgba(10,15,25,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.ovc{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90%}
+</style>
+</head><body>
+<main id="main"></main>
+<nav id="nav"><div class="in">
+<button data-tab="home"><b>⌂</b>홈</button>
+<button data-tab="prac"><b>▶</b>연습</button>
+<button data-tab="cards"><b>☰</b>카드</button>
+<button data-tab="qs"><b>?</b>질문</button>
+<button data-tab="info"><b>i</b>자료</button>
+</div></nav>
+<script>
+const D=window.MARI_DATA;
+if(!D||!Array.isArray(D.questions)){document.getElementById('main').innerHTML='<div class="card"><b>로그인 후 이용할 수 있습니다.</b><p class="sub">MARI EDU LAB에서 로그인해 주세요.</p></div>';throw Error('no data')}
+const QUESTIONS=D.questions,CARDS=D.cards,CORE=D.core,META=D.meta||{};
+const WHO=META.name||'본인';
+const SRC={g:['공식 2026','g'],gj:['공식 2026(정시)','g'],r:['작년 후기','r'],i:['생기부 기반 예상','i']};
+const AREAS=['활동','교직관','미래교육·AI','지원동기'];
+const KEY='mari-interview-'+(META.app||'app')+':'+(window.MARI_ACCOUNT||'local');
+let STORE_OK=true;
+function blank(){return{my:{},cards:{},core:{},log:[],cnt:{},notice:{essay:'미확인',qn:'3',time:'8',memo:''}}}
+let S=(function(){try{const t='__t';localStorage.setItem(t,'1');localStorage.removeItem(t);const v=JSON.parse(localStorage.getItem(KEY)||'null');return v?Object.assign(blank(),v):blank()}catch(e){STORE_OK=false;return blank()}})();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){STORE_OK=false}}
+const QM={};QUESTIONS.forEach(q=>QM[q.id]=q);const CM={};CARDS.forEach(c=>CM[c.id]=c);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
+const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
+let V={tab:'home',view:null};let TM=null;
+function stopTimer(){if(TM){clearInterval(TM);TM=null}}
+/* 화면 안 확인창·알림 (브라우저 기본 창을 쓰지 않음) */
+function ask(msg,ok,cancel,onOk){closeAsk();const d=document.createElement('div');d.id='askbox';d.className='ov';d.innerHTML=`<div class="ovc"><p style="font-weight:700;font-size:17px;margin:0 0 14px">${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" id="askno">${esc(cancel)}</button><button class="btn pri" id="askok">${esc(ok)}</button></div></div>`;document.body.appendChild(d);document.getElementById('askno').onclick=closeAsk;document.getElementById('askok').onclick=()=>{closeAsk();onOk()}}
+function closeAsk(){const d=document.getElementById('askbox');if(d)d.remove()}
+function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+function go(tab,view){stopTimer();closeAsk();V={tab,view:view||null};render();window.scrollTo(0,0)}
+function dday(){const p=String(META.date||'2026-11-27').split('-').map(Number);const t=new Date(p[0],p[1]-1,p[2]);const n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/864e5)}
+function coreSt(id){const v=(S.core[id]||'').trim().length;return v===0?0:v<60?1:2}
+function cardSt(id){const c=S.cards[id]||{};const f=['f1','f2','f3','f4','f5'].filter(k=>(c[k]||'').trim()).length;if(!f&&!c.real)return 0;return f>=4&&c.real?2:1}
+const ST=['○ 비어 있음','◐ 작성 중','● 완성'];
+function pickToday(){const pend=QUESTIONS.filter(q=>q.c&&CM[q.c]&&CM[q.c].r!=='B'&&cardSt(q.c)<2);const pool=pend.length?pend:QUESTIONS;const d=new Date();const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);return pool[doy%pool.length]}
+function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===V.tab));document.getElementById('nav').classList.toggle('hide',!!(V.view&&V.view.k==='mock'&&V.view.ph==='run'));const m=document.getElementById('main');m.innerHTML=(STORE_OK?'':'<div class="notice">이 브라우저에서는 입력 내용이 저장되지 않을 수 있습니다. 자료 탭의 백업을 사용하세요.</div>')+(V.view?'':topbar())+view();bindAfter()}
+function topbar(){if(!window.MARI_ACCOUNT)return '';return `<div class="topbar"><a href="https://www.marihome.co.kr/" target="_top">⌂ MARI EDU LAB</a><button class="back" data-act="logout">로그아웃</button></div>`}
+function view(){const v=V.view;if(v){if(v.k==='q')return vQ(v.id);if(v.k==='card')return vCard(v.id);if(v.k==='core')return vCore(v.id);if(v.k==='one')return vOne();if(v.k==='mock')return vMock()}
+return({home:vHome,prac:vPrac,cards:vCards,qs:vQs,info:vInfo})[V.tab]()}
+/* HOME */
+function vHome(){const d=dday();const tq=pickToday();const cDone=CORE.filter(c=>coreSt(c.id)===2).length;const kDone=CARDS.filter(c=>cardSt(c.id)===2).length;const mocks=S.log.filter(l=>l.m==='mock').length;
+const recent=S.log.slice(-3).reverse().map(l=>`<div class="sub">${new Date(l.t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})} · ${l.m==='mock'?'8분 모의면접':esc((QM[l.q]||{}).q||'').slice(0,28)+'…'} · ${mmss(l.sec)}</div>`).join('')||'<div class="sub">아직 연습 기록이 없습니다.</div>';
+const bar=(n,t)=>`<div class="bar"><i style="width:${Math.round(n/t*100)}%"></i></div>`;
+return `<div class="card"><div class="sub">${esc(META.exam||'면접')} · ${esc(META.dateLabel||'')}</div><div class="dday">${d>0?'D-'+d:d===0?'오늘 면접':'면접 종료'}</div>${META.notice?`<div class="sub" style="margin-top:6px">${esc(META.notice)}</div>`:''}</div>
+<div class="card"><div class="sub">오늘의 연습</div><div style="font-weight:700;font-size:18px;margin:6px 0 10px">${esc(tq.q)}</div><div class="row">${srcTag(tq)}<span class="tag ar">${tq.a}</span></div><div style="margin-top:12px"><button class="btn pri wide" data-act="one" data-id="${tq.id}">이 질문으로 연습</button></div></div>
+<div class="card"><h3 style="margin-top:0">준비 상황</h3><div class="stat"><span>기본 답변</span><b>${cDone}/5</b></div>${bar(cDone,5)}<div class="stat" style="margin-top:10px"><span>활동 카드 완성</span><b>${kDone}/${CARDS.length}</b></div>${bar(kDone,CARDS.length)}<div class="stat" style="margin-top:10px"><span>8분 모의면접</span><b>${mocks}회</b></div></div>
+<button class="btn pri wide" data-act="mockgo">8분 모의면접 시작</button>
+<div class="card"><h3 style="margin-top:0">최근 연습</h3>${recent}</div>`}
+/* PRACTICE MENU */
+function vPrac(){return `<h1>연습</h1>
+<div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 예상 답변과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
+<div class="row" style="margin:10px 0">${AREAS.map(a=>`<button class="chip" data-act="onerand" data-a="${a}">${a}</button>`).join('')}</div>
+<button class="btn wide" data-act="onerand" data-a="">아무 질문이나</button></div>
+<div class="card"><h3 style="margin-top:0">8분 모의면접</h3><p class="sub">실제처럼 질문 3~4개를 이어서 받습니다. 활동 질문 뒤에 꼬리질문이 하나 붙습니다.</p><button class="btn pri wide" data-act="mockgo">설정하고 시작</button></div>`}
+function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));const p=pool.filter(q=>(S.cnt[q.id]||0)===min);return p[Math.floor(Math.random()*p.length)]}
+/* ONE QUESTION */
+function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
+let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
+if(v.ph==='ready'){h+=`<div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p>${esc(c.rec)}</p></details>`:''}`}
+else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
+else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>예상 답변</h3><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
+<label for="my">내 답변 (예상 답변을 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
+<div class="row" style="margin-top:12px"><button class="btn" data-act="again1">다시 하기</button><button class="btn pri" data-act="next1">다음 질문</button></div>`}
+return h}
+function startOne(id){go('prac',{k:'one',id,ph:'ready',dur:60})}
+/* MOCK */
+function vMock(){const v=V.view;
+if(v.ph==='setup'){const n=S.notice;return `<button class="back" data-act="close">← 나가기</button><h1>8분 모의면접</h1>
+${n.essay==='있음'?'<div class="notice">공지에서 제시문이 있다고 입력했습니다. 이 앱은 제시문 연습을 지원하지 않으니 학생부 질문 연습으로만 쓰세요.</div>':''}
+<div class="card"><label>질문 수</label><div class="row">${['3','4'].map(x=>`<button class="chip ${v.n===x?'on':''}" data-act="mn" data-v="${x}">${x}개</button>`).join('')}</div>
+<label class="check" style="margin-top:14px"><input type="checkbox" id="mfu" ${v.fu?'checked':''}> 활동 질문 뒤 꼬리질문 1개</label>
+<label class="check"><input type="checkbox" id="mlast" ${v.last?'checked':''}> 남은 시간에 "마지막으로 하고 싶은 말"</label>
+<p class="sub">구성: 활동 1 · 교직관 1 · 미래교육·AI 1${v.n==='4'?' · 지원동기 1':''} (작년 후기를 바탕으로 한 추정 구성입니다)</p></div>
+<button class="btn pri wide" data-act="mockstart">시작 (8:00)</button>`}
+if(v.ph==='run'){const it=v.items[v.i];return `<div class="row" style="justify-content:space-between"><span class="sub">${v.i+1} / ${v.items.length}</span><button class="back" data-act="mockstop">그만하기</button></div>
+<div class="timer ${v.left<=60?'low':''}" id="tm">${mmss(v.left)}</div><div class="card"><div class="sub">${it.k==='fu'?'꼬리질문':it.k==='last'?'마무리':'질문'}</div><div class="qbig" style="margin-bottom:4px">${esc(it.text)}</div></div>
+<button class="btn pri wide" data-act="mocknext">${v.i<v.items.length-1?'다음 질문':'면접 끝내기'}</button>`}
+const tot=v.times.reduce((a,b)=>a+b,0);
+return `<button class="back" data-act="close">← 나가기</button><h1>모의면접 결과</h1><div class="card"><div class="stat"><span>사용 시간</span><b>${mmss(tot)} / 8:00</b></div>${v.timeout?'<p class="sub">8분이 다 되어 종료되었습니다.</p>':''}</div>
+${v.items.map((it,i)=>`<details><summary>${i+1}. ${esc(it.text)} <span class="sub">(${mmss(v.times[i]||0)})</span></summary>${it.q?`<div class="ans" style="margin-top:8px">${fmt(QM[it.q].ans)}</div>`:it.c?`<p class="sub">이 꼬리질문은 활동 카드의 내용으로 답합니다.</p><p>${esc(CM[it.c].warn)}</p>`:''}</details>`).join('')}
+<label for="mmemo">이번 연습 메모</label><textarea id="mmemo" placeholder="막혔던 질문, 다음에 고칠 점"></textarea>
+<button class="btn pri wide" style="margin-top:12px" data-act="mocksave">저장하고 나가기</button>`}
+function buildMock(n,fu,last){const items=[];const pickA=a=>leastPick(QUESTIONS.filter(q=>q.a===a&&q.id!=='D7'));
+const a=pickA('활동');items.push({q:a.id,text:a.q,k:'q'});
+if(fu&&a.c&&CM[a.c]){const f=CM[a.c].fu;items.push({c:a.c,text:f[Math.floor(Math.random()*f.length)],k:'fu'})}
+['교직관','미래교육·AI'].forEach(x=>{const q=pickA(x);items.push({q:q.id,text:q.q,k:'q'})});
+if(n==='4'){const q=pickA('지원동기');items.push({q:q.id,text:q.q,k:'q'})}
+if(last)items.push({q:'D7',text:QM.D7.q,k:'last'});return items}
+/* CARDS */
+function vCards(){return `<h1>카드</h1><h2>기본 답변 5</h2><p class="sub">어떤 질문에도 기본이 되는 답입니다. 30초 분량으로 내 말로 고쳐 쓰세요.</p><div class="list">${CORE.map((c,i)=>`<button class="item" data-act="core" data-id="${c.id}"><b>${i+1}. ${esc(c.t)}</b><div class="meta"><span class="sub">${ST[coreSt(c.id)]}</span></div></button>`).join('')}</div>
+<h2>활동 카드 ${CARDS.length}</h2><p class="sub">S부터 채우세요. 생기부 기록을 보고 ${esc(WHO)}만 아는 내용을 적습니다.</p><div class="list">${CARDS.map(c=>`<button class="item" data-act="card" data-id="${c.id}"><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b><div class="meta"><span class="sub">${esc(c.p)}</span><span class="sub">· ${ST[cardSt(c.id)]}</span></div></button>`).join('')}</div>`}
+const FIELDS=[['f1','내가 직접 한 일 (분량, 누구와, 어떤 부분)'],['f2','어려웠던 점과 해결한 방법'],['f3','배운 점'],['f4','초등교사와 연결하는 한 문장'],['f5','숫자·증거 (인원, 횟수, 결과물)']];
+function vCard(id){const c=CM[id];const d=S.cards[id]||{};const qs=QUESTIONS.filter(q=>q.c===id);
+return `<button class="back" data-act="close">← 카드 목록</button><div class="row"><span class="tag ${c.r}">${c.r}</span><span class="sub">${esc(c.p)}</span></div><h1>${esc(c.t)}</h1>
+<details open><summary>생기부 기록 (요약)</summary><p>${esc(c.rec)}</p></details>
+${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-save="card" data-id="${id}" data-f="${k}" style="min-height:80px">${esc(d[k]||'')}</textarea>`).join('')}
+<label class="check" style="margin-top:14px"><input type="checkbox" data-save="real" data-id="${id}" ${d.real?'checked':''}> 실제로 있었던 일만 적었다</label>
+<div class="tip">${esc(c.warn)}</div>
+<h3>예상 꼬리질문</h3><ul>${c.fu.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+${qs.length?`<h3>이 카드로 답하는 질문</h3><div class="list">${qs.map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`:''}`}
+function vCore(id){const c=CORE.find(x=>x.id===id);
+return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">예시 초안</div><div class="ans">${fmt(c.d)}</div></div>
+<label for="core">내 답변</label><textarea id="core" data-save="core" data-id="${id}" style="min-height:160px" placeholder="예시를 참고해 내 말로 적어 보세요.">${esc(S.core[id]||'')}</textarea><p class="sub">${(S.core[id]||'').length}자 · 소리 내어 30초 안팎이면 적당합니다(약 150~200자).</p>
+<h3>관련 질문</h3><div class="list">${c.q.map(i=>QM[i]).map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`}
+/* QUESTIONS */
+let QF={a:'',s:''};
+function vQs(){const list=QUESTIONS.filter(q=>(!QF.a||q.a===QF.a)&&(!QF.s||(QF.s==='g'?q.s[0]==='g':q.s===QF.s)));
+return `<h1>질문 ${QUESTIONS.length}</h1>
+<div class="fbox"><div class="frow"><span class="flbl ar">주제</span><div class="row">${['',...AREAS].map(a=>`<button class="chip ${QF.a===a?'on':''}" data-act="qfa" data-v="${a}">${a||'전체'}</button>`).join('')}</div></div>
+<div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
+<p class="sub"><b>주제</b>는 무엇을 묻는 질문인지, <b>출처</b>는 어디서 온 질문인지입니다. 두 줄을 함께 골라 좁힐 수 있어요.<br><span class="tag g">공식 2026</span> 대학이 공개한 작년 실제 문항 · <span class="tag r">작년 후기</span> 수험생 후기 · <span class="tag i">생기부 기반 예상</span> ${esc(WHO)} 기록으로 만든 예상 질문</p>
+<div class="list">${list.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}<span class="tag ar">${q.a}</span>${S.cnt[q.id]?`<span class="sub">연습 ${S.cnt[q.id]}회</span>`:''}${S.my[q.id]?'<span class="sub">· 내 답변 있음</span>':''}</div></button>`).join('')}</div>`}
+function vQ(id){const q=QM[id];const c=q.c?CM[q.c]:null;
+return `<button class="back" data-act="close">← 질문 목록</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
+<button class="btn pri wide" data-act="one" data-id="${id}">이 질문으로 연습</button>
+<details><summary>예상 답변 (먼저 말해 본 뒤에 열기)</summary><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
+<label for="my">내 답변</label><textarea id="my" data-save="my" data-id="${id}">${esc(S.my[id]||'')}</textarea>
+${c?`<div class="list" style="margin-top:12px"><button class="item" data-act="card" data-id="${c.id}"><span class="sub">관련 활동 카드</span><br><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b></button></div>`:''}`}
+/* INFO */
+function vInfo(){const n=S.notice;return `<h1>자료</h1>
+<details open><summary>면접 방식 (2027 모집요강)</summary><ul>
+<li>학생부위주(종합) 지역인재선발: 1단계 서류 100%로 모집인원의 300% 선발 → 2단계 서류 70% + 면접 30%</li>
+<li>수능 최저학력기준 없음</li>
+<li>면접: <b>학생부 기반 면접</b>, 개인별 <b>8분 이내</b></li>
+<li>평가: 예비 초등교사로서의 자질 — 교직적성 확인, 우수 교사로서의 잠재능력, 학생부 기재사항의 신뢰도 등 종합 평가</li>
+<li>면접일 2026.11.27(금). 일정은 11.20(금) 오후 1시 이후 홈페이지 게재</li>
+<li>면접위원 3인 모두 0점이면 1단계 성적과 관계없이 탈락, 면접 미응시 불합격</li></ul>
+<p class="sub">작년(2026) 공식 보고서: 수시 면접은 "교직적성·인성 2문항 + 학생부 관련 질문, 8분 이내"였고, 향후 문제출제 방식 면접을 폐지할 계획이라고 적혀 있습니다.</p></details>
+<details><summary>작년 후기에서 본 것 (개인 후기 3건)</summary><ul>
+<li>질문 3~4개, 면접관 3명, 8분</li>
+<li>나온 질문: 가장 열심히 한 활동과 배운 점 / 좋은 초등교사 / 미래 교육에서 초등교육의 역할 / AI·소프트웨어·미래사회 / 교사의 인성적 덕목 / 교사 꿈에 가까워진 활동 / 교대 지원 이유</li>
+<li>"생기부 활동을 꼼꼼하게 묻는 게 아니라 질문에 내 활동을 엮어 답해야 한다"(후기)</li>
+<li>마지막 할 말이 있었다는 후기와 없었다는 후기가 모두 있음</li></ul><p class="sub">개인 후기라 전형과 진행 방식이 ${esc(WHO)}와 같다는 보장은 없습니다.</p></details>
+<details><summary>대학 이해 한 장</summary><ul>
+<li><b>건학이념</b> 참·사랑·새로움 — 참: 진리 탐구 / 사랑: 고매한 인격과 양식 / 새로움: 미래사회에 능동적으로 대응하는 창조성 (홈페이지)</li>
+<li><b>교육목적</b> 도덕성과 전문성을 갖춘 유능하고 창의적인 교원 양성 (홈페이지)</li>
+<li><b>비전</b> 작지만 강한 대학 함께 만드는 미래교육 혁신플랫폼. 목표에 "교육혁신을 주도할 미래형 초등교사 양성", 전략에 "AI·디지털 교육혁신을 주도하는 대학", "지역을 기반으로 상생 공동체 대학" (홈페이지)</li>
+<li><b>인재상</b> 인성과 전문성을 갖춘 교육실천가 · <b>핵심역량</b> 수업전문성, 교육리더십, 생태시민성, 의사소통력, 도덕적상상력 (구판 브로슈어, 지금과 다를 수 있음)</li>
+<li><b>교육과정</b> 1학년은 무학과제, 이후 12개 심화과정(윤리·국어·사회·수학·과학·실과·음악·미술·체육·초등·영어·컴퓨터). 교육과정에 초등안전교육, 응급처치 및 심폐소생술 포함. 일본 오사카교육대학·효고교육대학 학생교류 (2027 요강)</li></ul>
+<p class="sub">문구를 외워서 읊기보다, 내 활동을 말한 뒤 한 문장으로 연결하는 정도가 안전합니다.</p></details>
+<details><summary>답변 원칙</summary><ul>
+<li>결론 먼저 → 내 활동 사례 → 초등교사와 연결</li>
+<li>한 답변은 1분 안팎</li>
+<li>생기부에 없는 일, 하지 않은 결과는 말하지 않기 (평가항목이 '기재사항의 신뢰도')</li>
+${(META.rules||[]).map(r=>`<li>${esc(r)}</li>`).join('')}
+<li>모르는 것은 "그 부분은 정확히 모릅니다. 다만 ~"으로 정직하게</li></ul></details>
+<details><summary>면접 당일 체크리스트</summary><ul>
+<li>수험표, 신분증 (인정: 주민등록증, 운전면허증, 청소년증, 학생증 등)</li>
+<li>면접고사장과 대기실에서 휴대전화 소지 불가</li>
+<li>11.20 공지에서 집결 시간과 장소 확인</li>
+<li>시계 지참 가능 여부는 공지로 확인 (요강에 없음)</li>
+<li>전날: 기본 답변 5를 소리 내어 한 번씩</li></ul></details>
+<details><summary>11.20 면접 공지 입력</summary><p class="sub">공지가 나오면 입력하세요. 모의면접 설정에 반영됩니다.</p>
+<label for="ne">제시문</label><select id="ne" data-save="notice" data-f="essay">${['미확인','없음','있음'].map(x=>`<option ${n.essay===x?'selected':''}>${x}</option>`).join('')}</select>
+<label for="nq">기본 질문 수</label><select id="nq" data-save="notice" data-f="qn">${['3','4'].map(x=>`<option ${n.qn===x?'selected':''}>${x}</option>`).join('')}</select>
+<label for="nm">기타 (집결 시간, 장소, 진행 방식)</label><textarea id="nm" data-save="notice" data-f="memo">${esc(n.memo||'')}</textarea></details>
+<details><summary>내 입력 백업</summary><p class="sub">입력 내용은 이 기기의 이 브라우저에만 저장됩니다. 다른 기기로 옮기거나 지워질 때를 대비해 백업하세요.</p>
+<button class="btn sm" data-act="exp">백업 파일 내려받기</button>
+<label for="imp">백업 불러오기 (파일 선택)</label><input type="file" id="imp" accept=".json,application/json"></details>`}
+/* EVENTS */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-tab]');if(!b)return;
+if(b.dataset.tab){QF={a:'',s:''};go(b.dataset.tab);return}
+const a=b.dataset.act,id=b.dataset.id,v=V.view;
+if(a==='one')startOne(id);
+else if(a==='onerand'){const pool=QUESTIONS.filter(q=>!b.dataset.a||q.a===b.dataset.a);startOne(leastPick(pool).id)}
+else if(a==='q')go('qs',{k:'q',id});
+else if(a==='card')go('cards',{k:'card',id});
+else if(a==='core')go('cards',{k:'core',id});
+else if(a==='close'){go(V.tab)}
+else if(a==='dur'){v.dur=+b.dataset.s;render()}
+else if(a==='start1'){v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
+else if(a==='end1')endOne();
+else if(a==='again1'){V.view={k:'one',id:v.id,ph:'ready',dur:v.dur};render()}
+else if(a==='next1'){const q=QM[v.id];const pool=QUESTIONS.filter(x=>x.a===q.a&&x.id!==q.id);startOne(leastPick(pool.length?pool:QUESTIONS).id)}
+else if(a==='mockgo')go('prac',{k:'mock',ph:'setup',n:S.notice.qn||'3',fu:true,last:false});
+else if(a==='mn'){v.n=b.dataset.v;v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;render()}
+else if(a==='mockstart'){v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;v.items=buildMock(v.n,v.fu,v.last);v.i=0;v.times=[];v.ph='run';v.left=480;v.t0=Date.now();v.qt=Date.now();render();window.scrollTo(0,0);
+TM=setInterval(()=>{v.left=480-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=60)}if(v.left<=0){v.timeout=true;mockNext(true)}},250)}
+else if(a==='mocknext')mockNext(false);
+else if(a==='mockstop'){ask('모의면접을 그만할까요? 이번 회차 기록은 저장되지 않습니다.','그만하기','계속하기',()=>{stopTimer();V={tab:'prac',view:null};render();window.scrollTo(0,0)})}
+else if(a==='mocksave'){const tot=v.times.reduce((x,y)=>x+y,0);S.log.push({t:Date.now(),m:'mock',sec:tot,memo:(document.getElementById('mmemo')||{}).value||'',qs:v.items.map(i=>i.q||i.text)});v.items.forEach(i=>{if(i.q)S.cnt[i.q]=(S.cnt[i.q]||0)+1});save();V.view=null;V.tab='home';render()}
+else if(a==='logout'){try{parent.postMessage({channel:'mari-logout'},'*')}catch(e){}}
+else if(a==='qfa'){QF.a=b.dataset.v;render()}
+else if(a==='qfs'){QF.s=b.dataset.v;render()}
+else if(a==='exp'){try{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const l=document.createElement('a');l.href=u;l.download=(META.backupName||'면접연습_백업')+'_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(err){toast('이 화면에서는 내려받기를 할 수 없습니다. 브라우저로 열어 주세요.')}}
+});
+function endOne(){const v=V.view;stopTimer();v.used=Math.min(v.dur,(Date.now()-v.t0)/1000);v.ph='done';S.cnt[v.id]=(S.cnt[v.id]||0)+1;S.log.push({t:Date.now(),m:'one',q:v.id,sec:v.used});save();render()}
+function mockNext(timeout){const v=V.view;v.times[v.i]=(Date.now()-v.qt)/1000;v.qt=Date.now();if(timeout||v.i>=v.items.length-1){stopTimer();v.ph='done';V.view=v;render();window.scrollTo(0,0);return}v.i++;render()}
+document.addEventListener('input',e=>{const el=e.target,k=el.dataset.save;if(!k)return;const id=el.dataset.id;
+if(k==='my'){S.my[id]=el.value}else if(k==='core'){S.core[id]=el.value}else if(k==='card'){(S.cards[id]=S.cards[id]||{})[el.dataset.f]=el.value}else if(k==='notice'){S.notice[el.dataset.f]=el.value}save()});
+document.addEventListener('change',e=>{const el=e.target;if(el.dataset.save==='real'){(S.cards[el.dataset.id]=S.cards[el.dataset.id]||{}).real=el.checked;save()}
+else if(el.dataset.save==='notice'){S.notice[el.dataset.f]=el.value;save()}
+else if(el.id==='imp'&&el.files[0]){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);ask('지금 입력한 내용을 백업 파일 내용으로 바꿀까요?','바꾸기','취소',()=>{S=Object.assign(blank(),d);save();render();toast('백업을 불러왔습니다.')})}catch(err){toast('백업 파일을 읽을 수 없습니다.')}};r.readAsText(el.files[0])}});
+function bindAfter(){}
+render();
+</script>
+</body></html>
