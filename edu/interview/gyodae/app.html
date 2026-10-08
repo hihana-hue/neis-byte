@@ -37,7 +37,7 @@ p{margin:6px 0}
 .chip.s-g{border-color:var(--ok);color:var(--ok)}.chip.s-r{border-color:var(--pu);color:var(--pu)}.chip.s-i{border-color:var(--sub);color:var(--sub)}
 .tag.S{background:var(--red);color:#fff}.tag.A{background:var(--warn);color:#fff}.tag.B{background:var(--sub);color:#fff}
 mark.ph{background:var(--ph);color:var(--phink);border-radius:4px;padding:0 3px}
-.ans{white-space:pre-wrap}
+.ans,.rec,.tip{white-space:pre-wrap}
 .tip{background:var(--warnbg);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
 .list .item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;color:var(--ink);font-size:15px;cursor:pointer;font-family:inherit}
 .item .meta{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -92,7 +92,7 @@ let S=(function(){try{const t='__t';localStorage.setItem(t,'1');localStorage.rem
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){STORE_OK=false}}
 const QM={};QUESTIONS.forEach(q=>QM[q.id]=q);const CM={};CARDS.forEach(c=>CM[c.id]=c);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
+const brk=s=>String(s==null?'':s).replace(/([.)])[ \t]+(?=[^.:\n()'"‘’]{1,20}:\s)/g,'$1\n'); const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
 let V={tab:'home',view:null};let TM=null;
@@ -130,7 +130,7 @@ function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));cons
 /* ONE QUESTION */
 function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
 let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
-if(v.ph==='ready'){h+=`<div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p>${esc(c.rec)}</p></details>`:''}`}
+if(v.ph==='ready'){h+=`<div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
 else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
 else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>예상 답변</h3><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
 <label for="my">내 답변 (예상 답변을 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
@@ -166,7 +166,7 @@ function vCards(){return `<h1>카드</h1><h2>기본 답변 5</h2><p class="sub">
 const FIELDS=[['f1','내가 직접 한 일 (분량, 누구와, 어떤 부분)'],['f2','어려웠던 점과 해결한 방법'],['f3','배운 점'],['f4','초등교사와 연결하는 한 문장'],['f5','숫자·증거 (인원, 횟수, 결과물)']];
 function vCard(id){const c=CM[id];const d=S.cards[id]||{};const qs=QUESTIONS.filter(q=>q.c===id);
 return `<button class="back" data-act="close">← 카드 목록</button><div class="row"><span class="tag ${c.r}">${c.r}</span><span class="sub">${esc(c.p)}</span></div><h1>${esc(c.t)}</h1>
-<details open><summary>생기부 기록 (요약)</summary><p>${esc(c.rec)}</p></details>
+<details open><summary>생기부 기록 (요약)</summary><p class="rec">${esc(brk(c.rec))}</p></details>
 ${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-save="card" data-id="${id}" data-f="${k}" style="min-height:80px">${esc(d[k]||'')}</textarea>`).join('')}
 <label class="check" style="margin-top:14px"><input type="checkbox" data-save="real" data-id="${id}" ${d.real?'checked':''}> 실제로 있었던 일만 적었다</label>
 <div class="tip">${esc(c.warn)}</div>
