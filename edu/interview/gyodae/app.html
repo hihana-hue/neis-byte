@@ -101,7 +101,7 @@ function stopTimer(){if(TM){clearInterval(TM);TM=null}}
 function ask(msg,ok,cancel,onOk){closeAsk();const d=document.createElement('div');d.id='askbox';d.className='ov';d.innerHTML=`<div class="ovc"><p style="font-weight:700;font-size:17px;margin:0 0 14px">${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" id="askno">${esc(cancel)}</button><button class="btn pri" id="askok">${esc(ok)}</button></div></div>`;document.body.appendChild(d);document.getElementById('askno').onclick=closeAsk;document.getElementById('askok').onclick=()=>{closeAsk();onOk()}}
 function closeAsk(){const d=document.getElementById('askbox');if(d)d.remove()}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
-function go(tab,view){stopTimer();closeAsk();V={tab,view:view||null};render();window.scrollTo(0,0)}
+let HIST=[];/* 나가기·뒤로가 들어온 화면으로 돌아가도록 이전 화면을 기억 */ function go(tab,view){stopTimer();closeAsk();if(!view)HIST=[];else if(V.view?V.view.k!==view.k:V.tab!==tab)HIST.push(V);V={tab,view:view||null};render();window.scrollTo(0,0)} function back(){if(HIST.length){stopTimer();closeAsk();V=HIST.pop();render();window.scrollTo(0,0)}else go(V.tab)}
 function dday(){const p=String(META.date||'2026-11-27').split('-').map(Number);const t=new Date(p[0],p[1]-1,p[2]);const n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/864e5)}
 function coreSt(id){const v=(S.core[id]||'').trim().length;return v===0?0:v<60?1:2}
 function cardSt(id){const c=S.cards[id]||{};const f=['f1','f2','f3','f4','f5'].filter(k=>(c[k]||'').trim()).length;if(!f&&!c.real)return 0;return f>=4&&c.real?2:1}
@@ -240,7 +240,7 @@ else if(a==='onerand'){const pool=QUESTIONS.filter(q=>!b.dataset.a||q.a===b.data
 else if(a==='q')go('qs',{k:'q',id});
 else if(a==='card')go('cards',{k:'card',id});
 else if(a==='core')go('cards',{k:'core',id});
-else if(a==='close'){go(V.tab)}
+else if(a==='close'){back()}
 else if(a==='dur'){v.dur=+b.dataset.s;render()}
 else if(a==='start1'){v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
 else if(a==='end1')endOne();
