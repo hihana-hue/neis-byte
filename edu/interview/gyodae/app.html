@@ -92,9 +92,7 @@ let S=(function(){try{const t='__t';localStorage.setItem(t,'1');localStorage.rem
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){STORE_OK=false}}
 const QM={};QUESTIONS.forEach(q=>QM[q.id]=q);const CM={};CARDS.forEach(c=>CM[c.id]=c);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const brk=s=>String(s==null?'':s).replace(/([.)])[ 	]+(?=[^.:
-()'"‘’]{1,20}:\s)/g,'$1
-'); const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
+const brk=s=>String(s==null?'':s).replace(/([.)])[ \t]+(?=[^.:\n()'"‘’]{1,20}:\s)/g,'$1\n'); const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
 let V={tab:'home',view:null};let TM=null;
