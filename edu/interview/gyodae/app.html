@@ -37,7 +37,7 @@ p{margin:6px 0}
 .chip.s-g{border-color:var(--ok);color:var(--ok)}.chip.s-r{border-color:var(--pu);color:var(--pu)}.chip.s-i{border-color:var(--sub);color:var(--sub)}
 .tag.S{background:var(--red);color:#fff}.tag.A{background:var(--warn);color:#fff}.tag.B{background:var(--sub);color:#fff}
 mark.ph{background:var(--ph);color:var(--phink);border-radius:4px;padding:0 3px}
-.ans,.rec,.tip{white-space:pre-wrap}
+.ans,.rec,.tip{white-space:pre-wrap} .aiwarn{margin:4px 0 8px;font-size:13px} .order{background:var(--warnbg);border-radius:10px;padding:8px 12px;font-size:14px;margin:4px 0 12px} .order b{margin-right:6px} table.fmt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0} table.fmt th,table.fmt td{border-bottom:1px solid var(--line,#dfe3ea);padding:6px 4px;text-align:left;vertical-align:top} table.fmt td:last-child,table.fmt th:last-child{white-space:nowrap}
 .tip{background:var(--warnbg);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
 .list .item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;color:var(--ink);font-size:15px;cursor:pointer;font-family:inherit}
 .item .meta{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -122,7 +122,7 @@ return `<div class="card"><div class="sub">${esc(META.exam||'면접')} · ${esc(
 <div class="card"><h3 style="margin-top:0">최근 연습</h3>${recent}</div>`}
 /* PRACTICE MENU */
 function vPrac(){return `<h1>연습</h1>
-<div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 예상 답변과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
+<div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 AI 예시 답안과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
 <div class="row" style="margin:10px 0">${AREAS.map(a=>`<button class="chip" data-act="onerand" data-a="${a}">${a}</button>`).join('')}</div>
 <button class="btn wide" data-act="onerand" data-a="">아무 질문이나</button></div>
 <div class="card"><h3 style="margin-top:0">8분 모의면접</h3><p class="sub">실제처럼 질문 3~4개를 이어서 받습니다. 활동 질문 뒤에 꼬리질문이 하나 붙습니다.</p><button class="btn pri wide" data-act="mockgo">설정하고 시작</button></div>`}
@@ -130,10 +130,10 @@ function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));cons
 /* ONE QUESTION */
 function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
 let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
-if(v.ph==='ready'){h+=`<div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
+if(v.ph==='ready'){h+=`<div class="order"><b>답변 순서</b> 결론 → 이유 → 내 경험 → 교사가 되면</div><div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
 else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
-else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>예상 답변</h3><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
-<label for="my">내 답변 (예상 답변을 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
+else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>AI 예시 답안</h3><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
+<label for="my">내 답변 (AI 예시를 참고해 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
 <div class="row" style="margin-top:12px"><button class="btn" data-act="again1">다시 하기</button><button class="btn pri" data-act="next1">다음 질문</button></div>`}
 return h}
 function startOne(id){go('prac',{k:'one',id,ph:'ready',dur:60})}
@@ -151,7 +151,7 @@ if(v.ph==='run'){const it=v.items[v.i];return `<div class="row" style="justify-c
 <button class="btn pri wide" data-act="mocknext">${v.i<v.items.length-1?'다음 질문':'면접 끝내기'}</button>`}
 const tot=v.times.reduce((a,b)=>a+b,0);
 return `<button class="back" data-act="close">← 나가기</button><h1>모의면접 결과</h1><div class="card"><div class="stat"><span>사용 시간</span><b>${mmss(tot)} / 8:00</b></div>${v.timeout?'<p class="sub">8분이 다 되어 종료되었습니다.</p>':''}</div>
-${v.items.map((it,i)=>`<details><summary>${i+1}. ${esc(it.text)} <span class="sub">(${mmss(v.times[i]||0)})</span></summary>${it.q?`<div class="ans" style="margin-top:8px">${fmt(QM[it.q].ans)}</div>`:it.c?`<p class="sub">이 꼬리질문은 활동 카드의 내용으로 답합니다.</p><p>${esc(CM[it.c].warn)}</p>`:''}</details>`).join('')}
+${v.items.map((it,i)=>`<details><summary>${i+1}. ${esc(it.text)} <span class="sub">(${mmss(v.times[i]||0)})</span></summary>${it.q?`<p class="sub" style="margin-top:8px">AI 예시 답안</p><div class="ans">${fmt(QM[it.q].ans)}</div>`:it.c?`<p class="sub">이 꼬리질문은 활동 카드의 내용으로 답합니다.</p><p>${esc(CM[it.c].warn)}</p>`:''}</details>`).join('')}
 <label for="mmemo">이번 연습 메모</label><textarea id="mmemo" placeholder="막혔던 질문, 다음에 고칠 점"></textarea>
 <button class="btn pri wide" style="margin-top:12px" data-act="mocksave">저장하고 나가기</button>`}
 function buildMock(n,fu,last){const items=[];const pickA=a=>leastPick(QUESTIONS.filter(q=>q.a===a&&q.id!=='D7'));
@@ -173,7 +173,7 @@ ${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-sa
 <h3>예상 꼬리질문</h3><ul>${c.fu.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
 ${qs.length?`<h3>이 카드로 답하는 질문</h3><div class="list">${qs.map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`:''}`}
 function vCore(id){const c=CORE.find(x=>x.id===id);
-return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">예시 초안</div><div class="ans">${fmt(c.d)}</div></div>
+return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">AI 예시 초안</div><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(c.d)}</div></div>
 <label for="core">내 답변</label><textarea id="core" data-save="core" data-id="${id}" style="min-height:160px" placeholder="예시를 참고해 내 말로 적어 보세요.">${esc(S.core[id]||'')}</textarea><p class="sub">${(S.core[id]||'').length}자 · 소리 내어 30초 안팎이면 적당합니다(약 150~200자).</p>
 <h3>관련 질문</h3><div class="list">${c.q.map(i=>QM[i]).map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`}
 /* QUESTIONS */
@@ -187,7 +187,7 @@ return `<h1>질문 ${QUESTIONS.length}</h1>
 function vQ(id){const q=QM[id];const c=q.c?CM[q.c]:null;
 return `<button class="back" data-act="close">← 질문 목록</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
 <button class="btn pri wide" data-act="one" data-id="${id}">이 질문으로 연습</button>
-<details><summary>예상 답변 (먼저 말해 본 뒤에 열기)</summary><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
+<details><summary>AI 예시 답안 (먼저 말해 본 뒤에 열기)</summary><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
 <label for="my">내 답변</label><textarea id="my" data-save="my" data-id="${id}">${esc(S.my[id]||'')}</textarea>
 ${c?`<div class="list" style="margin-top:12px"><button class="item" data-act="card" data-id="${c.id}"><span class="sub">관련 활동 카드</span><br><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b></button></div>`:''}`}
 /* INFO */
@@ -212,12 +212,33 @@ function vInfo(){const n=S.notice;return `<h1>자료</h1>
 <li><b>인재상</b> 인성과 전문성을 갖춘 교육실천가 · <b>핵심역량</b> 수업전문성, 교육리더십, 생태시민성, 의사소통력, 도덕적상상력 (구판 브로슈어, 지금과 다를 수 있음)</li>
 <li><b>교육과정</b> 1학년은 무학과제, 이후 12개 심화과정(윤리·국어·사회·수학·과학·실과·음악·미술·체육·초등·영어·컴퓨터). 교육과정에 초등안전교육, 응급처치 및 심폐소생술 포함. 일본 오사카교육대학·효고교육대학 학생교류 (2027 요강)</li></ul>
 <p class="sub">문구를 외워서 읊기보다, 내 활동을 말한 뒤 한 문장으로 연결하는 정도가 안전합니다.</p></details>
+<details open><summary>답변 형식</summary>
+<p class="sub">한 답변은 1분 안팎. 8분에 질문 3~4개와 꼬리질문이 오갑니다.</p>
+<table class="fmt"><tr><th>순서</th><th>내용</th><th>길이</th></tr>
+<tr><td>1. 결론</td><td>"저는 ○○라고 생각합니다." 먼저 말하기</td><td>1문장</td></tr>
+<tr><td>2. 이유</td><td>왜 그런지 1~2개</td><td>2문장</td></tr>
+<tr><td>3. 내 경험</td><td>생기부 활동 하나: 무엇을, 왜, 어떻게, 무엇을 배웠는지</td><td>3~4문장</td></tr>
+<tr><td>4. 교사가 되면</td><td>그 배움을 교실에서 어떻게 쓸지</td><td>1~2문장</td></tr>
+<tr><td>5. 보완(필요할 때)</td><td>부족한 점을 인정하고 대학에서 배울 것</td><td>1문장</td></tr></table>
+<p class="sub">결론을 먼저 말하는 방식은 청주교대 학생부종합전형 안내서가 권하는 방식입니다(다른 교대 자료).</p></details>
+<details><summary>어려운 질문 판단 순서</summary><p class="sub">상황 질문(학생 갈등, 학부모, AI 등)은 머릿속으로 이 순서를 거친 뒤 답합니다.</p><ul>
+<li><b>① 아이</b> 가장 영향받는 아이, 가장 약한 아이는 누구인가</li>
+<li><b>② 사실</b> 확인된 것과 모르는 것은 무엇인가. 단정하지 않기</li>
+<li><b>③ 관점</b> 아이·학부모·동료교사·학교 각각의 입장</li>
+<li><b>④ 원칙</b> 학습권·안전·공정·존중 중 무엇이 걸려 있나</li>
+<li><b>⑤ 실천</b> 지금 할 수 있는 구체 행동 + 다시 일어나지 않게 할 예방</li></ul></details>
 <details><summary>답변 원칙</summary><ul>
-<li>결론 먼저 → 내 활동 사례 → 초등교사와 연결</li>
-<li>한 답변은 1분 안팎</li>
-<li>생기부에 없는 일, 하지 않은 결과는 말하지 않기 (평가항목이 '기재사항의 신뢰도')</li>
+<li>생기부에 없는 일, 하지 않은 결과는 말하지 않기 (평가항목이 '학생부 기재사항의 신뢰도')</li>
 ${(META.rules||[]).map(r=>`<li>${esc(r)}</li>`).join('')}
-<li>모르는 것은 "그 부분은 정확히 모릅니다. 다만 ~"으로 정직하게</li></ul></details>
+<li>모르는 것은 "그 부분은 정확히 모릅니다. 다만 ~"으로 정직하게</li>
+<li>꼬리질문에서 새 조건이 나오면: "그 조건이라면 처음 생각을 조금 바꿔야 할 것 같습니다. 먼저 ○○를 확인하겠습니다."</li></ul>
+<h3>피해야 할 답</h3><ul>
+<li><b>추상적 다짐</b> "모든 아이를 사랑하는 교사가 되겠습니다"로 끝내지 않기. 경험과 구체 행동을 붙이기</li>
+<li><b>한쪽 편만 들기</b> 무조건 학생 편, 무조건 교사 편을 피하고 원칙과 소통을 함께</li>
+<li><b>혼자 다 해결하기</b> 학부모·동료교사·학교와 함께 해결한다고 말하기</li>
+<li><b>진로 변경 감추기</b> 1학년 기록은 면접관도 보고 있음. 먼저 인정하기</li>
+<li><b>외운 문장 낭독</b> 핵심 단어만 기억하고 말은 그 자리에서 만들기</li>
+<li><b>개인정보</b> 학교명, 부모 직업은 말하지 않기 (전주교대 요강에 블라인드 여부 명시는 없음)</li></ul></details>
 <details><summary>면접 당일 체크리스트</summary><ul>
 <li>수험표, 신분증 (인정: 주민등록증, 운전면허증, 청소년증, 학생증 등)</li>
 <li>면접고사장과 대기실에서 휴대전화 소지 불가</li>
