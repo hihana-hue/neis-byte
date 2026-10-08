@@ -1,11 +1,21 @@
-# MARI EDU LAB 앱 구성
+# MARI EDU LAB 앱 구성 및 파일 의존성
 
-- /: 학습 도구 선택
-- /neis-byte/: 기존 정적 바이트 계산기
-- /gogeon-word/: 현재 비공개 Sites 고전 어휘 앱으로 연결
+| URL | 저장소 파일 | 역할 |
+| --- | --- | --- |
+| `/` | `index.html` | 메인 메뉴 |
+| `/edu/neis-byte/` | `edu/neis-byte/index.html` | 나이스 바이트 계산기 |
+| `/edu/gogeon-word/` | `edu/gogeon-word/index.html` | 고전 어휘 및 로그인 화면 |
+| `/edu/economy-word/` | `edu/economy-word/index.html` | 경제 어휘 및 로그인 화면 |
+| `/edu/exam-prep/hanmun/` | `edu/exam-prep/hanmun/index.html` | 한문시험준비 및 로그인 화면 |
 
-고전 앱은 기존 owner-private 접근을 유지합니다. 아이디/PIN 인증은 아직 구현하지 않았습니다. 기존 학습 데이터는 현재 Sites 앱의 브라우저 저장소에 남아 있습니다.
+## 공통 의존성
+- 고전 어휘: `./config.js`, `./ui.js`, `./app.html` 및 어휘 데이터 파일
+- 경제 어휘: `./config.js` -> `/edu/gogeon-word/config.js`, `./ui.js`, `./app.html`
+- 한문시험준비: `/edu/gogeon-word/config.js`, `./ui.js`, `./app.html`
+- 공통 서버 URL 설정: `edu/gogeon-word/config.js`. 공개 파일에 PIN이나 개인정보를 저장하지 마세요.
+- 앱별 인증·학습 기록 로직은 `ui.js`와 Google Apps Script에 연관되어 있습니다. 실제 권한·저장 동작은 배포 환경에서 별도 검증해야 합니다.
 
-아이디/PIN과 계정별 학습 동기화를 추가하려면 서버 인증, PIN 해시 저장, 로그인 시도 제한, 만료되는 세션, 계정별 학습 데이터 저장이 필요합니다. GitHub Pages의 정적 HTML에 계정이나 PIN을 기록하지 않습니다.
+## 정리 기록
+과거 React/Next.js 계산기의 `app/`, `worker/`, `build/`, `db/`, `drizzle/`, `scripts/`, `tests/` 및 관련 설정은 정리 브랜치에서 제거했습니다. `edu/`, 루트 `index.html`, `CNAME`은 유지했습니다.
 
-루트 CNAME 및 기존 개발 소스는 유지했습니다.
+운영 배포 설정과 사용자 테스트를 마치기 전까지 정리 브랜치를 `main`에 병합하지 마세요.
