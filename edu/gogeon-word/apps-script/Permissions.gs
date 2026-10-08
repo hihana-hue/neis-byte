@@ -8,7 +8,9 @@ function mariPermissions_(id){
 }
 function mariRequire_(id,app){if(!Object.prototype.hasOwnProperty.call(MARI_ACCESS_COLUMNS,app))throw Error('앱 설정을 확인하세요.');const permissions=mariPermissions_(id);if(!permissions[app])throw Error('이 앱의 이용 권한이 없습니다. 관리자에게 문의하세요.');return permissions;}
 function mariPayload_(id,app){return app==='classic'?studentPayload_(id):app==='economy'?economyPayload_(id):app==='gyodae'?gyodaePayload_(id):{id};}
+// 학생 탭의 '날짜·테스트한 단어 수…' 칸은 고전어휘 기록입니다. 다른 앱으로 로그인할 때는 그 줄을 만들지 않고 '최근 접속'(C2)만 고칩니다.
 function mariSignIn(id,pin,remember,device,label,app){
+ if(app!=='classic')writeDay_=function(s,a,metrics,touch){if(touch)s.getRange('C2').setValue(new Date());};
  const auth=login(id,pin,remember,device,label);
  try{const permissions=mariRequire_(auth.id,app);return {...mariPayload_(auth.id,app),token:auth.token,permissions};}
  catch(error){logout(auth.token);throw error;}
