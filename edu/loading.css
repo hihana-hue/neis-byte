@@ -9,6 +9,5 @@
 @keyframes mari-blessing{0%,100%{opacity:1}35%,48%{opacity:.45}80%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.mari-loading-piece,.mari-loading-blessing{animation:none}}
 
-.mari-loading-piece{filter:url(#mari-paint)}
 .mari-loading-english{font-size:14px;font-weight:500;letter-spacing:.06em;color:#1c555a}
 @media(max-width:768px){.mari-loading-icon{width:56px;height:56px;margin:12px 0 18px}}
