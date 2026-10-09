@@ -78,9 +78,9 @@ ul{padding-left:20px;margin:6px 0}
 <main id="main"></main>
 <nav id="nav"><div class="in">
 <button data-tab="home"><b>⌂</b>홈</button>
-<button data-tab="prac"><b>▶</b>연습</button>
-<button data-tab="cards"><b>☰</b>카드</button>
-<button data-tab="qs"><b>?</b>질문</button>
+<button data-tab="prac"><b>▶</b>면접 연습</button>
+<button data-tab="cards"><b>☰</b>답변 준비</button>
+<button data-tab="qs"><b>?</b>질문 모음</button>
 <button data-tab="info"><b>i</b>자료</button>
 </div></nav>
 <script>
@@ -160,9 +160,9 @@ const sCards=CARDS.filter(c=>c.r==='S'),sDone=sCards.filter(c=>cardSt(c.id)===2)
 const step=(ok,n,t,d,btn)=>`<li class="${ok?'ok':''}"><b>${ok?'✓':n}</b><div><div class="st">${t}</div><div class="sub">${d}</div>${btn}</div></li>`;
 const guide=`<details class="card start"><summary>처음이라면 이 순서로</summary><ol class="steps">
 ${step(seenRules,1,'답변 형식 읽기 (5분)','자료 탭의 답변 형식·답변 원칙. 결론 → 이유 → 내 경험 → 교사가 되면','<button class="btn sm" data-act="readrules">읽으러 가기</button>')}
-${step(sDone>=sCards.length,2,'중요 활동 카드 '+sCards.length+'개 채우기 ('+sDone+'/'+sCards.length+')','카드 탭에서 S 카드부터. 생기부 기록을 읽고 내가 직접 한 일, 어려웠던 점, 배운 점을 실제 있었던 일로 적기','<button class="btn sm" data-tab="cards">카드로 가기</button>')}
-${step(cDone>=5,3,'기본 답변 5개 내 말로 쓰기 ('+cDone+'/5)','카드 탭 아래 기본 답변. AI 예시 초안을 참고해 노란 칸을 채우고 내 말로 고치기','<button class="btn sm" data-tab="cards">기본 답변으로</button>')}
-${step(false,4,'한 문제 연습','소리 내어 1분 안팎으로 답한 뒤 AI 예시 답안과 비교','<button class="btn sm" data-tab="prac">연습으로</button>')}
+${step(sDone>=sCards.length,2,'중요 활동 카드 '+sCards.length+'개 채우기 ('+sDone+'/'+sCards.length+')','답변 준비 탭에서 S 카드부터. 생기부 기록을 읽고 내가 직접 한 일, 어려웠던 점, 배운 점을 실제 있었던 일로 적기','<button class="btn sm" data-tab="cards">답변 준비로 가기</button>')}
+${step(cDone>=5,3,'기본 답변 5개 내 말로 쓰기 ('+cDone+'/5)','답변 준비 탭 아래 기본 답변. AI 예시 초안을 참고해 노란 칸을 채우고 내 말로 고치기','<button class="btn sm" data-tab="cards">기본 답변으로</button>')}
+${step(false,4,'한 문제 연습','소리 내어 1분 안팎으로 답한 뒤 AI 예시 답안과 비교','<button class="btn sm" data-tab="prac">면접 연습으로</button>')}
 ${step(mocks>0,5,'8분 모의면접','질문 3~4개 + 꼬리질문을 실제처럼','<button class="btn sm" data-act="mockgo">모의면접</button>')}
 </ol></details>`;
 const bar=(n,t)=>`<div class="bar"><i style="width:${Math.round(n/t*100)}%"></i></div>`;
@@ -172,7 +172,7 @@ return guide+`<div class="card"><div class="sub">${esc(META.exam||'면접')} · 
 <button class="btn pri wide" data-act="mockgo">8분 모의면접 시작</button>
 <div class="card"><h3 style="margin-top:0">최근 연습</h3>${recent}</div>`}
 /* PRACTICE MENU */
-function vPrac(){return `<h1>연습</h1>
+function vPrac(){return `<h1>면접 연습</h1>
 <div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 AI 예시 답안과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
 <div class="row" style="margin:10px 0">${AREAS.map(a=>`<button class="chip" data-act="onerand" data-a="${a}">${a}</button>`).join('')}</div>
 <button class="btn wide" data-act="onerand" data-a="">아무 질문이나</button></div>
@@ -212,11 +212,11 @@ if(fu&&a.c&&CM[a.c]){const f=CM[a.c].fu;items.push({c:a.c,text:f[Math.floor(Math
 if(n==='4'){const q=pickA('지원동기');items.push({q:q.id,text:q.q,k:'q'})}
 if(last)items.push({q:'D7',text:QM.D7.q,k:'last'});return items}
 /* CARDS */
-function vCards(){return `<h1>카드</h1><h2>기본 답변 5</h2><p class="sub">어떤 질문에도 기본이 되는 답입니다. 30초 분량으로 내 말로 고쳐 쓰세요.</p><div class="list grid2">${CORE.map((c,i)=>`<button class="item" data-act="core" data-id="${c.id}"><b>${i+1}. ${esc(c.t)}</b><div class="meta"><span class="sub">${ST[coreSt(c.id)]}</span></div></button>`).join('')}</div>
+function vCards(){return `<h1>답변 준비</h1><h2>기본 답변 5</h2><p class="sub">어떤 질문에도 기본이 되는 답입니다. 30초 분량으로 내 말로 고쳐 쓰세요.</p><div class="list grid2">${CORE.map((c,i)=>`<button class="item" data-act="core" data-id="${c.id}"><b>${i+1}. ${esc(c.t)}</b><div class="meta"><span class="sub">${ST[coreSt(c.id)]}</span></div></button>`).join('')}</div>
 <h2>활동 카드 ${CARDS.length}</h2><p class="sub">S부터 채우세요. 생기부 기록을 보고 ${esc(WHO)}만 아는 내용을 적습니다.</p><div class="list grid2">${CARDS.map(c=>`<button class="item" data-act="card" data-id="${c.id}"><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b><div class="meta"><span class="sub">${esc(c.p)}</span></div><div class="meta"><span class="sub">${ST[cardSt(c.id)]}</span></div></button>`).join('')}</div>`}
 const FIELDS=[['f1','내가 직접 한 일 (분량, 누구와, 어떤 부분)'],['f2','어려웠던 점과 해결한 방법'],['f3','배운 점'],['f4','초등교사와 연결하는 한 문장'],['f5','숫자·증거 (인원, 횟수, 결과물)']];
 function vCard(id){const c=CM[id];const d=S.cards[id]||{};const qs=QUESTIONS.filter(q=>q.c===id);
-return `<button class="back" data-act="close">← 카드 목록</button><div class="row"><span class="tag ${c.r}">${c.r}</span><span class="sub">${esc(c.p)}</span></div><h1>${esc(c.t)}</h1>
+return `<button class="back" data-act="close">← 답변 준비</button><div class="row"><span class="tag ${c.r}">${c.r}</span><span class="sub">${esc(c.p)}</span></div><h1>${esc(c.t)}</h1>
 <details open><summary>생기부 기록 (요약)</summary><p class="rec">${esc(brk(c.rec))}</p></details>
 ${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-save="card" data-id="${id}" data-f="${k}" style="min-height:80px">${esc(d[k]||'')}</textarea>`).join('')}
 <label class="check" style="margin-top:14px"><input type="checkbox" data-save="real" data-id="${id}" ${d.real?'checked':''}> 실제로 있었던 일만 적었다</label>
@@ -224,19 +224,19 @@ ${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-sa
 <h3>예상 꼬리질문</h3><ul>${c.fu.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
 ${qs.length?`<h3>이 카드로 답하는 질문</h3><p class="sub">누르면 질문 화면이 열립니다. 연습하거나 AI 예시 답안을 볼 수 있어요.</p><div class="list">${qs.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`:''}`}
 function vCore(id){const c=CORE.find(x=>x.id===id);
-return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">AI 예시 초안</div><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(c.d)}</div></div>
+return `<button class="back" data-act="close">← 답변 준비</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">AI 예시 초안</div><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(c.d)}</div></div>
 <label for="core">내 답변</label><textarea id="core" data-save="core" data-id="${id}" style="min-height:160px" placeholder="예시를 참고해 내 말로 적어 보세요.">${esc(S.core[id]||'')}</textarea><p class="sub">${(S.core[id]||'').length}자 · 소리 내어 30초 안팎이면 적당합니다(약 150~200자).</p>
 <h3>관련 질문</h3><p class="sub">누르면 질문 화면이 열립니다. 연습하거나 AI 예시 답안을 볼 수 있어요.</p><div class="list">${c.q.map(i=>QM[i]).filter(Boolean).map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`}
 /* QUESTIONS */
 let QF={a:'',s:''};
 function vQs(){const list=QUESTIONS.filter(q=>(!QF.a||q.a===QF.a)&&(!QF.s||(QF.s==='g'?q.s[0]==='g':q.s===QF.s)));
-return `<h1>질문 ${QUESTIONS.length}</h1>
+return `<h1>질문 모음 ${QUESTIONS.length}</h1>
 <div class="fbox"><div class="frow"><span class="flbl ar">주제</span><div class="row">${['',...AREAS].map(a=>`<button class="chip ${QF.a===a?'on':''}" data-act="qfa" data-v="${a}">${a||'전체'}</button>`).join('')}</div></div>
 <div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['x','기출 예제','s-x'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
 
 <div class="list">${list.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}<span class="tag ar">${q.a}</span>${S.cnt[q.id]?`<span class="sub">연습 ${S.cnt[q.id]}회</span>`:''}${S.my[q.id]?'<span class="sub">· 내 답변 있음</span>':''}</div></button>`).join('')}</div>`}
 function vQ(id){const q=QM[id];const c=q.c?CM[q.c]:null;
-return `<button class="back" data-act="close">← 질문 목록</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
+return `<button class="back" data-act="close">← 질문 모음</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
 <button class="btn pri wide" data-act="one" data-id="${id}">이 질문으로 연습</button>
 <details><summary>AI 예시 답안 (먼저 말해 본 뒤에 열기)</summary><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
 <label for="my">내 답변</label><textarea id="my" data-save="my" data-id="${id}">${esc(S.my[id]||'')}</textarea>
