@@ -14,7 +14,7 @@ function mariSignIn(id,pin,remember,device,label,app){
  try{const permissions=mariRequire_(auth.id,app);visitAfterLogin_(auth.id,app);return {...mariPayload_(auth.id,app),token:auth.token,permissions};}
  catch(error){logout(auth.token);throw error;}
 }
-function mariRestore(token,app){const {a,s}=session_(token,false);const permissions=mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,true));return {...mariPayload_(a.id,app),permissions};}
+function mariRestore(token,app,device,label){if(device&&label)deviceRefresh_(token,device,label);const {a,s}=session_(token,false);const permissions=mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,true));return {...mariPayload_(a.id,app),permissions};}
 function mariCheck(token,app){const {a,s}=session_(token,false);mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,false));return true;}
 function mariSave(token,event,app){const {a,s}=session_(token,false);mariRequire_(a.id,app);const result=app==='classic'?saveLearning(token,event):app==='economy'?saveEconomy(token,event):app==='gyodae'?{ok:true}:saveExam(token,event);lock_(()=>visitRecord_(a,s,app,false));return result;}
 function setupAppPermissions(){
