@@ -21,8 +21,7 @@ function deviceMigrateHeader_(s){
  rows.forEach(r=>{if(r[0]&&!r[8]){r[8]=r[0];r[0]=deviceTitle_(r[8],r[1]);}});
  s.getRange(5,1,rows.length,9).setValues(rows);
  if(s.getRange('C1').getDisplayValue()!=='최초등록일'){
-  const dates=rows.map(r=>r[1]).filter(d=>d instanceof Date&&!isNaN(d.getTime())).sort((a,b)=>a-b);
-  s.getRange('C1').setValue('최초등록일');s.getRange('C2').setValue(dates[0]||'확인 불가');
+  s.getRange('C1').setValue('최초등록일');s.getRange('C2').clearContent();
  }
  s.getRange('C2').setNumberFormat('yyyy-mm-dd');s.getRange('A3:B3').setValues([['기기변경 횟수',0]]);
  s.getRange('I4').setValue('기기 판별 정보');s.hideColumns(7,3);
