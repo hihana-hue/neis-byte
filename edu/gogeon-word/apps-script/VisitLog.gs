@@ -51,7 +51,7 @@ function visitRecord_(a,s,app,isNew){
  if(i<0){const blank=rows.findIndex(r=>r.every(c=>String(c).trim()===''));row=blank<0?first+n:first+blank;values=[label,day,stamp,isNew?1:0,visitDuration_(add)];}
  else{const r=rows[i];row=first+i;values=[label,day,isNew?stamp:r[2],(Number(r[3])||0)+(isNew?1:0),visitDuration_(visitParseDuration_(r[4])+add)];}
  s.getRange(row,1,1,5).setNumberFormat('@').setValues([values.map(String)]);
- if(isNew)s.getRange('C2').setValue(new Date(now));
+
  cache.put(key,String(now),21600);
 }
 function visitAfterLogin_(id,app){return lock_(()=>{const a=account_(id);if(a)visitRecord_(a,tab_(a),app,true);});}

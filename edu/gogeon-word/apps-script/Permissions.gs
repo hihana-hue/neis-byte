@@ -10,12 +10,17 @@ function mariRequire_(id,app){if(!Object.prototype.hasOwnProperty.call(MARI_ACCE
 function mariPayload_(id,app){return app==='classic'?studentPayload_(id):app==='economy'?economyPayload_(id):app==='gyodae'?gyodaePayload_(id):{id};}
 // 로그인·자동 로그인·1분 확인·학습 저장 때마다 학생 탭의 접속 기록(VisitLog.gs)을 고칩니다.
 function mariSignIn(id,pin,remember,device,label,app){
- const auth=login(id,pin,remember,device,label);
- try{const permissions=mariRequire_(auth.id,app);visitAfterLogin_(auth.id,app);return {...mariPayload_(auth.id,app),token:auth.token,permissions};}
+ const auth=login(id,pin,remember,device,label,null,app);
+ if(auth.deviceLimit)return auth;
+ try{const permissions=auth.permissions;visitAfterLogin_(auth.id,app);return {...mariPayload_(auth.id,app),token:auth.token,permissions};}
  catch(error){logout(auth.token);throw error;}
 }
+function mariReplaceDevice(id,pin,remember,device,label,app,generation){
+ const auth=login(id,pin,remember,device,label,generation,app);if(auth.deviceLimit)return auth;
+ try{const permissions=auth.permissions;visitAfterLogin_(auth.id,app);return {...mariPayload_(auth.id,app),token:auth.token,permissions};}catch(error){logout(auth.token);throw error;}
+}
 function mariRestore(token,app,device,label){if(device&&label)deviceRefresh_(token,device,label);const {a,s}=session_(token,false);const permissions=mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,true));return {...mariPayload_(a.id,app),permissions};}
-function mariCheck(token,app){const {a,s}=session_(token,false);mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,false));return true;}
+function mariCheck(token,app){const {a,s}=session_(token,true);mariRequire_(a.id,app);lock_(()=>visitRecord_(a,s,app,false));return true;}
 function mariSave(token,event,app){const {a,s}=session_(token,false);mariRequire_(a.id,app);const result=app==='classic'?saveLearning(token,event):app==='economy'?saveEconomy(token,event):app==='gyodae'?{ok:true}:saveExam(token,event);lock_(()=>visitRecord_(a,s,app,false));return result;}
 function setupAppPermissions(){
  const sheet=db_().getSheetByName('시트1');if(!sheet)throw Error('회원 시트1이 없습니다.');
