@@ -119,7 +119,15 @@ function recStart(q){if(!(navigator.mediaDevices&&navigator.mediaDevices.getUser
   m.onstop=()=>{stream.getTracks().forEach(k=>k.stop());const fin=()=>{if(r.keep){REC_SAVING=false;recShow()}};if(!r.keep||!r.chunks.length)return fin();const blob=new Blob(r.chunks,{type:m.mimeType||type||'audio/webm'});const dur=(r.end-r.t)/1000;if(dur<1)return fin();
    recAdd({acc:KEY,q:r.q,t:r.t,dur,blob}).catch(()=>toast('녹음을 저장하지 못했습니다')).then(fin)};
   m.start(1000);const el=document.getElementById('recon');if(el)el.hidden=false})
- .catch(()=>{if(REC===r)REC=null;toast('마이크를 쓸 수 없어 녹음 없이 진행합니다')})}
+ .catch(e=>{if(REC===r)REC=null;recFail(e)})}
+function recFail(e){const n=(e&&e.name)||'',ua=navigator.userAgent,inapp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp/i.test(ua);
+ let m;if(inapp)m='앱 안의 브라우저(카카오톡 등)에서는 녹음이 막힐 수 있어요. 오른쪽 위 메뉴에서 "다른 브라우저로 열기"로 크롬이나 사파리에서 열어 주세요.';
+ else if(n==='NotAllowedError'||n==='PermissionDeniedError')m='마이크 권한이 꺼져 있어요. 주소창 왼쪽 자물쇠(또는 ⓘ)를 눌러 마이크를 "허용"으로 바꾼 뒤 새로고침해 주세요.';
+ else if(n==='NotFoundError'||n==='DevicesNotFoundError')m='이 기기에서 마이크를 찾지 못했어요.';
+ else if(n==='NotReadableError'||n==='TrackStartError')m='다른 앱이 마이크를 쓰고 있어요. 통화·녹음 앱을 닫고 다시 해 보세요.';
+ else if(n==='SecurityError'||!window.isSecureContext)m='이 화면에서는 마이크를 쓸 수 없어요. 크롬이나 사파리에서 사이트 주소로 열어 주세요.';
+ else m='마이크를 쓸 수 없어요'+(n?' ('+n+')':'')+'.';
+ const d=document.createElement('div');d.className='toast';d.style.bottom='auto';d.style.top='16px';d.innerHTML=esc(m+' 지금은 녹음 없이 진행합니다.')+'<br><button class="btn" style="margin-top:8px;min-height:30px;padding:4px 12px">닫기</button>';d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),15000)}
 function recStop(keep){const r=REC;REC=null;if(!r)return;r.on=false;r.keep=keep;r.end=Date.now();if(r.m&&r.m.state!=='inactive'){if(keep)REC_SAVING=true;r.m.stop()}else if(r.stream)r.stream.getTracks().forEach(k=>k.stop())}
 function recTitle(t){const d=new Date(t),p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}월 ${d.getDate()}일 ${p(d.getHours())}:${p(d.getMinutes())}`}
 function recShow(){const box=document.getElementById('recs');if(!box)return;const q=box.dataset.q;
