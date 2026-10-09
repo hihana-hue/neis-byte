@@ -20,3 +20,7 @@
 .mari-loading-reveal-video{position:absolute;inset:3.125%;width:93.75%;height:93.75%;object-fit:cover;border-radius:50%;clip-path:circle(50%);border:0;z-index:0}
 .mari-loading-reveal .mari-loading-icon{position:absolute;inset:0;width:100%;height:100%;margin:0;z-index:1}
 @media(max-width:768px){.mari-loading-reveal{width:56px;height:56px;margin:12px 0 18px}}
+
+/* 어휘·한문: 영상과 네 조각 커버를 교대면접보다 크게 표시합니다. */
+.mari-loading-reveal-large{width:144px;height:144px}
+@media(max-width:768px){.mari-loading-reveal-large{width:25vw;height:25vw;max-width:120px;max-height:120px}}
