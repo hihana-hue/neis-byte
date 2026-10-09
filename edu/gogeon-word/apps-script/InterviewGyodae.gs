@@ -13,7 +13,7 @@ function gyodaeData_(){
  if(!id)throw Error('면접 데이터 시트 설정이 필요합니다. 관리자에게 문의하세요.');
  const book=SpreadsheetApp.openById(id);
  const meta={app:'gyodae',rules:[]};
- const keys={'이름':'name','면접':'exam','면접일':'date','면접일 표시':'dateLabel','안내':'notice','백업 파일 이름':'backupName'};
+ const keys={'이름':'name','면접':'exam','면접일':'date','면접일 표시':'dateLabel','안내':'notice','백업 파일 이름':'backupName','응원 문구':'cheer'};
  for(const r of gyodaeRows_(book,'설정')){if(r['항목']==='답변 원칙'){if(r['값'])meta.rules.push(r['값']);}else if(keys[r['항목']])meta[keys[r['항목']]]=r['값'];}
  const questions=gyodaeRows_(book,'질문').filter(r=>r['번호']&&r['질문']).map(r=>({id:r['번호'],a:r['주제'],s:GYODAE_SOURCES[r['출처']]||'i',c:r['연결 카드'],q:r['질문'],ans:r['예상 답변'],tip:r['도움말']}));
  const cards=gyodaeRows_(book,'활동카드').filter(r=>r['번호']&&r['제목']).map(r=>({id:r['번호'],r:r['우선순위']||'B',t:r['제목'],p:r['학년·영역'],rec:r['생기부 기록'],fu:[r['꼬리질문1'],r['꼬리질문2'],r['꼬리질문3']].filter(Boolean),warn:r['주의']}));
