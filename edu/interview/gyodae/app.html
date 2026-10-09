@@ -95,6 +95,8 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const brk=s=>String(s==null?'':s).replace(/([.)])[ \t]+(?=[^.:\n()'"‘’]{1,20}:\s)/g,'$1\n'); const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
+/* 말하기 시작 알림음 '띵동' (버튼을 누를 때만 재생) */
+let AC=null;function ding(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const t=AC.currentTime;[[1318.5,0],[1046.5,.28]].forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(0.35,t+d+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.6);o.connect(g);g.connect(AC.destination);o.start(t+d);o.stop(t+d+0.65)})}catch(e){}}
 let V={tab:'home',view:null};let TM=null;
 function stopTimer(){if(TM){clearInterval(TM);TM=null}}
 /* 화면 안 확인창·알림 (브라우저 기본 창을 쓰지 않음) */
@@ -272,13 +274,13 @@ else if(a==='card')go('cards',{k:'card',id});
 else if(a==='core')go('cards',{k:'core',id});
 else if(a==='close'){back()} else if(a==='readrules'){S.seenRules=true;save();HIST=[];go('info')}
 else if(a==='dur'){v.dur=+b.dataset.s;render()}
-else if(a==='start1'){v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
+else if(a==='start1'){ding();v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
 else if(a==='end1')endOne();
 else if(a==='again1'){V.view={k:'one',id:v.id,ph:'ready',dur:v.dur};render()}
 else if(a==='next1'){const q=QM[v.id];const pool=QUESTIONS.filter(x=>x.a===q.a&&x.id!==q.id);startOne(leastPick(pool.length?pool:QUESTIONS).id)}
 else if(a==='mockgo')go('prac',{k:'mock',ph:'setup',n:S.notice.qn||'3',fu:true,last:false});
 else if(a==='mn'){v.n=b.dataset.v;v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;render()}
-else if(a==='mockstart'){v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;v.items=buildMock(v.n,v.fu,v.last);v.i=0;v.times=[];v.ph='run';v.left=480;v.t0=Date.now();v.qt=Date.now();render();window.scrollTo(0,0);
+else if(a==='mockstart'){ding();v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;v.items=buildMock(v.n,v.fu,v.last);v.i=0;v.times=[];v.ph='run';v.left=480;v.t0=Date.now();v.qt=Date.now();render();window.scrollTo(0,0);
 TM=setInterval(()=>{v.left=480-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=60)}if(v.left<=0){v.timeout=true;mockNext(true)}},250)}
 else if(a==='mocknext')mockNext(false);
 else if(a==='mockstop'){ask('모의면접을 그만할까요? 이번 회차 기록은 저장되지 않습니다.','그만하기','계속하기',()=>{stopTimer();V={tab:'prac',view:null};render();window.scrollTo(0,0)})}
