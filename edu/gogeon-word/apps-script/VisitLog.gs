@@ -39,9 +39,9 @@ function visitMigrateTab_(s){
  s.showColumns(5,2);s.hideColumns(7,2);
 }
 
-function visitRecord_(a,s,app,isNew){
+function visitRecord_(a,s,app,isNew,knownLayout){
  const label=VISIT_LABELS[app]||String(app);
- const layout=deviceLayout_(s,a),first=layout.dailyRow+1,n=Math.max(0,s.getLastRow()-layout.dailyRow);
+ const layout=knownLayout||deviceLayout_(s,a),first=layout.dailyRow+1,n=Math.max(0,s.getLastRow()-layout.dailyRow);
  const rows=n?s.getRange(first,1,n,5).getDisplayValues():[];
  const cache=CacheService.getScriptCache(),key='visit:'+a.id+':'+app,last=Number(cache.get(key)||0);
  const now=Date.now(),day=visitDay_(now),stamp=visitTime_(now);
@@ -54,4 +54,3 @@ function visitRecord_(a,s,app,isNew){
 
  cache.put(key,String(now),21600);
 }
-function visitAfterLogin_(id,app){return lock_(()=>{const a=account_(id);if(a)visitRecord_(a,tab_(a),app,true);});}

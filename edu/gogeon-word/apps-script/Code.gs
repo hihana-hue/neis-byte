@@ -7,11 +7,10 @@ function db_(){return book_(SHEET_ID);}
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(20000);try{return fn();}finally{l.releaseLock();}}
 function hash_(v){const p=PropertiesService.getScriptProperties();let key=p.getProperty('AUTH_SECRET');if(!key){key=Utilities.getUuid()+Utilities.getUuid();p.setProperty('AUTH_SECRET',key);}return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(String(v),key));}
 function literal_(v){return /^[=+@-]/.test(String(v))?"'"+v:String(v);}
-function account_(id){const s=db_().getSheetByName('시트1');const rows=s.getDataRange().getDisplayValues(),h=rows.shift(),i=h.indexOf('아이디'),p=h.indexOf('핀번호'),n=h.indexOf('사용자'),a=h.indexOf('활성'),limitCol=h.indexOf('기기한도');if(i<0||p<0)throw Error('아이디·핀번호 열이 없습니다.');const matches=rows.filter(r=>r[i].trim()===id);if(matches.length!==1)return null;const r=matches[0];if(a>=0&&['FALSE','false','아니오','비활성','0'].includes(r[a]))return null;const raw=limitCol>=0?String(r[limitCol]||'').trim():'';const limit=raw?Number(raw):5;if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('기기한도는 1~100의 정수로 입력하세요.');return {id,limit,name:n>=0?r[n]:'',pin:r[p],version:hash_(id+'\n'+r[p])};}
+function account_(id){const s=db_().getSheetByName('시트1');const rows=s.getDataRange().getValues().map(r=>r.map(v=>typeof v==='boolean'?v:String(v))),h=rows.shift(),i=h.indexOf('아이디'),p=h.indexOf('핀번호'),n=h.indexOf('사용자'),a=h.indexOf('활성'),limitCol=h.indexOf('기기한도');if(i<0||p<0)throw Error('아이디·핀번호 열이 없습니다.');const matches=rows.filter(r=>String(r[i]).trim()===id);if(matches.length!==1)return null;const r=matches[0];if(a>=0&&['FALSE','false','아니오','비활성','0'].includes(r[a]))return null;const raw=limitCol>=0?String(r[limitCol]||'').trim():'';const limit=raw?Number(raw):5;if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('기기한도는 1~100의 정수로 입력하세요.');const permissions={};for(const app of Object.keys(MARI_ACCESS_COLUMNS)){const col=h.indexOf(MARI_ACCESS_COLUMNS[app]);permissions[app]=col>=0&&r[col]===true;}return {id,limit,name:n>=0?r[n]:'',pin:r[p],permissions,version:hash_(id+'\n'+r[p])};}
 function tab_(a){if(!/^[A-Za-z0-9_.-]{1,70}$/.test(a.id))throw Error('아이디는 영문·숫자·밑줄·점·하이픈 70자 이내로 설정하세요.');const d=db_();let s=d.getSheetByName(a.id);const isNew=!s;
  if(!s){s=d.insertSheet(a.id);s.getRange('A1:C2').setValues([['아이디','사용자','최초등록일'],[a.id,literal_(a.name),new Date()]]);s.getRange('A4:H4').setValues([['기기 이름','최초 등록','최근 접속','상태','','','기기 식별값','등록 버전']]);s.getRange('D5:D7').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange('A10:E10').setValues([VISIT_HEADERS]);s.getRange('A1:C1').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A4:D4').setBackground('#17838c').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A10:E10').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.setFrozenRows(10);s.setColumnWidths(1,5,170);s.hideColumns(7,2);s.getRange('B5:C7').setNumberFormat('yyyy-mm-dd hh:mm:ss');s.getRange('C2').setNumberFormat('yyyy-mm-dd');}
- if(s.getRange('A2').getDisplayValue()!==a.id)throw Error('동명 탭 충돌: 관리자에게 문의하세요.');visitMigrateTab_(s);deviceMigrateHeader_(s);s.getRange('B2').setValue(literal_(a.name));if(isNew)deviceMemberLink_(a.id,s);return s;}
-function today_(){return Utilities.formatDate(new Date(),'Asia/Seoul','yyyy-MM-dd');}
+ if(s.getRange('A2').getDisplayValue()!==a.id)throw Error('동명 탭 충돌: 관리자에게 문의하세요.');visitMigrateTab_(s);deviceMigrateHeader_(s);if(s.getRange('B2').getDisplayValue()!==String(a.name))s.getRange('B2').setValue(literal_(a.name));if(isNew)deviceMemberLink_(a.id,s);return s;}
 // 배포 전 한 번 실행: 기존 기본 한도 3과 빈 값을 5로 바꾸고, 다른 개별 한도는 보존합니다.
 function setupDeviceLimits(){return lock_(()=>{const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getValues(),h=rows.shift().map(String),idCol=h.indexOf('아이디');let col=h.indexOf('기기한도');
  if(idCol<0)throw Error('아이디 열이 없습니다.');if(col<0){col=h.length;if(col+1>s.getMaxColumns())s.insertColumnsAfter(s.getMaxColumns(),1);s.getRange(1,col+1).setValue('기기한도');}
@@ -19,9 +18,8 @@ function setupDeviceLimits(){return lock_(()=>{const s=db_().getSheetByName('시
 // 같은 기기의 브라우저 식별값은 공백으로 구분해 보존합니다(기기 한도와 별개).
 function deviceHashes_(v){return String(v||'').split(' ').filter(Boolean);}
 function cleanSessions_(){const p=PropertiesService.getScriptProperties(),all=p.getProperties();for(const k of Object.keys(all)){if(k.startsWith('event:')&&Number(all[k])<Date.now())p.deleteProperty(k);if(k.startsWith('session:')){try{if(JSON.parse(all[k]).expiry<Date.now())p.deleteProperty(k);}catch{p.deleteProperty(k);}}}}
-function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,8).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(v.device)&&r[7]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s};}
+function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(v.device)&&r[7]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s,layout,rows,v};}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
-function heartbeat(token){return lock_(()=>{const {a,s}=session_(token,true);visitRecord_(a,s,'classic',false);return true;});}
 function recordProgress(token,event){return lock_(()=>{const {a}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));if(event.type==='answer'&&(!valid.has(String(event.cardId))||typeof event.correct!=='boolean'))throw Error('문항 오류');PropertiesService.getScriptProperties().setProperty('state:'+hash_(a.id),JSON.stringify(ids));return {ok:true};});}
 
 function corpus_(){
@@ -58,11 +56,8 @@ function deviceLayout_(s,a){
 }
 
 function studentPayload_(id){const c=corpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(id))||'[]')};}
-function signIn(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);visitAfterLogin_(auth.id,'classic');return {...studentPayload_(auth.id),token:auth.token};}
-function restoreSession(token){return lock_(()=>{const {a,s}=session_(token,true);visitRecord_(a,s,'classic',true);return studentPayload_(a.id);});}
 function saveLearning(token,event){return recordProgress(token,event);}
 function signOut(token){return logout(token);}
-function checkSession(token){return heartbeat(token);}
 
 
 // Economy extension. Existing classical vocabulary functions remain unchanged.
@@ -77,8 +72,6 @@ function economyCorpus_(){
  return {data,coverage:{cardCount:data.length,works:[],suwanWorks:[]}};
 }
 function economyPayload_(id){const c=economyCorpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('economy:state:'+hash_(id))||'[]')};}
-function signInEconomy(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);visitAfterLogin_(auth.id,'economy');return {...economyPayload_(auth.id),token:auth.token};}
-function restoreEconomy(token){const {a}=session_(token,false);return economyPayload_(a.id);}
 function saveEconomy(token,event){return lock_(()=>{
  const {a}=session_(token,false);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');
  const valid=new Set(economyCorpus_().data.map(d=>d.id)),ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));

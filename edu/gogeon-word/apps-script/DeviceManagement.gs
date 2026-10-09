@@ -33,7 +33,7 @@ function login(id,pin,remember,device,label,replaceGeneration,app){
  return lock_(()=>{
   const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');
   const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);
-  const permissions=app?mariRequire_(a.id,app):null;if(!app&&replaceGeneration)throw Error('앱 설정을 확인하세요.');
+  const permissions=app?mariRequire_(a,app):null;if(!app&&replaceGeneration)throw Error('앱 설정을 확인하세요.');
   const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),dh=hash_(device),registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);
   let slot=deviceSlot_(rows,dh,identity),changed=false;const now=new Date();
   if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 관리자에게 문의하세요.');
@@ -49,15 +49,15 @@ function login(id,pin,remember,device,label,replaceGeneration,app){
   }else{rows[slot][2]=now;rows[slot][8]=identity.label;rows[slot][0]=deviceTitle_(identity.label,rows[slot][1]);rows[slot][6]=[...new Set([...deviceHashes_(rows[slot][6]),dh])].join(' ');}
   s.getRange(5+slot,1,1,9).setValues([rows[slot]]);if(changed)s.getRange('B3').setValue((Number(s.getRange('B3').getValues()[0][0])||0)+1);
   const token=Utilities.getUuid()+Utilities.getUuid(),p=PropertiesService.getScriptProperties();cleanSessions_();p.setProperty('session:'+hash_(token),JSON.stringify({id:a.id,device:dh,generation:rows[slot][7],version:a.version,expiry:Date.now()+(remember?30:1)*86400000}));
-  return {token,id:a.id,permissions};
+  return {token,id:a.id,permissions,a,s,layout};
  });
 }
-function deviceRefresh_(token,device,label){return lock_(()=>{
- const {a,s}=session_(token,false),identity=deviceIdentity_(label);if(!identity)throw Error('기기 종류를 선택하고 다시 로그인하세요.');
- const layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),slot=deviceSlot_(rows,hash_(device),identity),v=JSON.parse(PropertiesService.getScriptProperties().getProperty('session:'+hash_(token)));
+function deviceRefresh_(token,device,label){
+ const context=session_(token,false),{a,s,layout,rows,v}=context,identity=deviceIdentity_(label);if(!identity)throw Error('기기 종류를 선택하고 다시 로그인하세요.');
+ const slot=deviceSlot_(rows,hash_(device),identity);
  if(slot<0||!deviceHashes_(rows[slot][6]).includes(v.device)||rows[slot][7]!==v.generation)throw Error('다시 로그인하세요.');
- s.getRange(5+slot,1).setValue(deviceTitle_(identity.label,rows[slot][1]));s.getRange(5+slot,9).setValue(identity.label);s.getRange(5+slot,3).setValue(new Date());return true;
-});}
+ s.getRange(5+slot,1).setValue(deviceTitle_(identity.label,rows[slot][1]));s.getRange(5+slot,9).setValue(identity.label);s.getRange(5+slot,3).setValue(new Date());return context;
+}
 function deviceMemberLink_(id,tab){
  const book=db_(),s=book.getSheetByName('시트1'),rows=s.getDataRange().getDisplayValues(),h=rows.shift(),col=h.indexOf('아이디');if(col<0)return;
  const i=rows.findIndex(r=>r[col].trim()===id);if(i<0)return;
