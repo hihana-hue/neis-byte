@@ -7,17 +7,44 @@ function db_(){return book_(SHEET_ID);}
 function lock_(fn){const l=LockService.getScriptLock();l.waitLock(20000);try{return fn();}finally{l.releaseLock();}}
 function hash_(v){const p=PropertiesService.getScriptProperties();let key=p.getProperty('AUTH_SECRET');if(!key){key=Utilities.getUuid()+Utilities.getUuid();p.setProperty('AUTH_SECRET',key);}return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(String(v),key));}
 function literal_(v){return /^[=+@-]/.test(String(v))?"'"+v:String(v);}
-function account_(id){const s=db_().getSheetByName('시트1');const rows=s.getDataRange().getDisplayValues(),h=rows.shift(),i=h.indexOf('아이디'),p=h.indexOf('핀번호'),n=h.indexOf('사용자'),a=h.indexOf('활성'),limitCol=h.indexOf('기기한도');if(i<0||p<0)throw Error('아이디·핀번호 열이 없습니다.');const matches=rows.filter(r=>r[i].trim()===id);if(matches.length!==1)return null;const r=matches[0];if(a>=0&&['FALSE','false','아니오','비활성','0'].includes(r[a]))return null;const raw=limitCol>=0?String(r[limitCol]||'').trim():'';const limit=raw?Number(raw):3;if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('기기한도는 1~100의 정수로 입력하세요.');return {id,limit,name:n>=0?r[n]:'',pin:r[p],version:hash_(id+'\n'+r[p])};}
-function tab_(a){if(!/^[A-Za-z0-9_.-]{1,70}$/.test(a.id))throw Error('아이디는 영문·숫자·밑줄·점·하이픈 70자 이내로 설정하세요.');const d=db_();let s=d.getSheetByName(a.id);if(!s){s=d.insertSheet(a.id);s.getRange('A1:D2').setValues([['아이디','사용자','최근 접속','현재 완료 수'],[a.id,literal_(a.name),'',0]]);s.getRange('A4:F4').setValues([['기기 이름','최초 등록','최근 접속','상태','기기 식별값','등록 버전']]);s.getRange('D5:D7').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange('A10:F10').setValues([['날짜','최근 접속 시간','테스트한 단어 수','현재 완료 수','정답 수','완료한 테스트 수']]);s.getRange('A1:D1').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A4:F4').setBackground('#17838c').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A10:F10').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.setFrozenRows(10);s.setColumnWidths(1,4,170);s.hideColumns(5,2);s.getRange('B5:C7').setNumberFormat('yyyy-mm-dd hh:mm:ss');s.getRange('C2').setNumberFormat('yyyy-mm-dd hh:mm:ss');}if(s.getRange('A2').getDisplayValue()!==a.id)throw Error('동명 탭 충돌: 관리자에게 문의하세요.');s.getRange('B2').setValue(literal_(a.name));return s;}
+function account_(id){const s=db_().getSheetByName('시트1');const rows=s.getDataRange().getDisplayValues(),h=rows.shift(),i=h.indexOf('아이디'),p=h.indexOf('핀번호'),n=h.indexOf('사용자'),a=h.indexOf('활성'),limitCol=h.indexOf('기기한도');if(i<0||p<0)throw Error('아이디·핀번호 열이 없습니다.');const matches=rows.filter(r=>r[i].trim()===id);if(matches.length!==1)return null;const r=matches[0];if(a>=0&&['FALSE','false','아니오','비활성','0'].includes(r[a]))return null;const raw=limitCol>=0?String(r[limitCol]||'').trim():'';const limit=raw?Number(raw):5;if(!Number.isInteger(limit)||limit<1||limit>100)throw Error('기기한도는 1~100의 정수로 입력하세요.');return {id,limit,name:n>=0?r[n]:'',pin:r[p],version:hash_(id+'\n'+r[p])};}
+function tab_(a){if(!/^[A-Za-z0-9_.-]{1,70}$/.test(a.id))throw Error('아이디는 영문·숫자·밑줄·점·하이픈 70자 이내로 설정하세요.');const d=db_();let s=d.getSheetByName(a.id);
+ if(!s){s=d.insertSheet(a.id);s.getRange('A1:C2').setValues([['아이디','사용자','최근 접속'],[a.id,literal_(a.name),'']]);s.getRange('A4:H4').setValues([['기기 이름','최초 등록','최근 접속','상태','','','기기 식별값','등록 버전']]);s.getRange('D5:D7').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange('A10:E10').setValues([VISIT_HEADERS]);s.getRange('A1:C1').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A4:D4').setBackground('#17838c').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A10:E10').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.setFrozenRows(10);s.setColumnWidths(1,5,170);s.hideColumns(7,2);s.getRange('B5:C7').setNumberFormat('yyyy-mm-dd hh:mm:ss');s.getRange('C2').setNumberFormat('yyyy-mm-dd hh:mm:ss');}
+ if(s.getRange('A2').getDisplayValue()!==a.id)throw Error('동명 탭 충돌: 관리자에게 문의하세요.');visitMigrateTab_(s);s.getRange('B2').setValue(literal_(a.name));return s;}
 function today_(){return Utilities.formatDate(new Date(),'Asia/Seoul','yyyy-MM-dd');}
-function daily_(s,a){const key='day:'+hash_(a.id)+':'+today_(),p=PropertiesService.getScriptProperties();let v;try{v=JSON.parse(p.getProperty(key)||'null');}catch{}return {key,v:v||{tested:0,correct:0,tests:0}};}
-function writeDay_(s,a,metrics,touch){const now=new Date();const state=PropertiesService.getScriptProperties().getProperty('state:'+hash_(a.id))||'[]',count=JSON.parse(state).length;const day=today_();const layout=deviceLayout_(s,a),first=layout.dailyRow+1;const n=Math.max(0,s.getLastRow()-layout.dailyRow);const rows=n?s.getRange(first,1,n,1).getDisplayValues():[];let i=rows.findIndex(r=>r[0]===day);const row=i<0?Math.max(first,s.getLastRow()+1):first+i;if(touch)s.getRange('C2').setValue(now);s.getRange('D2').setValue(count);s.getRange(row,1,1,6).setValues([[day,Utilities.formatDate(now,'Asia/Seoul','HH:mm:ss'),metrics.tested,count,metrics.correct,metrics.tests]]);}
-function login(id,pin,remember,device,label){id=String(id||'').trim();pin=String(pin||'');if(!id||id.length>70||pin.length>100||!/^[a-zA-Z0-9-]{20,100}$/.test(device||''))throw Error('로그인 입력을 확인하세요.');return lock_(()=>{const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,6).getValues(),dh=hash_(device);const registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);let slot=rows.findIndex(r=>r[4]===dh&&r[3]==='등록');const now=new Date();if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 기기 해제를 요청하세요.');if(slot<0){if(registered.length>=a.limit)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');slot=rows.findIndex(r=>r[3]!=='등록');if(slot<0)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');rows[slot]=[literal_(String(label||'브라우저').slice(0,80)),now,now,'등록',dh,Utilities.getUuid()];}else rows[slot][2]=now;s.getRange(5+slot,1,1,6).setValues([rows[slot]]);const token=Utilities.getUuid()+Utilities.getUuid(),p=PropertiesService.getScriptProperties();cleanSessions_();p.setProperty('session:'+hash_(token),JSON.stringify({id:a.id,device:dh,generation:rows[slot][5],version:a.version,expiry:Date.now()+(remember?30:1)*86400000}));writeDay_(s,a,daily_(s,a).v,true);return {token,id:a.id};});}
+function login(id,pin,remember,device,label){id=String(id||'').trim();pin=String(pin||'');if(!id||id.length>70||pin.length>100||!/^[a-zA-Z0-9-]{20,100}$/.test(device||''))throw Error('로그인 입력을 확인하세요.');return lock_(()=>{const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,8).getValues(),dh=hash_(device);const registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);const identity=deviceIdentity_(label),devLabel=literal_(identity?identity.label:String(label||'브라우저').slice(0,80));let slot=deviceSlot_(rows,dh,identity);const now=new Date();if(slot>=0)rows[slot][6]=[...new Set([...deviceHashes_(rows[slot][6]),dh])].join(' ');if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 기기 해제를 요청하세요.');if(slot<0){if(registered.length>=a.limit)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');slot=rows.findIndex(r=>r[3]!=='등록');if(slot<0)throw Error('최대 '+a.limit+'개 기기가 등록되어 있습니다. 관리자에게 기기 해제를 요청하세요.');rows[slot]=[devLabel,now,now,'등록','','',dh,Utilities.getUuid()];}else{rows[slot][2]=now;if(identity)rows[slot][0]=devLabel;}s.getRange(5+slot,1,1,8).setValues([rows[slot]]);const token=Utilities.getUuid()+Utilities.getUuid(),p=PropertiesService.getScriptProperties();cleanSessions_();p.setProperty('session:'+hash_(token),JSON.stringify({id:a.id,device:dh,generation:rows[slot][7],version:a.version,expiry:Date.now()+(remember?30:1)*86400000}));s.getRange('C2').setValue(now);return {token,id:a.id};});}
+// 새 형식은 기기명 · 운영체제 종류 · 화면 크기입니다. 브라우저와 OS 버전은 비교하지 않습니다.
+function deviceIdentity_(label){
+ const parts=String(label||'').trim().split(/\s*·\s*/);if(parts.length!==3)return null;
+ const name=parts[0].trim(),os=parts[1].trim(),size=parts[2].match(/^(\d{1,6})[×x](\d{1,6})$/);
+ if(!name||name.length>40||/^[=+@-]/.test(name)||!['Android','Windows','iOS','macOS','ChromeOS','Linux','기타'].includes(os)||!size)return null;
+ const dims=[+size[1],+size[2]].sort((a,b)=>a-b);if(!dims[0])return null;
+ return {label:[name,os,dims.join('×')].join(' · ')};
+}
+function deviceSlot_(rows,hash,identity){
+ if(identity){const same=rows.findIndex(r=>r[3]==='등록'&&deviceIdentity_(r[0])?.label===identity.label);if(same>=0)return same;}
+ // 예전 이름의 행만 브라우저 식별값으로 찾아 새 이름으로 바꿉니다.
+ return rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(hash)&&(!identity||!deviceIdentity_(r[0])));
+}
+function deviceRefresh_(token,device,label){
+ return lock_(()=>{const {a,s}=session_(token,false),identity=deviceIdentity_(label);if(!identity)throw Error('기기 종류를 선택하고 다시 로그인하세요.');
+ const layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,8).getValues(),dh=hash_(device),slot=deviceSlot_(rows,dh,identity);
+ if(slot<0)throw Error('기기 정보가 바뀌었습니다. 다시 로그인하세요.');
+ const raw=PropertiesService.getScriptProperties().getProperty('session:'+hash_(token)),v=JSON.parse(raw);
+ if(!deviceHashes_(rows[slot][6]).includes(v.device)||rows[slot][7]!==v.generation)throw Error('다시 로그인하세요.');
+ s.getRange(5+slot,1).setValue(literal_(identity.label));return true;});
+}
+// 배포 전 한 번 실행: 기존 기본 한도 3과 빈 값을 5로 바꾸고, 다른 개별 한도는 보존합니다.
+function setupDeviceLimits(){return lock_(()=>{const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getValues(),h=rows.shift().map(String),idCol=h.indexOf('아이디');let col=h.indexOf('기기한도');
+ if(idCol<0)throw Error('아이디 열이 없습니다.');if(col<0){col=h.length;if(col+1>s.getMaxColumns())s.insertColumnsAfter(s.getMaxColumns(),1);s.getRange(1,col+1).setValue('기기한도');}
+ let changed=0;rows.forEach((r,i)=>{if(String(r[idCol]||'').trim()&&(!String(r[col]||'').trim()||Number(r[col])===3)){s.getRange(i+2,col+1).setValue(5);changed++;}});return changed+'개 ID의 기본 기기한도를 5로 변경했습니다.';});}
+// 같은 기기의 브라우저 식별값은 공백으로 구분해 보존합니다(기기 한도와 별개).
+function deviceHashes_(v){return String(v||'').split(' ').filter(Boolean);}
 function cleanSessions_(){const p=PropertiesService.getScriptProperties(),all=p.getProperties();for(const k of Object.keys(all)){if(k.startsWith('event:')&&Number(all[k])<Date.now())p.deleteProperty(k);if(k.startsWith('session:')){try{if(JSON.parse(all[k]).expiry<Date.now())p.deleteProperty(k);}catch{p.deleteProperty(k);}}}}
-function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,6).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&r[4]===v.device&&r[5]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s};}
+function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,8).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(v.device)&&r[7]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s};}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
-function heartbeat(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return true;});}
-function recordProgress(token,event){return lock_(()=>{const {a,s}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));const p=PropertiesService.getScriptProperties(),m=daily_(s,a);const ek='event:'+hash_(a.id+':'+event.eventId);if(p.getProperty(ek))return {ok:true};if(event.type==='answer'){if(!valid.has(String(event.cardId))||typeof event.correct!=='boolean')throw Error('문항 오류');m.v.tested++;if(event.correct)m.v.correct++;}if(event.type==='finish')m.v.tests++;p.setProperty('state:'+hash_(a.id),JSON.stringify(ids));p.setProperty(m.key,JSON.stringify(m.v));p.setProperty(ek,String(Date.now()+7*86400000));writeDay_(s,a,m.v,true);return {ok:true};});}
+function heartbeat(token){return lock_(()=>{const {a,s}=session_(token,true);visitRecord_(a,s,'classic',false);return true;});}
+function recordProgress(token,event){return lock_(()=>{const {a}=session_(token,true);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));if(event.type==='answer'&&(!valid.has(String(event.cardId))||typeof event.correct!=='boolean'))throw Error('문항 오류');PropertiesService.getScriptProperties().setProperty('state:'+hash_(a.id),JSON.stringify(ids));return {ok:true};});}
 
 function corpus_(){
  const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');if(!id)throw Error('DATA_SHEET_ID 설정이 필요합니다.');
@@ -46,47 +73,37 @@ function corpus_(){
 function cardIds_(){const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');const s=book_(id).getSheetByName('어휘자료');if(!s)throw Error('어휘자료 탭이 없습니다.');return s.getLastRow()>1?s.getRange(2,1,s.getLastRow()-1,1).getDisplayValues().flat().filter(Boolean):[];}
 
 function deviceLayout_(s,a){
- const labels=s.getRange(1,1,Math.min(s.getLastRow(),110),1).getDisplayValues();let dailyRow=labels.findIndex(r=>r[0]==='날짜')+1;if(dailyRow<10)throw Error('날짜 기록 헤더를 찾을 수 없습니다. 상단 행을 삭제하지 마세요.');
+ const labels=s.getRange(1,1,Math.min(s.getLastRow(),110),1).getDisplayValues();let dailyRow=labels.findIndex(r=>r[0]==='접속구분'||r[0]==='날짜')+1;if(dailyRow<10)throw Error('날짜 기록 헤더를 찾을 수 없습니다. 상단 행을 삭제하지 마세요.');
  let capacity=dailyRow-7;
  if(capacity<a.limit){const extra=a.limit-capacity;s.insertRowsBefore(5+capacity,extra);capacity=a.limit;dailyRow+=extra;s.getRange(5,4,capacity,1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange(5,2,capacity,2).setNumberFormat('yyyy-mm-dd hh:mm:ss');s.setFrozenRows(dailyRow);}
  s.getRange('A3:B3').setValues([['기기한도',a.limit]]);return {capacity,dailyRow};
 }
 
 function studentPayload_(id){const c=corpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(id))||'[]')};}
-function signIn(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);return {...studentPayload_(auth.id),token:auth.token};}
-function restoreSession(token){return lock_(()=>{const {a,s}=session_(token,true);writeDay_(s,a,daily_(s,a).v,true);return studentPayload_(a.id);});}
+function signIn(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);visitAfterLogin_(auth.id,'classic');return {...studentPayload_(auth.id),token:auth.token};}
+function restoreSession(token){return lock_(()=>{const {a,s}=session_(token,true);visitRecord_(a,s,'classic',true);return studentPayload_(a.id);});}
 function saveLearning(token,event){return recordProgress(token,event);}
 function signOut(token){return logout(token);}
 function checkSession(token){return heartbeat(token);}
 
-/* Exam logs use verified account identity; never accept a client user name. */
-function examSheet_(){
- const headers=["과목","아이디","사용자 이름","기록 종류","접속시간","나간시간","최근 확인시간","종료 상태","테스트 종류","문항","결과","문제 수","정답 수","테스트 번호","접속 번호","기록 번호"];
- let s=db_().getSheetByName('시험학습기록');
- if(!s){s=db_().insertSheet('시험학습기록');s.getRange(1,1,1,headers.length).setValues([headers]);s.setFrozenRows(1);}
- if(s.getRange(1,1,1,headers.length).getDisplayValues()[0].join('|')!==headers.join('|'))throw Error('시험학습기록 헤더를 확인하세요.');
- return s;
-}
-function examTime_(v){return Utilities.formatDate(new Date(v),'Asia/Seoul','yyyy-MM-dd HH:mm:ss');}
-function saveExam(token,e){return lock_(()=>{
- const {a}=session_(token,false);
- if(!e||!['start','pulse','end','test-start','answer','override','finish','abort','writing'].includes(e.type)||!/^[-a-zA-Z0-9]{8,100}$/.test(e.visitId||'')||!/^[-a-zA-Z0-9]{8,100}$/.test(e.eventId||''))throw Error('시험 기록 형식 오류');
- const s=examSheet_(),n=s.getLastRow()-1,rows=n?s.getRange(2,1,n,16).getDisplayValues():[],now=Date.now(),stamp=examTime_(now);
- if(rows.some(r=>r[15]===e.eventId&&r[1]===a.id))return {ok:true};
- let vi=rows.findIndex(r=>r[14]===e.visitId&&r[1]===a.id&&r[3]==='접속');
- // The last confirmed time is an estimate, not a fabricated exact close time.
- rows.forEach((r,i)=>{if(r[3]==='접속'&&r[7]==='접속 중'&&r[6]){const last=Date.parse(r[6].replace(' ','T')+'+09:00');if(Number.isFinite(last)&&now-last>180000){s.getRange(i+2,6).setValue(r[6]);s.getRange(i+2,8).setValue('연결 종료 추정');}}});
- if(vi<0){s.appendRow(['한문',literal_(a.id),literal_(a.name),'접속',stamp,'',stamp,'접속 중','','','','','','',e.visitId,e.eventId]);vi=s.getLastRow()-2;}
- const row=vi+2;s.getRange(row,7).setValue(stamp);
- if(e.type==='end'){s.getRange(row,6).setValue(stamp);s.getRange(row,8).setValue('정상 종료');return {ok:true};}
- if(e.type==='pulse'||e.type==='start'){s.getRange(row,8).setValue('접속 중');s.getRange(row,6).clearContent();return {ok:true};}
- const types={'test-start':'테스트 시작',answer:'문항 채점',override:'정답 정정',finish:'테스트 완료',abort:'테스트 중단',writing:'쓰기 연습'};
- if(!/^[-a-zA-Z0-9]{8,100}$/.test(e.testId||''))throw Error('테스트 번호 오류');
- if(['answer','override','writing'].includes(e.type)&&typeof e.correct!=='boolean')throw Error('채점 결과 오류');
- const total=Number(e.total||0),correct=Number(e.score||0);
- if(!Number.isInteger(total)||!Number.isInteger(correct)||total<0||total>1000||correct<0||correct>total)throw Error('문제 수 오류');
- s.appendRow(['한문',literal_(a.id),literal_(a.name),types[e.type],rows[vi]?.[4]||stamp,e.type==='finish'||e.type==='abort'?stamp:'',stamp,'',literal_(String(e.title||'').slice(0,100)),literal_(String(e.question||'').slice(0,250)),typeof e.correct==='boolean'?(e.correct?'정답':'오답'):'',total,correct,e.testId,e.visitId,e.eventId]);
- return {ok:true};
- });}
 
-function examRecordingReady(){return {ok:true,version:1};}
+// Economy extension. Existing classical vocabulary functions remain unchanged.
+function economyCorpus_(){
+ const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');if(!id)throw Error('DATA_SHEET_ID 설정이 필요합니다.');
+ const sheet=book_(id).getSheetByName('경제어휘');if(!sheet)throw Error('경제어휘 탭이 없습니다.');
+ const rows=sheet.getDataRange().getDisplayValues(),h=rows.shift(),get=(r,n)=>String(r[h.indexOf(n)]||'').trim();
+ for(const n of ['어휘ID','단어','분류','뜻','뜻풀이','쪽수','사용'])if(!h.includes(n))throw Error('경제어휘 헤더 누락: '+n);
+ const seen=new Set(),data=[];
+ for(const r of rows){if(!get(r,'단어')||get(r,'사용')==='숨김')continue;const cid=get(r,'어휘ID');if(!/^e_[A-Za-z0-9_-]{1,75}$/.test(cid)||seen.has(cid))throw Error('경제 어휘ID 중복 또는 형식 오류');seen.add(cid);if(!get(r,'뜻'))throw Error('경제어휘 뜻을 입력하세요.');
+ data.push({id:cid,word:get(r,'단어'),genre:get(r,'갈래')||'경제',cat:get(r,'분류')||'기타',def:get(r,'뜻'),title:get(r,'작품명')||'경제 전제지식',displayQuote:get(r,'원문 예문'),modernExplanation:get(r,'뜻풀이'),caution:get(r,'주의'),displaySource:get(r,'교재')+' · '+get(r,'쪽수'),displayCitation:{title:get(r,'작품명')},catalogBooks:['수능특강','수능완성 수록작'].filter(b=>get(r,'교재').includes(b==='수능특강'?'수능특강':'수능완성')),sources:['수능특강','수능완성 수록작'].filter(b=>get(r,'교재').includes(b==='수능특강'?'수능특강':'수능완성')).map(book=>({book,title:get(r,'작품명')||'경제 전제지식'})),linkedWorks:[],hanjaExplanation:get(r,'한자 설명')?[{character:'',meaning:get(r,'한자 설명'),reading:''}]:[]});}
+ return {data,coverage:{cardCount:data.length,works:[],suwanWorks:[]}};
+}
+function economyPayload_(id){const c=economyCorpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('economy:state:'+hash_(id))||'[]')};}
+function signInEconomy(id,pin,remember,device,label){const auth=login(id,pin,remember,device,label);visitAfterLogin_(auth.id,'economy');return {...economyPayload_(auth.id),token:auth.token};}
+function restoreEconomy(token){const {a}=session_(token,false);return economyPayload_(a.id);}
+function saveEconomy(token,event){return lock_(()=>{
+ const {a}=session_(token,false);if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');
+ const valid=new Set(economyCorpus_().data.map(d=>d.id)),ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));
+ if(event.type==='answer'&&(!valid.has(String(event.cardId))||typeof event.correct!=='boolean'))throw Error('문항 오류');
+ PropertiesService.getScriptProperties().setProperty('economy:state:'+hash_(a.id),JSON.stringify(ids));return {ok:true};
+});}
