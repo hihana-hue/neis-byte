@@ -69,6 +69,7 @@ ul{padding-left:20px;margin:6px 0}
 .ov{position:fixed;inset:0;background:rgba(10,15,25,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .ovc{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90%}
+.pdfdoc{width:720px;padding:0;background:#fff;color:#000;font-size:15px;line-height:1.65} .pdfdoc h1{font-size:24px;margin:0 0 2px} .pdfdoc .pd{font-size:12px;color:#555;margin:0 0 14px} .pdfdoc h2{font-size:18px;border-bottom:2px solid #000;padding-bottom:3px;margin:20px 0 8px} .pdfdoc h3{font-size:15px;margin:14px 0 4px} .pdfdoc .pl{font-size:12px;color:#555;margin:8px 0 1px;font-weight:700} .pdfdoc .pt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 #printout{display:none}
 @media print{body>*:not(#printout){display:none!important} body{background:#fff!important;color:#000!important;padding:0!important;margin:0!important} #printout{display:block;font-size:11pt;line-height:1.6;color:#000} #printout h1{font-size:18pt;margin:0 0 2pt} #printout .pd{font-size:9pt;color:#555;margin:0 0 12pt} #printout h2{font-size:13pt;border-bottom:1.5pt solid #000;padding-bottom:2pt;margin:16pt 0 6pt} #printout h3{font-size:11pt;margin:10pt 0 3pt} #printout section{break-inside:avoid;page-break-inside:avoid} #printout .pl{font-size:9pt;color:#555;margin:6pt 0 1pt;font-weight:700} #printout .pt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere} @page{size:A4;margin:16mm}}
 </style>
@@ -294,12 +295,8 @@ ${(META.rules||[]).map(r=>`<li>${esc(r)}</li>`).join('')}
 <li>11.20 공지에서 집결 시간과 장소 확인</li>
 <li>시계 지참 가능 여부는 공지로 확인 (요강에 없음)</li>
 <li>전날: 기본 답변 5를 소리 내어 한 번씩</li></ul></details>
-<details><summary>11.20 면접 공지 입력</summary><p class="sub">공지가 나오면 입력하세요. 모의면접 설정에 반영됩니다.</p>
-<label for="ne">제시문</label><select id="ne" data-save="notice" data-f="essay">${['미확인','없음','있음'].map(x=>`<option ${n.essay===x?'selected':''}>${x}</option>`).join('')}</select>
-<label for="nq">기본 질문 수</label><select id="nq" data-save="notice" data-f="qn">${['3','4'].map(x=>`<option ${n.qn===x?'selected':''}>${x}</option>`).join('')}</select>
-<label for="nm">기타 (집결 시간, 장소, 진행 방식)</label><textarea id="nm" data-save="notice" data-f="memo">${esc(n.memo||'')}</textarea></details>
 <details open><summary>내 답변 PDF로 저장</summary><p class="sub">내가 직접 적은 내용만 모아 PDF로 저장합니다(기본 답변, 질문별 내 답변, 활동 카드). AI 예시 답안은 넣지 않습니다.</p>
-<button class="btn sm" data-act="pdf">PDF로 저장</button><p class="sub" style="font-size:12px;margin-top:6px">인쇄 창이 열리면 대상(프린터)을 <b>PDF로 저장</b>으로 고르세요. 아이폰은 공유 버튼에서 저장할 수 있습니다.</p></details>
+<button class="btn sm" data-act="pdf">PDF로 저장</button><p class="sub" style="font-size:12px;margin-top:6px">PDF 파일이 이 기기의 다운로드(파일)에 저장됩니다.</p></details>
 <details><summary>내 입력 백업</summary><p class="sub">입력 내용은 이 기기의 이 브라우저에만 저장됩니다. 다른 기기로 옮기거나 지워질 때를 대비해 백업하세요.</p>
 <button class="btn sm" data-act="exp">백업 파일 내려받기</button>
 <label for="imp">백업 불러오기 (파일 선택)</label><input type="file" id="imp" accept=".json,application/json"></details>`}
@@ -345,9 +342,17 @@ function myPdf(){const t=x=>String(x||'').trim();
  const cards=CARDS.map(c=>{const d=S.cards[c.id]||{};const f=FIELDS.filter(([k])=>t(d[k]));return f.length?`<section><h3>${esc(c.t)}</h3>${f.map(([k,l])=>`<p class="pl">${esc(l)}</p><div class="pt">${esc(t(d[k]))}</div>`).join('')}</section>`:''}).filter(Boolean);
  if(!core.length&&!qs.length&&!cards.length){toast('아직 직접 작성한 내용이 없습니다');return}
  const day=new Date(),p=n=>String(n).padStart(2,'0'),ds=`${day.getFullYear()}-${p(day.getMonth()+1)}-${p(day.getDate())}`;
- let el=document.getElementById('printout');if(el)el.remove();el=document.createElement('div');el.id='printout';
- el.innerHTML=`<h1>${esc(WHO)} 면접 답변 모음</h1><p class="pd">${ds} 저장 · 직접 작성한 내용만</p>`+(core.length?`<h2>기본 답변</h2>${core.join('')}`:'')+(qs.length?`<h2>질문별 내 답변</h2>${qs.join('')}`:'')+(cards.length?`<h2>활동 카드</h2>${cards.join('')}`:'');
- document.body.appendChild(el);const name=`${WHO}_면접답변_${ds}`,old=document.title;let pold=null;document.title=name;try{pold=parent.document.title;parent.document.title=name}catch(e){}
+ const inner=`<h1>${esc(WHO)} 면접 답변 모음</h1><p class="pd">${ds} 저장 · 직접 작성한 내용만</p>`+(core.length?`<h2>기본 답변</h2>${core.join('')}`:'')+(qs.length?`<h2>질문별 내 답변</h2>${qs.join('')}`:'')+(cards.length?`<h2>활동 카드</h2>${cards.join('')}`:'');
+ const name=`${WHO}_면접답변_${ds}`;if(PDF_BUSY)return;PDF_BUSY=true;toast('PDF를 만드는 중입니다…');
+ loadH2P().then(h2p=>{const el=document.createElement('div');el.className='pdfdoc';el.innerHTML=inner;
+  return h2p().set({margin:[12,12,14,12],filename:name+'.pdf',image:{type:'jpeg',quality:0.9},html2canvas:{scale:2,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:760},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css'],avoid:['section','h2']}}).from(el).save()})
+ .then(()=>toast('PDF를 저장했습니다. 다운로드(파일)에서 확인하세요.'))
+ .catch(()=>{toast('PDF 파일을 만들지 못해 인쇄 창을 엽니다. "PDF로 저장"을 고르세요.');printPdf(inner,name)})
+ .finally(()=>{PDF_BUSY=false})}
+let PDF_BUSY=false,H2P=null;
+function loadH2P(){if(window.html2pdf)return Promise.resolve(window.html2pdf);if(H2P)return H2P;H2P=new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';sc.onload=()=>window.html2pdf?ok(window.html2pdf):no(Error('no html2pdf'));sc.onerror=()=>{H2P=null;no(Error('load'))};document.head.appendChild(sc)});return H2P}
+function printPdf(inner,name){let el=document.getElementById('printout');if(el)el.remove();el=document.createElement('div');el.id='printout';el.innerHTML=inner;
+ document.body.appendChild(el);const old=document.title;let pold=null;document.title=name;try{pold=parent.document.title;parent.document.title=name}catch(e){}
  const done=()=>{document.title=old;try{if(pold!==null)parent.document.title=pold}catch(e){}const x=document.getElementById('printout');if(x)x.remove();window.removeEventListener('afterprint',done)};
  window.addEventListener('afterprint',done);setTimeout(()=>{try{window.print()}catch(e){toast('이 화면에서는 인쇄 창을 열 수 없습니다');done()}},50)}
 function bindAfter(){if(document.getElementById('recs'))recShow()}
