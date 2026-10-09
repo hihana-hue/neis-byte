@@ -37,7 +37,7 @@ p{margin:6px 0}
 .chip.s-g{border-color:var(--ok);color:var(--ok)}.chip.s-r{border-color:var(--pu);color:var(--pu)}.chip.s-i{border-color:var(--sub);color:var(--sub)}
 .tag.S{background:var(--red);color:#fff}.tag.A{background:var(--warn);color:#fff}.tag.B{background:var(--sub);color:#fff}
 mark.ph{background:var(--ph);color:var(--phink);border-radius:4px;padding:0 3px}
-.ans,.rec,.tip{white-space:pre-wrap} .snd{margin-left:auto;appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:2px 9px;font-size:16px;line-height:1;min-height:30px;min-width:38px;cursor:pointer;font-family:inherit} .snd[aria-pressed="true"]{color:var(--sub)} .start summary{font-weight:700;font-size:17px} ol.steps{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:12px} ol.steps li{display:flex;gap:10px;align-items:flex-start} ol.steps li>b{flex:0 0 26px;height:26px;border-radius:50%;background:var(--line,#dfe3ea);display:flex;align-items:center;justify-content:center;font-size:14px} ol.steps li.ok>b{background:var(--pri,#1d4e89);color:#fff} ol.steps li.ok .st{color:var(--sub,#666)} ol.steps .st{font-weight:700} .btn.sm{padding:6px 12px;font-size:14px;margin-top:6px;width:auto} .aiwarn{margin:4px 0 8px;font-size:13px} .order{background:var(--warnbg);border-radius:10px;padding:8px 12px;font-size:14px;margin:4px 0 12px} .order b{margin-right:6px} table.fmt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0} table.fmt th,table.fmt td{border-bottom:1px solid var(--line,#dfe3ea);padding:6px 4px;text-align:left;vertical-align:top} table.fmt td:last-child,table.fmt th:last-child{white-space:nowrap}
+.ans,.rec,.tip{white-space:pre-wrap} .recs{margin:0 0 14px} .recs h3{margin:0 0 8px} .recit{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)} .recit:first-of-type{border-top:0} .recit .rt{flex:1;min-width:0} .recit .rt b{font-size:14px} .recit .rt span{font-size:12px;color:var(--sub);margin-left:6px} .recit audio{width:100%;height:36px;margin-top:4px;display:block} .recx{flex:0 0 32px;height:32px;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;font-size:16px;line-height:1;cursor:pointer;font-family:inherit} .recnote{font-size:11px;color:var(--sub);margin:8px 0 0} .recon{text-align:center;color:#d33;font-size:13px;font-weight:700;margin:-4px 0 6px} .snd{margin-left:auto;appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:2px 9px;font-size:16px;line-height:1;min-height:30px;min-width:38px;cursor:pointer;font-family:inherit} .snd[aria-pressed="true"]{color:var(--sub)} .start summary{font-weight:700;font-size:17px} ol.steps{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:12px} ol.steps li{display:flex;gap:10px;align-items:flex-start} ol.steps li>b{flex:0 0 26px;height:26px;border-radius:50%;background:var(--line,#dfe3ea);display:flex;align-items:center;justify-content:center;font-size:14px} ol.steps li.ok>b{background:var(--pri,#1d4e89);color:#fff} ol.steps li.ok .st{color:var(--sub,#666)} ol.steps .st{font-weight:700} .btn.sm{padding:6px 12px;font-size:14px;margin-top:6px;width:auto} .aiwarn{margin:4px 0 8px;font-size:13px} .order{background:var(--warnbg);border-radius:10px;padding:8px 12px;font-size:14px;margin:4px 0 12px} .order b{margin-right:6px} table.fmt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0} table.fmt th,table.fmt td{border-bottom:1px solid var(--line,#dfe3ea);padding:6px 4px;text-align:left;vertical-align:top} table.fmt td:last-child,table.fmt th:last-child{white-space:nowrap}
 .tip{background:var(--warnbg);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
 .list .item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;color:var(--ink);font-size:15px;cursor:pointer;font-family:inherit}
 .item .meta{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -103,11 +103,34 @@ function ding(){audio();tones([[1318.5,0,0.6],[1046.5,0.28,0.6]],'sine')}
 function bellEnd(){tones([[523.25,0,0.55],[392,0.2,0.55],[261.63,0.4,1.2]],'sine')}
 let V={tab:'home',view:null};let TM=null;
 function stopTimer(){if(TM){clearInterval(TM);TM=null}}
+/* 녹음: 이 기기 브라우저(IndexedDB)에만 저장, 질문마다 최근 5개 */
+const REC_MAX=5;let REC=null,REC_URLS=[],REC_SAVING=false;
+function recDB(){return new Promise((ok,no)=>{try{const r=indexedDB.open('mari-rec',1);r.onupgradeneeded=()=>r.result.createObjectStore('r',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
+function recTx(mode,fn){return recDB().then(db=>new Promise((ok,no)=>{const t=db.transaction('r',mode),st=t.objectStore('r');let out;Promise.resolve(fn(st,v=>out=v));t.oncomplete=()=>{db.close();ok(out)};t.onerror=()=>{db.close();no(t.error)}}))}
+function recAll(q){return recTx('readonly',(st,set)=>{const r=st.getAll();r.onsuccess=()=>set(r.result.filter(x=>x.acc===KEY&&x.q===q).sort((a,b)=>b.t-a.t))})}
+function recAdd(item){return recTx('readwrite',st=>st.add(item)).then(()=>recAll(item.q)).then(list=>list.length>REC_MAX?recTx('readwrite',st=>list.slice(REC_MAX).forEach(x=>st.delete(x.id))):null)}
+function recDel(id){return recTx('readwrite',st=>st.delete(id))}
+function recStart(q){if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder&&window.indexedDB)){toast('이 브라우저는 녹음을 지원하지 않아 녹음 없이 진행합니다');return}
+ const r={q,t:Date.now(),chunks:[],on:true};REC=r;
+ navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{if(REC!==r||!r.on){stream.getTracks().forEach(k=>k.stop());return}
+  const type=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+  const m=type?new MediaRecorder(stream,{mimeType:type}):new MediaRecorder(stream);r.m=m;r.stream=stream;r.t=Date.now();
+  m.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
+  m.onstop=()=>{stream.getTracks().forEach(k=>k.stop());const fin=()=>{if(r.keep){REC_SAVING=false;recShow()}};if(!r.keep||!r.chunks.length)return fin();const blob=new Blob(r.chunks,{type:m.mimeType||type||'audio/webm'});const dur=(r.end-r.t)/1000;if(dur<1)return fin();
+   recAdd({acc:KEY,q:r.q,t:r.t,dur,blob}).catch(()=>toast('녹음을 저장하지 못했습니다')).then(fin)};
+  m.start(1000);const el=document.getElementById('recon');if(el)el.hidden=false})
+ .catch(()=>{if(REC===r)REC=null;toast('마이크를 쓸 수 없어 녹음 없이 진행합니다')})}
+function recStop(keep){const r=REC;REC=null;if(!r)return;r.on=false;r.keep=keep;r.end=Date.now();if(r.m&&r.m.state!=='inactive'){if(keep)REC_SAVING=true;r.m.stop()}else if(r.stream)r.stream.getTracks().forEach(k=>k.stop())}
+function recTitle(t){const d=new Date(t),p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}월 ${d.getDate()}일 ${p(d.getHours())}:${p(d.getMinutes())}`}
+function recShow(){const box=document.getElementById('recs');if(!box)return;const q=box.dataset.q;
+ recAll(q).then(list=>{if(!document.body.contains(box))return;REC_URLS.forEach(u=>URL.revokeObjectURL(u));REC_URLS=[];
+  box.innerHTML=`<h3>내 녹음</h3>`+(list.length?list.map(x=>{const u=URL.createObjectURL(x.blob);REC_URLS.push(u);return `<div class="recit"><div class="rt"><b>${recTitle(x.t)}</b><span>${mmss(x.dur)}</span><audio controls preload="metadata" src="${u}"></audio></div><button class="recx" data-act="recdel" data-rid="${x.id}" aria-label="${recTitle(x.t)} 녹음 삭제" title="삭제">✕</button></div>`}).join(''):`<p class="sub">${REC_SAVING?'녹음을 저장하는 중…':'아직 녹음이 없습니다.'}</p>`)+`<p class="recnote">최대 ${REC_MAX}개까지 저장됩니다. 이 기기에만 저장돼요.</p>`})
+ .catch(()=>{box.innerHTML=`<h3>내 녹음</h3><p class="sub">이 브라우저에서는 녹음을 불러올 수 없습니다.</p>`})}
 /* 화면 안 확인창·알림 (브라우저 기본 창을 쓰지 않음) */
 function ask(msg,ok,cancel,onOk){closeAsk();const d=document.createElement('div');d.id='askbox';d.className='ov';d.innerHTML=`<div class="ovc"><p style="font-weight:700;font-size:17px;margin:0 0 14px">${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" id="askno">${esc(cancel)}</button><button class="btn pri" id="askok">${esc(ok)}</button></div></div>`;document.body.appendChild(d);document.getElementById('askno').onclick=closeAsk;document.getElementById('askok').onclick=()=>{closeAsk();onOk()}}
 function closeAsk(){const d=document.getElementById('askbox');if(d)d.remove()}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
-let HIST=[];/* 나가기·뒤로가 들어온 화면으로 돌아가도록 이전 화면을 기억 */ function go(tab,view){stopTimer();closeAsk();if(!view)HIST=[];else if(V.view?V.view.k!==view.k:V.tab!==tab)HIST.push(V);V={tab,view:view||null};render();window.scrollTo(0,0)} function back(){if(HIST.length){stopTimer();closeAsk();V=HIST.pop();render();window.scrollTo(0,0)}else go(V.tab)}
+let HIST=[];/* 나가기·뒤로가 들어온 화면으로 돌아가도록 이전 화면을 기억 */ function go(tab,view){stopTimer();recStop(false);closeAsk();if(!view)HIST=[];else if(V.view?V.view.k!==view.k:V.tab!==tab)HIST.push(V);V={tab,view:view||null};render();window.scrollTo(0,0)} function back(){recStop(false);if(HIST.length){stopTimer();closeAsk();V=HIST.pop();render();window.scrollTo(0,0)}else go(V.tab)}
 function dday(){const p=String(META.date||'2026-11-27').split('-').map(Number);const t=new Date(p[0],p[1]-1,p[2]);const n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/864e5)}
 function coreSt(id){const v=(S.core[id]||'').trim().length;return v===0?0:v<60?1:2}
 function cardSt(id){const c=S.cards[id]||{};const f=['f1','f2','f3','f4','f5'].filter(k=>(c[k]||'').trim()).length;if(!f&&!c.real)return 0;return f>=4&&c.real?2:1}
@@ -146,8 +169,8 @@ function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));cons
 function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
 let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
 if(v.ph==='ready'){h+=`<div class="order"><b>답변 순서</b> 결론 → 이유 → 내 경험 → 교사가 되면</div><div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}<button class="snd" data-act="mute" aria-pressed="${S.mute?'true':'false'}" title="${S.mute?'알림음 켜기':'알림음 끄기'}" aria-label="${S.mute?'알림음 꺼짐. 누르면 켜기':'알림음 켜짐. 누르면 끄기'}">${S.mute?'🔇':'🔊'}</button></div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
-else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
-else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>AI 예시 답안</h3><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
+else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><div class="recon" id="recon" ${REC&&REC.m?'':'hidden'}>● 녹음 중</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
+else{h+=`<div class="card recs" id="recs" data-q="${esc(q.id)}"><h3>내 녹음</h3><p class="sub">불러오는 중…</p></div><div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>AI 예시 답안</h3><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
 <label for="my">내 답변 (AI 예시를 참고해 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
 <div class="row" style="margin-top:12px"><button class="btn" data-act="again1">다시 하기</button><button class="btn pri" data-act="next1">다음 질문</button></div>`}
 return h}
@@ -278,8 +301,9 @@ else if(a==='card')go('cards',{k:'card',id});
 else if(a==='core')go('cards',{k:'core',id});
 else if(a==='close'){back()} else if(a==='mute'){S.mute=!S.mute;save();render();toast(S.mute?'알림음을 껐습니다':'알림음을 켰습니다')} else if(a==='readrules'){S.seenRules=true;save();HIST=[];go('info')}
 else if(a==='dur'){v.dur=+b.dataset.s;render()}
-else if(a==='start1'){ding();v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
+else if(a==='start1'){ding();v.ph='run';v.left=v.dur;v.t0=Date.now();render();recStart(v.id);TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
 else if(a==='end1')endOne();
+else if(a==='recdel'){const rid=Number(b.dataset.rid);ask('이 녹음을 삭제할까요?','삭제','취소',()=>recDel(rid).then(recShow).catch(()=>toast('삭제하지 못했습니다')))}
 else if(a==='again1'){V.view={k:'one',id:v.id,ph:'ready',dur:v.dur};render()}
 else if(a==='next1'){const q=QM[v.id];const pool=QUESTIONS.filter(x=>x.a===q.a&&x.id!==q.id);startOne(leastPick(pool.length?pool:QUESTIONS).id)}
 else if(a==='mockgo')go('prac',{k:'mock',ph:'setup',n:S.notice.qn||'3',fu:true,last:false});
@@ -294,14 +318,14 @@ else if(a==='qfa'){QF.a=b.dataset.v;render()}
 else if(a==='qfs'){QF.s=b.dataset.v;render()}
 else if(a==='exp'){try{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const l=document.createElement('a');l.href=u;l.download=(META.backupName||'면접연습_백업')+'_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(err){toast('이 화면에서는 내려받기를 할 수 없습니다. 브라우저로 열어 주세요.')}}
 });
-function endOne(){const v=V.view;stopTimer();bellEnd();v.used=Math.min(v.dur,(Date.now()-v.t0)/1000);v.ph='done';S.cnt[v.id]=(S.cnt[v.id]||0)+1;S.log.push({t:Date.now(),m:'one',q:v.id,sec:v.used});save();render()}
+function endOne(){const v=V.view;stopTimer();recStop(true);bellEnd();v.used=Math.min(v.dur,(Date.now()-v.t0)/1000);v.ph='done';S.cnt[v.id]=(S.cnt[v.id]||0)+1;S.log.push({t:Date.now(),m:'one',q:v.id,sec:v.used});save();render()}
 function mockNext(timeout){const v=V.view;v.times[v.i]=(Date.now()-v.qt)/1000;v.qt=Date.now();if(timeout||v.i>=v.items.length-1){stopTimer();bellEnd();v.ph='done';V.view=v;render();window.scrollTo(0,0);return}v.i++;render()}
 document.addEventListener('input',e=>{const el=e.target,k=el.dataset.save;if(!k)return;const id=el.dataset.id;
 if(k==='my'){S.my[id]=el.value}else if(k==='core'){S.core[id]=el.value}else if(k==='card'){(S.cards[id]=S.cards[id]||{})[el.dataset.f]=el.value}else if(k==='notice'){S.notice[el.dataset.f]=el.value}save()});
 document.addEventListener('change',e=>{const el=e.target;if(el.dataset.save==='real'){(S.cards[el.dataset.id]=S.cards[el.dataset.id]||{}).real=el.checked;save()}
 else if(el.dataset.save==='notice'){S.notice[el.dataset.f]=el.value;save()}
 else if(el.id==='imp'&&el.files[0]){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);ask('지금 입력한 내용을 백업 파일 내용으로 바꿀까요?','바꾸기','취소',()=>{S=Object.assign(blank(),d);save();render();toast('백업을 불러왔습니다.')})}catch(err){toast('백업 파일을 읽을 수 없습니다.')}};r.readAsText(el.files[0])}});
-function bindAfter(){}
+function bindAfter(){if(document.getElementById('recs'))recShow()}
 render();
 </script>
 </body></html>
