@@ -2,7 +2,7 @@
    데이터는 비공개 구글 시트에 있습니다. 이 파일에는 학생 데이터가 없습니다.
    스크립트 속성 GYODAE_SHEET_ID에 시트 ID를 넣어야 합니다.
    시트 탭: 설정, 질문, 활동카드, 기본답변 (탭 이름과 제목 줄을 바꾸지 마세요) */
-const GYODAE_SOURCES = {'공식 2026':'g','공식 2026(정시)':'gj','작년 후기':'r','생기부 기반 예상':'i'};
+const GYODAE_SOURCES = {'공식 2026':'g','공식 2026(정시)':'gj','작년 후기':'r','기출 예제':'x','생기부 기반 예상':'i'};
 function gyodaeRows_(book,name){
  const sheet=book.getSheetByName(name);if(!sheet)throw Error('면접 데이터 시트에 '+name+' 탭이 없습니다.');
  const values=sheet.getDataRange().getDisplayValues();const headers=(values.shift()||[]).map(h=>String(h).trim());

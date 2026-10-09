@@ -1,7 +1,10 @@
-# MARI EDU LAB
+# MARI EDU LAB 교육 앱
 
-- `/edu/neis-byte/`: 기존 계산기 복사본. 상위 링크는 `/edu/`로 연결됩니다.
-- `/edu/gogeon-word/`: 비공개 인증 서버 연결 준비 화면. 전체 어휘 데이터나 ID/PIN은 이 공개 저장소에 저장하지 않습니다.
-- `/edu/interview/gyodae/`: 교대 면접 연습. 화면만 이 저장소에 있고, 질문·예상 답변·생기부 카드 데이터는 비공개 구글 시트에 둡니다. Apps Script의 `InterviewGyodae.gs`가 스크립트 속성 `GYODAE_SHEET_ID`로 시트를 읽어 로그인한 회원(시트1의 `교대면접` 체크)에게만 전달합니다. 시트 내용과 시트 ID는 공개 저장소에 올리지 마세요.
+- `neis-byte/`: 나이스 바이트 계산기
+- `gogeon-word/`: 고전 어휘
+- `economy-word/`: 경제 어휘
+- `exam-prep/hanmun/`: 한문시험준비
+- `interview/gyodae/`: 교대 면접 연습
+- `index.html`: 메인 홈페이지로 이동하는 파일로, 유지합니다.
 
-기존 주소, 루트 메인, CNAME은 유지합니다. 로그인, 기기 제한, 구글 시트 학습 기록은 아직 배포되지 않았습니다.
+주의: `gogeon-word/config.js`는 다른 학습 프로그램도 참조하는 공통 서버 설정입니다. 이동하거나 삭제하지 마세요. 실제 로그인·학습 기록 동작은 운영 환경에서 별도 검증해야 합니다.

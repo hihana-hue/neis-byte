@@ -23,7 +23,7 @@ p{margin:6px 0}
 .chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
 @media (prefers-color-scheme:dark){.chip.on{color:#0e1520}}
 .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--pri2);color:var(--pri);font-weight:600;white-space:nowrap}
-.tag.g{background:var(--okbg);color:var(--ok)}.tag.r{background:var(--pubg);color:var(--pu)}.tag.i{background:var(--line);color:var(--sub)}
+.tag.g{background:var(--okbg);color:var(--ok)}.tag.r{background:var(--pubg);color:var(--pu)}.tag.i{background:var(--line);color:var(--sub)} .tag.x{background:#fdeee2;color:#b4541a} .chip.s-x{border-color:#b4541a;color:#b4541a} .chip.s-x.on{background:#b4541a;border-color:#b4541a;color:#fff} .fbox .chip{padding:3px 10px;min-height:30px;font-size:13px} .fbox .row{gap:6px}
 .tag.ar{background:transparent;border:1px solid var(--pri);color:var(--pri);padding:1px 8px}
 .fbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .frow{display:flex;gap:10px;align-items:flex-start}.frow+.frow{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px}
@@ -37,9 +37,10 @@ p{margin:6px 0}
 .chip.s-g{border-color:var(--ok);color:var(--ok)}.chip.s-r{border-color:var(--pu);color:var(--pu)}.chip.s-i{border-color:var(--sub);color:var(--sub)}
 .tag.S{background:var(--red);color:#fff}.tag.A{background:var(--warn);color:#fff}.tag.B{background:var(--sub);color:#fff}
 mark.ph{background:var(--ph);color:var(--phink);border-radius:4px;padding:0 3px}
-.ans{white-space:pre-wrap}
+.ans,.rec,.tip{white-space:pre-wrap} .recs{margin:0 0 14px} .recs h3{margin:0 0 8px} .recit{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)} .recit:first-of-type{border-top:0} .recit .rt{flex:1;min-width:0} .recit .rt b{font-size:14px} .recit .rt span{font-size:12px;color:var(--sub);margin-left:6px} .recit audio{width:100%;height:36px;margin-top:4px;display:block} .recx{flex:0 0 32px;height:32px;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:999px;font-size:16px;line-height:1;cursor:pointer;font-family:inherit} .recnote{font-size:11px;color:var(--sub);margin:8px 0 0} .recon{text-align:center;color:#d33;font-size:13px;font-weight:700;margin:-4px 0 6px} .snd{margin-left:auto;appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:2px 9px;font-size:16px;line-height:1;min-height:30px;min-width:38px;cursor:pointer;font-family:inherit} .snd[aria-pressed="true"]{color:var(--sub)} .start summary{font-weight:700;font-size:17px} ol.steps{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:12px} ol.steps li{display:flex;gap:10px;align-items:flex-start} ol.steps li>b{flex:0 0 26px;height:26px;border-radius:50%;background:var(--line,#dfe3ea);display:flex;align-items:center;justify-content:center;font-size:14px} ol.steps li.ok>b{background:var(--pri,#1d4e89);color:#fff} ol.steps li.ok .st{color:var(--sub,#666)} ol.steps .st{font-weight:700} .btn.sm{padding:6px 12px;font-size:14px;margin-top:6px;width:auto} .aiwarn{margin:4px 0 8px;font-size:13px} .order{background:var(--warnbg);border-radius:10px;padding:8px 12px;font-size:14px;margin:4px 0 12px} .order b{margin-right:6px} table.fmt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0} table.fmt th,table.fmt td{border-bottom:1px solid var(--line,#dfe3ea);padding:6px 4px;text-align:left;vertical-align:top} table.fmt td:last-child,table.fmt th:last-child{white-space:nowrap}
 .tip{background:var(--warnbg);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:8px}
 .list .item{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;color:var(--ink);font-size:15px;cursor:pointer;font-family:inherit}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0} .grid2 .item{margin:0;height:100%;display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;word-break:keep-all;overflow-wrap:anywhere} @media(max-width:480px){.grid2{gap:6px} .grid2 .item{padding:10px;font-size:14px} .grid2 .item .meta .sub{font-size:12px}}
 .item .meta{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 textarea,input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
 textarea{min-height:110px;resize:vertical}
@@ -68,6 +69,8 @@ ul{padding-left:20px;margin:6px 0}
 .ov{position:fixed;inset:0;background:rgba(10,15,25,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .ovc{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:30;max-width:90%}
+#printout{display:none}
+@media print{body>*:not(#printout){display:none!important} body{background:#fff!important;color:#000!important;padding:0!important;margin:0!important} #printout{display:block;font-size:11pt;line-height:1.6;color:#000} #printout h1{font-size:18pt;margin:0 0 2pt} #printout .pd{font-size:9pt;color:#555;margin:0 0 12pt} #printout h2{font-size:13pt;border-bottom:1.5pt solid #000;padding-bottom:2pt;margin:16pt 0 6pt} #printout h3{font-size:11pt;margin:10pt 0 3pt} #printout section{break-inside:avoid;page-break-inside:avoid} #printout .pl{font-size:9pt;color:#555;margin:6pt 0 1pt;font-weight:700} #printout .pt{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere} @page{size:A4;margin:16mm}}
 </style>
 </head><body>
 <main id="main"></main>
@@ -83,8 +86,8 @@ const D=window.MARI_DATA;
 if(!D||!Array.isArray(D.questions)){document.getElementById('main').innerHTML='<div class="card"><b>로그인 후 이용할 수 있습니다.</b><p class="sub">MARI EDU LAB에서 로그인해 주세요.</p></div>';throw Error('no data')}
 const QUESTIONS=D.questions,CARDS=D.cards,CORE=D.core,META=D.meta||{};
 const WHO=META.name||'본인';
-const SRC={g:['공식 2026','g'],gj:['공식 2026(정시)','g'],r:['작년 후기','r'],i:['생기부 기반 예상','i']};
-const AREAS=['활동','교직관','미래교육·AI','지원동기'];
+const SRC={g:['공식 2026','g'],gj:['공식 2026(정시)','g'],r:['작년 후기','r'],x:['기출 예제','x'],i:['생기부 기반 예상','i']};
+const AREAS=['활동','교직관','미래교육·AI','지원동기','시사·교육정책'];
 const KEY='mari-interview-'+(META.app||'app')+':'+(window.MARI_ACCOUNT||'local');
 let STORE_OK=true;
 function blank(){return{my:{},cards:{},core:{},log:[],cnt:{},notice:{essay:'미확인',qn:'3',time:'8',memo:''}}}
@@ -92,16 +95,53 @@ let S=(function(){try{const t='__t';localStorage.setItem(t,'1');localStorage.rem
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){STORE_OK=false}}
 const QM={};QUESTIONS.forEach(q=>QM[q.id]=q);const CM={};CARDS.forEach(c=>CM[c.id]=c);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
+const brk=s=>String(s==null?'':s).replace(/([.)])[ \t]+(?=[^.:\n()'"‘’]{1,20}:\s)/g,'$1\n'); const fmt=s=>esc(s).replace(/\[\[(.+?)\]\]/g,'<mark class="ph">✎ $1</mark>');
 const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
+/* 말하기 시작 알림음 '띵동' (버튼을 누를 때만 재생) */
+let AC=null;function audio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function tones(list,type){if(S.mute)return;const c=audio();if(!c)return;const t=c.currentTime;list.forEach(([f,d,len])=>{const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(type==='sine'&&f<600?0.45:0.35,t+d+(f<600?0.04:0.015));g.gain.exponentialRampToValueAtTime(0.0001,t+d+len);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+len+0.05)})}
+function ding(){audio();tones([[1318.5,0,0.6],[1046.5,0.28,0.6]],'sine')}
+/* 끝 알림음 '띠리': 음이 아래로 내려가는 짧은 종소리 */
+function bellEnd(){tones([[523.25,0,0.55],[392,0.2,0.55],[261.63,0.4,1.2]],'sine')}
 let V={tab:'home',view:null};let TM=null;
 function stopTimer(){if(TM){clearInterval(TM);TM=null}}
+/* 녹음: 이 기기 브라우저(IndexedDB)에만 저장, 질문마다 최근 5개 */
+const REC_MAX=5;let REC=null,REC_URLS=[],REC_SAVING=false;
+function recDB(){return new Promise((ok,no)=>{try{const r=indexedDB.open('mari-rec',1);r.onupgradeneeded=()=>r.result.createObjectStore('r',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}})}
+function recTx(mode,fn){return recDB().then(db=>new Promise((ok,no)=>{const t=db.transaction('r',mode),st=t.objectStore('r');let out;Promise.resolve(fn(st,v=>out=v));t.oncomplete=()=>{db.close();ok(out)};t.onerror=()=>{db.close();no(t.error)}}))}
+function recAll(q){return recTx('readonly',(st,set)=>{const r=st.getAll();r.onsuccess=()=>set(r.result.filter(x=>x.acc===KEY&&x.q===q).sort((a,b)=>b.t-a.t))})}
+function recAdd(item){return recTx('readwrite',st=>st.add(item)).then(()=>recAll(item.q)).then(list=>list.length>REC_MAX?recTx('readwrite',st=>list.slice(REC_MAX).forEach(x=>st.delete(x.id))):null)}
+function recDel(id){return recTx('readwrite',st=>st.delete(id))}
+function recStart(q){if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder&&window.indexedDB)){toast('이 브라우저는 녹음을 지원하지 않아 녹음 없이 진행합니다');return}
+ const r={q,t:Date.now(),chunks:[],on:true};REC=r;
+ navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{if(REC!==r||!r.on){stream.getTracks().forEach(k=>k.stop());return}
+  const type=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+  const m=type?new MediaRecorder(stream,{mimeType:type}):new MediaRecorder(stream);r.m=m;r.stream=stream;r.t=Date.now();
+  m.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
+  m.onstop=()=>{stream.getTracks().forEach(k=>k.stop());const fin=()=>{if(r.keep){REC_SAVING=false;recShow()}};if(!r.keep||!r.chunks.length)return fin();const blob=new Blob(r.chunks,{type:m.mimeType||type||'audio/webm'});const dur=(r.end-r.t)/1000;if(dur<1)return fin();
+   recAdd({acc:KEY,q:r.q,t:r.t,dur,blob}).catch(()=>toast('녹음을 저장하지 못했습니다')).then(fin)};
+  m.start(1000);const el=document.getElementById('recon');if(el)el.hidden=false})
+ .catch(e=>{if(REC===r)REC=null;recFail(e)})}
+function recFail(e){const n=(e&&e.name)||'',ua=navigator.userAgent,inapp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp/i.test(ua);
+ let m;if(inapp)m='앱 안의 브라우저(카카오톡 등)에서는 녹음이 막힐 수 있어요. 오른쪽 위 메뉴에서 "다른 브라우저로 열기"로 크롬이나 사파리에서 열어 주세요.';
+ else if(n==='NotAllowedError'||n==='PermissionDeniedError')m='마이크 권한이 꺼져 있어요. 주소창 왼쪽 자물쇠(또는 ⓘ)를 눌러 마이크를 "허용"으로 바꾼 뒤 새로고침해 주세요.';
+ else if(n==='NotFoundError'||n==='DevicesNotFoundError')m='이 기기에서 마이크를 찾지 못했어요.';
+ else if(n==='NotReadableError'||n==='TrackStartError')m='다른 앱이 마이크를 쓰고 있어요. 통화·녹음 앱을 닫고 다시 해 보세요.';
+ else if(n==='SecurityError'||!window.isSecureContext)m='이 화면에서는 마이크를 쓸 수 없어요. 크롬이나 사파리에서 사이트 주소로 열어 주세요.';
+ else m='마이크를 쓸 수 없어요'+(n?' ('+n+')':'')+'.';
+ const d=document.createElement('div');d.className='toast';d.style.bottom='auto';d.style.top='16px';d.innerHTML=esc(m+' 지금은 녹음 없이 진행합니다.')+'<br><button class="btn" style="margin-top:8px;min-height:30px;padding:4px 12px">닫기</button>';d.querySelector('button').onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),15000)}
+function recStop(keep){const r=REC;REC=null;if(!r)return;r.on=false;r.keep=keep;r.end=Date.now();if(r.m&&r.m.state!=='inactive'){if(keep)REC_SAVING=true;r.m.stop()}else if(r.stream)r.stream.getTracks().forEach(k=>k.stop())}
+function recTitle(t){const d=new Date(t),p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}월 ${d.getDate()}일 ${p(d.getHours())}:${p(d.getMinutes())}`}
+function recShow(){const box=document.getElementById('recs');if(!box)return;const q=box.dataset.q;
+ recAll(q).then(list=>{if(!document.body.contains(box))return;REC_URLS.forEach(u=>URL.revokeObjectURL(u));REC_URLS=[];
+  box.innerHTML=`<h3>내 녹음</h3>`+(list.length?list.map(x=>{const u=URL.createObjectURL(x.blob);REC_URLS.push(u);return `<div class="recit"><div class="rt"><b>${recTitle(x.t)}</b><span>${mmss(x.dur)}</span><audio controls preload="metadata" src="${u}"></audio></div><button class="recx" data-act="recdel" data-rid="${x.id}" aria-label="${recTitle(x.t)} 녹음 삭제" title="삭제">✕</button></div>`}).join(''):`<p class="sub">${REC_SAVING?'녹음을 저장하는 중…':'아직 녹음이 없습니다.'}</p>`)+`<p class="recnote">최대 ${REC_MAX}개까지 저장됩니다. 이 기기에만 저장돼요.</p>`})
+ .catch(()=>{box.innerHTML=`<h3>내 녹음</h3><p class="sub">이 브라우저에서는 녹음을 불러올 수 없습니다.</p>`})}
 /* 화면 안 확인창·알림 (브라우저 기본 창을 쓰지 않음) */
 function ask(msg,ok,cancel,onOk){closeAsk();const d=document.createElement('div');d.id='askbox';d.className='ov';d.innerHTML=`<div class="ovc"><p style="font-weight:700;font-size:17px;margin:0 0 14px">${esc(msg)}</p><div class="row" style="justify-content:flex-end"><button class="btn" id="askno">${esc(cancel)}</button><button class="btn pri" id="askok">${esc(ok)}</button></div></div>`;document.body.appendChild(d);document.getElementById('askno').onclick=closeAsk;document.getElementById('askok').onclick=()=>{closeAsk();onOk()}}
 function closeAsk(){const d=document.getElementById('askbox');if(d)d.remove()}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
-function go(tab,view){stopTimer();closeAsk();V={tab,view:view||null};render();window.scrollTo(0,0)}
+let HIST=[];/* 나가기·뒤로가 들어온 화면으로 돌아가도록 이전 화면을 기억 */ function go(tab,view){stopTimer();recStop(false);closeAsk();if(!view)HIST=[];else if(V.view?V.view.k!==view.k:V.tab!==tab)HIST.push(V);V={tab,view:view||null};render();window.scrollTo(0,0)} function back(){recStop(false);if(HIST.length){stopTimer();closeAsk();V=HIST.pop();render();window.scrollTo(0,0)}else go(V.tab)}
 function dday(){const p=String(META.date||'2026-11-27').split('-').map(Number);const t=new Date(p[0],p[1]-1,p[2]);const n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/864e5)}
 function coreSt(id){const v=(S.core[id]||'').trim().length;return v===0?0:v<60?1:2}
 function cardSt(id){const c=S.cards[id]||{};const f=['f1','f2','f3','f4','f5'].filter(k=>(c[k]||'').trim()).length;if(!f&&!c.real)return 0;return f>=4&&c.real?2:1}
@@ -114,15 +154,24 @@ return({home:vHome,prac:vPrac,cards:vCards,qs:vQs,info:vInfo})[V.tab]()}
 /* HOME */
 function vHome(){const d=dday();const tq=pickToday();const cDone=CORE.filter(c=>coreSt(c.id)===2).length;const kDone=CARDS.filter(c=>cardSt(c.id)===2).length;const mocks=S.log.filter(l=>l.m==='mock').length;
 const recent=S.log.slice(-3).reverse().map(l=>`<div class="sub">${new Date(l.t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})} · ${l.m==='mock'?'8분 모의면접':esc((QM[l.q]||{}).q||'').slice(0,28)+'…'} · ${mmss(l.sec)}</div>`).join('')||'<div class="sub">아직 연습 기록이 없습니다.</div>';
+const sCards=CARDS.filter(c=>c.r==='S'),sDone=sCards.filter(c=>cardSt(c.id)===2).length,seenRules=!!S.seenRules;
+const step=(ok,n,t,d,btn)=>`<li class="${ok?'ok':''}"><b>${ok?'✓':n}</b><div><div class="st">${t}</div><div class="sub">${d}</div>${btn}</div></li>`;
+const guide=`<details class="card start"><summary>처음이라면 이 순서로</summary><ol class="steps">
+${step(seenRules,1,'답변 형식 읽기 (5분)','자료 탭의 답변 형식·답변 원칙. 결론 → 이유 → 내 경험 → 교사가 되면','<button class="btn sm" data-act="readrules">읽으러 가기</button>')}
+${step(sDone>=sCards.length,2,'중요 활동 카드 '+sCards.length+'개 채우기 ('+sDone+'/'+sCards.length+')','카드 탭에서 S 카드부터. 생기부 기록을 읽고 내가 직접 한 일, 어려웠던 점, 배운 점을 실제 있었던 일로 적기','<button class="btn sm" data-tab="cards">카드로 가기</button>')}
+${step(cDone>=5,3,'기본 답변 5개 내 말로 쓰기 ('+cDone+'/5)','카드 탭 아래 기본 답변. AI 예시 초안을 참고해 노란 칸을 채우고 내 말로 고치기','<button class="btn sm" data-tab="cards">기본 답변으로</button>')}
+${step(false,4,'한 문제 연습','소리 내어 1분 안팎으로 답한 뒤 AI 예시 답안과 비교','<button class="btn sm" data-tab="prac">연습으로</button>')}
+${step(mocks>0,5,'8분 모의면접','질문 3~4개 + 꼬리질문을 실제처럼','<button class="btn sm" data-act="mockgo">모의면접</button>')}
+</ol></details>`;
 const bar=(n,t)=>`<div class="bar"><i style="width:${Math.round(n/t*100)}%"></i></div>`;
-return `<div class="card"><div class="sub">${esc(META.exam||'면접')} · ${esc(META.dateLabel||'')}</div><div class="dday">${d>0?'D-'+d:d===0?'오늘 면접':'면접 종료'}</div>${META.notice?`<div class="sub" style="margin-top:6px">${esc(META.notice)}</div>`:''}</div>
+return guide+`<div class="card"><div class="sub">${esc(META.exam||'면접')} · ${esc(META.dateLabel||'')}</div><div class="dday">${d>0?'D-'+d:d===0?'오늘 면접':'면접 종료'}</div>${META.notice?`<div class="sub" style="margin-top:6px">${esc(META.notice)}</div>`:''}</div>
 <div class="card"><div class="sub">오늘의 연습</div><div style="font-weight:700;font-size:18px;margin:6px 0 10px">${esc(tq.q)}</div><div class="row">${srcTag(tq)}<span class="tag ar">${tq.a}</span></div><div style="margin-top:12px"><button class="btn pri wide" data-act="one" data-id="${tq.id}">이 질문으로 연습</button></div></div>
 <div class="card"><h3 style="margin-top:0">준비 상황</h3><div class="stat"><span>기본 답변</span><b>${cDone}/5</b></div>${bar(cDone,5)}<div class="stat" style="margin-top:10px"><span>활동 카드 완성</span><b>${kDone}/${CARDS.length}</b></div>${bar(kDone,CARDS.length)}<div class="stat" style="margin-top:10px"><span>8분 모의면접</span><b>${mocks}회</b></div></div>
 <button class="btn pri wide" data-act="mockgo">8분 모의면접 시작</button>
 <div class="card"><h3 style="margin-top:0">최근 연습</h3>${recent}</div>`}
 /* PRACTICE MENU */
 function vPrac(){return `<h1>연습</h1>
-<div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 예상 답변과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
+<div class="card"><h3 style="margin-top:0">한 문제 연습</h3><p class="sub">질문 하나를 소리 내어 답해 본 뒤 AI 예시 답안과 비교합니다. 8분에 질문 3~4개와 꼬리질문이 오가므로 한 답변은 1분 안팎이 적당합니다.</p>
 <div class="row" style="margin:10px 0">${AREAS.map(a=>`<button class="chip" data-act="onerand" data-a="${a}">${a}</button>`).join('')}</div>
 <button class="btn wide" data-act="onerand" data-a="">아무 질문이나</button></div>
 <div class="card"><h3 style="margin-top:0">8분 모의면접</h3><p class="sub">실제처럼 질문 3~4개를 이어서 받습니다. 활동 질문 뒤에 꼬리질문이 하나 붙습니다.</p><button class="btn pri wide" data-act="mockgo">설정하고 시작</button></div>`}
@@ -130,10 +179,10 @@ function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));cons
 /* ONE QUESTION */
 function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
 let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
-if(v.ph==='ready'){h+=`<div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p>${esc(c.rec)}</p></details>`:''}`}
-else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
-else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>예상 답변</h3><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
-<label for="my">내 답변 (예상 답변을 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
+if(v.ph==='ready'){h+=`<div class="order"><b>답변 순서</b> 결론 → 이유 → 내 경험 → 교사가 되면</div><div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}<button class="snd" data-act="mute" aria-pressed="${S.mute?'true':'false'}" title="${S.mute?'알림음 켜기':'알림음 끄기'}" aria-label="${S.mute?'알림음 꺼짐. 누르면 켜기':'알림음 켜짐. 누르면 끄기'}">${S.mute?'🔇':'🔊'}</button></div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
+else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><div class="recon" id="recon" ${REC&&REC.m?'':'hidden'}>● 녹음 중</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
+else{h+=`<div class="card recs" id="recs" data-q="${esc(q.id)}"><h3>내 녹음</h3><p class="sub">불러오는 중…</p></div><div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>AI 예시 답안</h3><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
+<label for="my">내 답변 (AI 예시를 참고해 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
 <div class="row" style="margin-top:12px"><button class="btn" data-act="again1">다시 하기</button><button class="btn pri" data-act="next1">다음 질문</button></div>`}
 return h}
 function startOne(id){go('prac',{k:'one',id,ph:'ready',dur:60})}
@@ -151,7 +200,7 @@ if(v.ph==='run'){const it=v.items[v.i];return `<div class="row" style="justify-c
 <button class="btn pri wide" data-act="mocknext">${v.i<v.items.length-1?'다음 질문':'면접 끝내기'}</button>`}
 const tot=v.times.reduce((a,b)=>a+b,0);
 return `<button class="back" data-act="close">← 나가기</button><h1>모의면접 결과</h1><div class="card"><div class="stat"><span>사용 시간</span><b>${mmss(tot)} / 8:00</b></div>${v.timeout?'<p class="sub">8분이 다 되어 종료되었습니다.</p>':''}</div>
-${v.items.map((it,i)=>`<details><summary>${i+1}. ${esc(it.text)} <span class="sub">(${mmss(v.times[i]||0)})</span></summary>${it.q?`<div class="ans" style="margin-top:8px">${fmt(QM[it.q].ans)}</div>`:it.c?`<p class="sub">이 꼬리질문은 활동 카드의 내용으로 답합니다.</p><p>${esc(CM[it.c].warn)}</p>`:''}</details>`).join('')}
+${v.items.map((it,i)=>`<details><summary>${i+1}. ${esc(it.text)} <span class="sub">(${mmss(v.times[i]||0)})</span></summary>${it.q?`<p class="sub" style="margin-top:8px">AI 예시 답안</p><div class="ans">${fmt(QM[it.q].ans)}</div>`:it.c?`<p class="sub">이 꼬리질문은 활동 카드의 내용으로 답합니다.</p><p>${esc(CM[it.c].warn)}</p>`:''}</details>`).join('')}
 <label for="mmemo">이번 연습 메모</label><textarea id="mmemo" placeholder="막혔던 질문, 다음에 고칠 점"></textarea>
 <button class="btn pri wide" style="margin-top:12px" data-act="mocksave">저장하고 나가기</button>`}
 function buildMock(n,fu,last){const items=[];const pickA=a=>leastPick(QUESTIONS.filter(q=>q.a===a&&q.id!=='D7'));
@@ -161,33 +210,33 @@ if(fu&&a.c&&CM[a.c]){const f=CM[a.c].fu;items.push({c:a.c,text:f[Math.floor(Math
 if(n==='4'){const q=pickA('지원동기');items.push({q:q.id,text:q.q,k:'q'})}
 if(last)items.push({q:'D7',text:QM.D7.q,k:'last'});return items}
 /* CARDS */
-function vCards(){return `<h1>카드</h1><h2>기본 답변 5</h2><p class="sub">어떤 질문에도 기본이 되는 답입니다. 30초 분량으로 내 말로 고쳐 쓰세요.</p><div class="list">${CORE.map((c,i)=>`<button class="item" data-act="core" data-id="${c.id}"><b>${i+1}. ${esc(c.t)}</b><div class="meta"><span class="sub">${ST[coreSt(c.id)]}</span></div></button>`).join('')}</div>
-<h2>활동 카드 ${CARDS.length}</h2><p class="sub">S부터 채우세요. 생기부 기록을 보고 ${esc(WHO)}만 아는 내용을 적습니다.</p><div class="list">${CARDS.map(c=>`<button class="item" data-act="card" data-id="${c.id}"><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b><div class="meta"><span class="sub">${esc(c.p)}</span><span class="sub">· ${ST[cardSt(c.id)]}</span></div></button>`).join('')}</div>`}
+function vCards(){return `<h1>카드</h1><h2>기본 답변 5</h2><p class="sub">어떤 질문에도 기본이 되는 답입니다. 30초 분량으로 내 말로 고쳐 쓰세요.</p><div class="list grid2">${CORE.map((c,i)=>`<button class="item" data-act="core" data-id="${c.id}"><b>${i+1}. ${esc(c.t)}</b><div class="meta"><span class="sub">${ST[coreSt(c.id)]}</span></div></button>`).join('')}</div>
+<h2>활동 카드 ${CARDS.length}</h2><p class="sub">S부터 채우세요. 생기부 기록을 보고 ${esc(WHO)}만 아는 내용을 적습니다.</p><div class="list grid2">${CARDS.map(c=>`<button class="item" data-act="card" data-id="${c.id}"><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b><div class="meta"><span class="sub">${esc(c.p)}</span></div><div class="meta"><span class="sub">${ST[cardSt(c.id)]}</span></div></button>`).join('')}</div>`}
 const FIELDS=[['f1','내가 직접 한 일 (분량, 누구와, 어떤 부분)'],['f2','어려웠던 점과 해결한 방법'],['f3','배운 점'],['f4','초등교사와 연결하는 한 문장'],['f5','숫자·증거 (인원, 횟수, 결과물)']];
 function vCard(id){const c=CM[id];const d=S.cards[id]||{};const qs=QUESTIONS.filter(q=>q.c===id);
 return `<button class="back" data-act="close">← 카드 목록</button><div class="row"><span class="tag ${c.r}">${c.r}</span><span class="sub">${esc(c.p)}</span></div><h1>${esc(c.t)}</h1>
-<details open><summary>생기부 기록 (요약)</summary><p>${esc(c.rec)}</p></details>
+<details open><summary>생기부 기록 (요약)</summary><p class="rec">${esc(brk(c.rec))}</p></details>
 ${FIELDS.map(([k,l])=>`<label for="${k}">${l}</label><textarea id="${k}" data-save="card" data-id="${id}" data-f="${k}" style="min-height:80px">${esc(d[k]||'')}</textarea>`).join('')}
 <label class="check" style="margin-top:14px"><input type="checkbox" data-save="real" data-id="${id}" ${d.real?'checked':''}> 실제로 있었던 일만 적었다</label>
 <div class="tip">${esc(c.warn)}</div>
 <h3>예상 꼬리질문</h3><ul>${c.fu.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
-${qs.length?`<h3>이 카드로 답하는 질문</h3><div class="list">${qs.map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`:''}`}
+${qs.length?`<h3>이 카드로 답하는 질문</h3><p class="sub">누르면 질문 화면이 열립니다. 연습하거나 AI 예시 답안을 볼 수 있어요.</p><div class="list">${qs.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`:''}`}
 function vCore(id){const c=CORE.find(x=>x.id===id);
-return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">예시 초안</div><div class="ans">${fmt(c.d)}</div></div>
+return `<button class="back" data-act="close">← 카드 목록</button><h1>${esc(c.t)}</h1><div class="card"><div class="sub">AI 예시 초안</div><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(c.d)}</div></div>
 <label for="core">내 답변</label><textarea id="core" data-save="core" data-id="${id}" style="min-height:160px" placeholder="예시를 참고해 내 말로 적어 보세요.">${esc(S.core[id]||'')}</textarea><p class="sub">${(S.core[id]||'').length}자 · 소리 내어 30초 안팎이면 적당합니다(약 150~200자).</p>
-<h3>관련 질문</h3><div class="list">${c.q.map(i=>QM[i]).map(q=>`<button class="item" data-act="one" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`}
+<h3>관련 질문</h3><p class="sub">누르면 질문 화면이 열립니다. 연습하거나 AI 예시 답안을 볼 수 있어요.</p><div class="list">${c.q.map(i=>QM[i]).filter(Boolean).map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}</div></button>`).join('')}</div>`}
 /* QUESTIONS */
 let QF={a:'',s:''};
 function vQs(){const list=QUESTIONS.filter(q=>(!QF.a||q.a===QF.a)&&(!QF.s||(QF.s==='g'?q.s[0]==='g':q.s===QF.s)));
 return `<h1>질문 ${QUESTIONS.length}</h1>
 <div class="fbox"><div class="frow"><span class="flbl ar">주제</span><div class="row">${['',...AREAS].map(a=>`<button class="chip ${QF.a===a?'on':''}" data-act="qfa" data-v="${a}">${a||'전체'}</button>`).join('')}</div></div>
-<div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
-<p class="sub"><b>주제</b>는 무엇을 묻는 질문인지, <b>출처</b>는 어디서 온 질문인지입니다. 두 줄을 함께 골라 좁힐 수 있어요.<br><span class="tag g">공식 2026</span> 대학이 공개한 작년 실제 문항 · <span class="tag r">작년 후기</span> 수험생 후기 · <span class="tag i">생기부 기반 예상</span> ${esc(WHO)} 기록으로 만든 예상 질문</p>
+<div class="frow"><span class="flbl src">출처</span><div class="row">${[['','전체','s-all'],['g','공식 2026','s-g'],['r','작년 후기','s-r'],['x','기출 예제','s-x'],['i','생기부 기반 예상','s-i']].map(([k,l,c])=>`<button class="chip ${c} ${QF.s===k?'on':''}" data-act="qfs" data-v="${k}">${l}</button>`).join('')}</div></div></div>
+
 <div class="list">${list.map(q=>`<button class="item" data-act="q" data-id="${q.id}">${esc(q.q)}<div class="meta">${srcTag(q)}<span class="tag ar">${q.a}</span>${S.cnt[q.id]?`<span class="sub">연습 ${S.cnt[q.id]}회</span>`:''}${S.my[q.id]?'<span class="sub">· 내 답변 있음</span>':''}</div></button>`).join('')}</div>`}
 function vQ(id){const q=QM[id];const c=q.c?CM[q.c]:null;
 return `<button class="back" data-act="close">← 질문 목록</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>
 <button class="btn pri wide" data-act="one" data-id="${id}">이 질문으로 연습</button>
-<details><summary>예상 답변 (먼저 말해 본 뒤에 열기)</summary><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
+<details><summary>AI 예시 답안 (먼저 말해 본 뒤에 열기)</summary><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans" style="margin-top:8px">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}</details>
 <label for="my">내 답변</label><textarea id="my" data-save="my" data-id="${id}">${esc(S.my[id]||'')}</textarea>
 ${c?`<div class="list" style="margin-top:12px"><button class="item" data-act="card" data-id="${c.id}"><span class="sub">관련 활동 카드</span><br><span class="tag ${c.r}">${c.r}</span> <b>${esc(c.t)}</b></button></div>`:''}`}
 /* INFO */
@@ -212,12 +261,33 @@ function vInfo(){const n=S.notice;return `<h1>자료</h1>
 <li><b>인재상</b> 인성과 전문성을 갖춘 교육실천가 · <b>핵심역량</b> 수업전문성, 교육리더십, 생태시민성, 의사소통력, 도덕적상상력 (구판 브로슈어, 지금과 다를 수 있음)</li>
 <li><b>교육과정</b> 1학년은 무학과제, 이후 12개 심화과정(윤리·국어·사회·수학·과학·실과·음악·미술·체육·초등·영어·컴퓨터). 교육과정에 초등안전교육, 응급처치 및 심폐소생술 포함. 일본 오사카교육대학·효고교육대학 학생교류 (2027 요강)</li></ul>
 <p class="sub">문구를 외워서 읊기보다, 내 활동을 말한 뒤 한 문장으로 연결하는 정도가 안전합니다.</p></details>
+<details open><summary>답변 형식</summary>
+<p class="sub">한 답변은 1분 안팎. 8분에 질문 3~4개와 꼬리질문이 오갑니다.</p>
+<table class="fmt"><tr><th>순서</th><th>내용</th><th>길이</th></tr>
+<tr><td>1. 결론</td><td>"저는 ○○라고 생각합니다." 먼저 말하기</td><td>1문장</td></tr>
+<tr><td>2. 이유</td><td>왜 그런지 1~2개</td><td>2문장</td></tr>
+<tr><td>3. 내 경험</td><td>생기부 활동 하나: 무엇을, 왜, 어떻게, 무엇을 배웠는지</td><td>3~4문장</td></tr>
+<tr><td>4. 교사가 되면</td><td>그 배움을 교실에서 어떻게 쓸지</td><td>1~2문장</td></tr>
+<tr><td>5. 보완(필요할 때)</td><td>부족한 점을 인정하고 대학에서 배울 것</td><td>1문장</td></tr></table>
+<p class="sub">결론을 먼저 말하는 방식은 청주교대 학생부종합전형 안내서가 권하는 방식입니다(다른 교대 자료).</p></details>
+<details><summary>어려운 질문 판단 순서</summary><p class="sub">상황 질문(학생 갈등, 학부모, AI 등)은 머릿속으로 이 순서를 거친 뒤 답합니다.</p><ul>
+<li><b>① 아이</b> 가장 영향받는 아이, 가장 약한 아이는 누구인가</li>
+<li><b>② 사실</b> 확인된 것과 모르는 것은 무엇인가. 단정하지 않기</li>
+<li><b>③ 관점</b> 아이·학부모·동료교사·학교 각각의 입장</li>
+<li><b>④ 원칙</b> 학습권·안전·공정·존중 중 무엇이 걸려 있나</li>
+<li><b>⑤ 실천</b> 지금 할 수 있는 구체 행동 + 다시 일어나지 않게 할 예방</li></ul></details>
 <details><summary>답변 원칙</summary><ul>
-<li>결론 먼저 → 내 활동 사례 → 초등교사와 연결</li>
-<li>한 답변은 1분 안팎</li>
-<li>생기부에 없는 일, 하지 않은 결과는 말하지 않기 (평가항목이 '기재사항의 신뢰도')</li>
+<li>생기부에 없는 일, 하지 않은 결과는 말하지 않기 (평가항목이 '학생부 기재사항의 신뢰도')</li>
 ${(META.rules||[]).map(r=>`<li>${esc(r)}</li>`).join('')}
-<li>모르는 것은 "그 부분은 정확히 모릅니다. 다만 ~"으로 정직하게</li></ul></details>
+<li>모르는 것은 "그 부분은 정확히 모릅니다. 다만 ~"으로 정직하게</li>
+<li>꼬리질문에서 새 조건이 나오면: "그 조건이라면 처음 생각을 조금 바꿔야 할 것 같습니다. 먼저 ○○를 확인하겠습니다."</li></ul>
+<h3>피해야 할 답</h3><ul>
+<li><b>추상적 다짐</b> "모든 아이를 사랑하는 교사가 되겠습니다"로 끝내지 않기. 경험과 구체 행동을 붙이기</li>
+<li><b>한쪽 편만 들기</b> 무조건 학생 편, 무조건 교사 편을 피하고 원칙과 소통을 함께</li>
+<li><b>혼자 다 해결하기</b> 학부모·동료교사·학교와 함께 해결한다고 말하기</li>
+<li><b>진로 변경 감추기</b> 1학년 기록은 면접관도 보고 있음. 먼저 인정하기</li>
+<li><b>외운 문장 낭독</b> 핵심 단어만 기억하고 말은 그 자리에서 만들기</li>
+<li><b>개인정보</b> 학교명, 부모 직업은 말하지 않기 (전주교대 요강에 블라인드 여부 명시는 없음)</li></ul></details>
 <details><summary>면접 당일 체크리스트</summary><ul>
 <li>수험표, 신분증 (인정: 주민등록증, 운전면허증, 청소년증, 학생증 등)</li>
 <li>면접고사장과 대기실에서 휴대전화 소지 불가</li>
@@ -228,27 +298,31 @@ ${(META.rules||[]).map(r=>`<li>${esc(r)}</li>`).join('')}
 <label for="ne">제시문</label><select id="ne" data-save="notice" data-f="essay">${['미확인','없음','있음'].map(x=>`<option ${n.essay===x?'selected':''}>${x}</option>`).join('')}</select>
 <label for="nq">기본 질문 수</label><select id="nq" data-save="notice" data-f="qn">${['3','4'].map(x=>`<option ${n.qn===x?'selected':''}>${x}</option>`).join('')}</select>
 <label for="nm">기타 (집결 시간, 장소, 진행 방식)</label><textarea id="nm" data-save="notice" data-f="memo">${esc(n.memo||'')}</textarea></details>
+<details open><summary>내 답변 PDF로 저장</summary><p class="sub">내가 직접 적은 내용만 모아 PDF로 저장합니다(기본 답변, 질문별 내 답변, 활동 카드). AI 예시 답안은 넣지 않습니다.</p>
+<button class="btn sm" data-act="pdf">PDF로 저장</button><p class="sub" style="font-size:12px;margin-top:6px">인쇄 창이 열리면 대상(프린터)을 <b>PDF로 저장</b>으로 고르세요. 아이폰은 공유 버튼에서 저장할 수 있습니다.</p></details>
 <details><summary>내 입력 백업</summary><p class="sub">입력 내용은 이 기기의 이 브라우저에만 저장됩니다. 다른 기기로 옮기거나 지워질 때를 대비해 백업하세요.</p>
 <button class="btn sm" data-act="exp">백업 파일 내려받기</button>
 <label for="imp">백업 불러오기 (파일 선택)</label><input type="file" id="imp" accept=".json,application/json"></details>`}
 /* EVENTS */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-tab]');if(!b)return;
-if(b.dataset.tab){QF={a:'',s:''};go(b.dataset.tab);return}
+if(b.dataset.tab){QF={a:'',s:''};if(b.dataset.tab==='info'&&!S.seenRules){S.seenRules=true;save()}go(b.dataset.tab);return}
 const a=b.dataset.act,id=b.dataset.id,v=V.view;
 if(a==='one')startOne(id);
+else if(a==='pdf')myPdf();
 else if(a==='onerand'){const pool=QUESTIONS.filter(q=>!b.dataset.a||q.a===b.dataset.a);startOne(leastPick(pool).id)}
 else if(a==='q')go('qs',{k:'q',id});
 else if(a==='card')go('cards',{k:'card',id});
 else if(a==='core')go('cards',{k:'core',id});
-else if(a==='close'){go(V.tab)}
+else if(a==='close'){back()} else if(a==='mute'){S.mute=!S.mute;save();render();toast(S.mute?'알림음을 껐습니다':'알림음을 켰습니다')} else if(a==='readrules'){S.seenRules=true;save();HIST=[];go('info')}
 else if(a==='dur'){v.dur=+b.dataset.s;render()}
-else if(a==='start1'){v.ph='run';v.left=v.dur;v.t0=Date.now();render();TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
+else if(a==='start1'){ding();v.ph='run';v.left=v.dur;v.t0=Date.now();render();recStart(v.id);TM=setInterval(()=>{v.left=v.dur-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=15)}if(v.left<=0)endOne()},250)}
 else if(a==='end1')endOne();
+else if(a==='recdel'){const rid=Number(b.dataset.rid);ask('이 녹음을 삭제할까요?','삭제','취소',()=>recDel(rid).then(recShow).catch(()=>toast('삭제하지 못했습니다')))}
 else if(a==='again1'){V.view={k:'one',id:v.id,ph:'ready',dur:v.dur};render()}
 else if(a==='next1'){const q=QM[v.id];const pool=QUESTIONS.filter(x=>x.a===q.a&&x.id!==q.id);startOne(leastPick(pool.length?pool:QUESTIONS).id)}
 else if(a==='mockgo')go('prac',{k:'mock',ph:'setup',n:S.notice.qn||'3',fu:true,last:false});
 else if(a==='mn'){v.n=b.dataset.v;v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;render()}
-else if(a==='mockstart'){v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;v.items=buildMock(v.n,v.fu,v.last);v.i=0;v.times=[];v.ph='run';v.left=480;v.t0=Date.now();v.qt=Date.now();render();window.scrollTo(0,0);
+else if(a==='mockstart'){ding();v.fu=document.getElementById('mfu').checked;v.last=document.getElementById('mlast').checked;v.items=buildMock(v.n,v.fu,v.last);v.i=0;v.times=[];v.ph='run';v.left=480;v.t0=Date.now();v.qt=Date.now();render();window.scrollTo(0,0);
 TM=setInterval(()=>{v.left=480-(Date.now()-v.t0)/1000;const t=document.getElementById('tm');if(t){t.textContent=mmss(v.left);t.classList.toggle('low',v.left<=60)}if(v.left<=0){v.timeout=true;mockNext(true)}},250)}
 else if(a==='mocknext')mockNext(false);
 else if(a==='mockstop'){ask('모의면접을 그만할까요? 이번 회차 기록은 저장되지 않습니다.','그만하기','계속하기',()=>{stopTimer();V={tab:'prac',view:null};render();window.scrollTo(0,0)})}
@@ -258,14 +332,25 @@ else if(a==='qfa'){QF.a=b.dataset.v;render()}
 else if(a==='qfs'){QF.s=b.dataset.v;render()}
 else if(a==='exp'){try{const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(blob);const l=document.createElement('a');l.href=u;l.download=(META.backupName||'면접연습_백업')+'_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}catch(err){toast('이 화면에서는 내려받기를 할 수 없습니다. 브라우저로 열어 주세요.')}}
 });
-function endOne(){const v=V.view;stopTimer();v.used=Math.min(v.dur,(Date.now()-v.t0)/1000);v.ph='done';S.cnt[v.id]=(S.cnt[v.id]||0)+1;S.log.push({t:Date.now(),m:'one',q:v.id,sec:v.used});save();render()}
-function mockNext(timeout){const v=V.view;v.times[v.i]=(Date.now()-v.qt)/1000;v.qt=Date.now();if(timeout||v.i>=v.items.length-1){stopTimer();v.ph='done';V.view=v;render();window.scrollTo(0,0);return}v.i++;render()}
+function endOne(){const v=V.view;stopTimer();recStop(true);bellEnd();v.used=Math.min(v.dur,(Date.now()-v.t0)/1000);v.ph='done';S.cnt[v.id]=(S.cnt[v.id]||0)+1;S.log.push({t:Date.now(),m:'one',q:v.id,sec:v.used});save();render()}
+function mockNext(timeout){const v=V.view;v.times[v.i]=(Date.now()-v.qt)/1000;v.qt=Date.now();if(timeout||v.i>=v.items.length-1){stopTimer();bellEnd();v.ph='done';V.view=v;render();window.scrollTo(0,0);return}v.i++;render()}
 document.addEventListener('input',e=>{const el=e.target,k=el.dataset.save;if(!k)return;const id=el.dataset.id;
 if(k==='my'){S.my[id]=el.value}else if(k==='core'){S.core[id]=el.value}else if(k==='card'){(S.cards[id]=S.cards[id]||{})[el.dataset.f]=el.value}else if(k==='notice'){S.notice[el.dataset.f]=el.value}save()});
 document.addEventListener('change',e=>{const el=e.target;if(el.dataset.save==='real'){(S.cards[el.dataset.id]=S.cards[el.dataset.id]||{}).real=el.checked;save()}
 else if(el.dataset.save==='notice'){S.notice[el.dataset.f]=el.value;save()}
 else if(el.id==='imp'&&el.files[0]){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);ask('지금 입력한 내용을 백업 파일 내용으로 바꿀까요?','바꾸기','취소',()=>{S=Object.assign(blank(),d);save();render();toast('백업을 불러왔습니다.')})}catch(err){toast('백업 파일을 읽을 수 없습니다.')}};r.readAsText(el.files[0])}});
-function bindAfter(){}
+function myPdf(){const t=x=>String(x||'').trim();
+ const core=CORE.filter(c=>t(S.core[c.id])).map(c=>`<section><h3>${esc(c.t)}</h3><div class="pt">${esc(t(S.core[c.id]))}</div></section>`);
+ const qs=QUESTIONS.filter(q=>t(S.my[q.id])).map(q=>`<section><h3>${esc(q.id)}. ${esc(q.q)}</h3><div class="pt">${esc(t(S.my[q.id]))}</div></section>`);
+ const cards=CARDS.map(c=>{const d=S.cards[c.id]||{};const f=FIELDS.filter(([k])=>t(d[k]));return f.length?`<section><h3>${esc(c.t)}</h3>${f.map(([k,l])=>`<p class="pl">${esc(l)}</p><div class="pt">${esc(t(d[k]))}</div>`).join('')}</section>`:''}).filter(Boolean);
+ if(!core.length&&!qs.length&&!cards.length){toast('아직 직접 작성한 내용이 없습니다');return}
+ const day=new Date(),p=n=>String(n).padStart(2,'0'),ds=`${day.getFullYear()}-${p(day.getMonth()+1)}-${p(day.getDate())}`;
+ let el=document.getElementById('printout');if(el)el.remove();el=document.createElement('div');el.id='printout';
+ el.innerHTML=`<h1>${esc(WHO)} 면접 답변 모음</h1><p class="pd">${ds} 저장 · 직접 작성한 내용만</p>`+(core.length?`<h2>기본 답변</h2>${core.join('')}`:'')+(qs.length?`<h2>질문별 내 답변</h2>${qs.join('')}`:'')+(cards.length?`<h2>활동 카드</h2>${cards.join('')}`:'');
+ document.body.appendChild(el);const name=`${WHO}_면접답변_${ds}`,old=document.title;let pold=null;document.title=name;try{pold=parent.document.title;parent.document.title=name}catch(e){}
+ const done=()=>{document.title=old;try{if(pold!==null)parent.document.title=pold}catch(e){}const x=document.getElementById('printout');if(x)x.remove();window.removeEventListener('afterprint',done)};
+ window.addEventListener('afterprint',done);setTimeout(()=>{try{window.print()}catch(e){toast('이 화면에서는 인쇄 창을 열 수 없습니다');done()}},50)}
+function bindAfter(){if(document.getElementById('recs'))recShow()}
 render();
 </script>
 </body></html>
