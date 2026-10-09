@@ -1,0 +1,2 @@
+/* 로딩 화면을 벗어나면 영상도 멈춥니다. */
+(()=>{const loading=document.getElementById('loading'),video=loading?.querySelector('video');if(!video)return;video.muted=true;const sync=()=>{if(loading.hidden||document.hidden){video.pause();}else{video.play().catch(()=>{});}};new MutationObserver(sync).observe(loading,{attributes:true,attributeFilter:['hidden']});document.addEventListener('visibilitychange',sync);sync();})();

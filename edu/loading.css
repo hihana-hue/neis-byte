@@ -11,3 +11,6 @@
 
 .mari-loading-english{font-size:14px;font-weight:500;letter-spacing:.06em;color:#1c555a}
 @media(max-width:768px){.mari-loading-icon{width:56px;height:56px;margin:12px 0 18px}}
+
+.mari-loading-video{display:block;width:112px;height:112px;object-fit:cover;border-radius:50%;clip-path:circle(50%);border:0;background:transparent;margin:16px 0 22px}
+@media(max-width:768px){.mari-loading-video{width:25vw;height:25vw;max-width:120px;max-height:120px;margin:12px 0 18px}}
