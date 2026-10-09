@@ -65,7 +65,7 @@ ul{padding-left:20px;margin:6px 0}
 .notice{background:var(--warnbg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0}
 .hide-ans{filter:blur(6px);user-select:none}
 .check{display:flex;gap:8px;align-items:flex-start;font-weight:500}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin:-6px 0 6px;font-size:13px}.topbar a{color:var(--pri);text-decoration:none;font-weight:600}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin:-6px 0 6px;font-size:13px}.topbar a{color:var(--pri);text-decoration:none;font-weight:600} .topbar .tl{display:flex;align-items:center;gap:8px;min-width:0} .topbar .sep{width:1px;height:14px;background:var(--line);flex:none} .topbar a{white-space:nowrap} .cheer{font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .check input{width:22px;height:22px;flex:none;margin-top:2px}
 .ov{position:fixed;inset:0;background:rgba(10,15,25,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .ovc{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.25)}
@@ -157,7 +157,7 @@ function cardSt(id){const c=S.cards[id]||{};const f=['f1','f2','f3','f4','f5'].f
 const ST=['○ 비어 있음','◐ 작성 중','● 완성'];
 function pickToday(){const pend=QUESTIONS.filter(q=>q.c&&CM[q.c]&&CM[q.c].r!=='B'&&cardSt(q.c)<2);const pool=pend.length?pend:QUESTIONS;const d=new Date();const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);return pool[doy%pool.length]}
 function render(){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===V.tab));document.getElementById('nav').classList.toggle('hide',!!(V.view&&V.view.k==='mock'&&V.view.ph==='run'));const m=document.getElementById('main');m.innerHTML=(STORE_OK?'':'<div class="notice">이 브라우저에서는 입력 내용이 저장되지 않을 수 있습니다. 자료 탭의 백업을 사용하세요.</div>')+(V.view?'':topbar())+view();bindAfter()}
-function topbar(){if(!window.MARI_ACCOUNT)return '';return `<div class="topbar"><a href="https://www.marihome.co.kr/" target="_top">⌂ MARI EDU LAB</a><button class="back" data-act="logout">로그아웃</button></div>`}
+function topbar(){const ch=META.cheer?`<span class="cheer">${esc(META.cheer)}</span>`:'';if(!window.MARI_ACCOUNT)return ch?`<div class="topbar">${ch}</div>`:'';return `<div class="topbar"><div class="tl"><a href="https://www.marihome.co.kr/" target="_top">⌂ MARI EDU LAB</a>${ch?'<i class="sep"></i>'+ch:''}</div><button class="back" data-act="logout">로그아웃</button></div>`}
 function view(){const v=V.view;if(v){if(v.k==='q')return vQ(v.id);if(v.k==='card')return vCard(v.id);if(v.k==='core')return vCore(v.id);if(v.k==='one')return vOne();if(v.k==='mock')return vMock()}
 return({home:vHome,prac:vPrac,cards:vCards,qs:vQs,info:vInfo})[V.tab]()}
 /* HOME */
