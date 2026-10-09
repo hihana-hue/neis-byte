@@ -97,10 +97,10 @@ const mmss=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%
 const srcTag=q=>`<span class="tag ${SRC[q.s][1]}">${SRC[q.s][0]}</span>`;
 /* 말하기 시작 알림음 '띵동' (버튼을 누를 때만 재생) */
 let AC=null;function audio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
-function tones(list,type){if(S.mute)return;const c=audio();if(!c)return;const t=c.currentTime;list.forEach(([f,d,len])=>{const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(0.35,t+d+0.015);g.gain.exponentialRampToValueAtTime(0.0001,t+d+len);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+len+0.05)})}
+function tones(list,type){if(S.mute)return;const c=audio();if(!c)return;const t=c.currentTime;list.forEach(([f,d,len])=>{const o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t+d);g.gain.exponentialRampToValueAtTime(type==='sine'&&f<600?0.45:0.35,t+d+(f<600?0.04:0.015));g.gain.exponentialRampToValueAtTime(0.0001,t+d+len);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+len+0.05)})}
 function ding(){audio();tones([[1318.5,0,0.6],[1046.5,0.28,0.6]],'sine')}
 /* 끝 알림음 '띠리': 음이 아래로 내려가는 짧은 종소리 */
-function bellEnd(){tones([[1568,0,0.35],[1175,0.14,0.35],[784,0.28,0.9]],'triangle')}
+function bellEnd(){tones([[523.25,0,0.55],[392,0.2,0.55],[261.63,0.4,1.2]],'sine')}
 let V={tab:'home',view:null};let TM=null;
 function stopTimer(){if(TM){clearInterval(TM);TM=null}}
 /* 화면 안 확인창·알림 (브라우저 기본 창을 쓰지 않음) */
@@ -131,7 +131,7 @@ ${step(mocks>0,5,'8분 모의면접','질문 3~4개 + 꼬리질문을 실제처�
 </ol></details>`;
 const bar=(n,t)=>`<div class="bar"><i style="width:${Math.round(n/t*100)}%"></i></div>`;
 return guide+`<div class="card"><div class="sub">${esc(META.exam||'면접')} · ${esc(META.dateLabel||'')}</div><div class="dday">${d>0?'D-'+d:d===0?'오늘 면접':'면접 종료'}</div>${META.notice?`<div class="sub" style="margin-top:6px">${esc(META.notice)}</div>`:''}</div>
-<div class="card"><div class="sub">오늘의 연습</div><div style="font-weight:700;font-size:18px;margin:6px 0 10px">${esc(tq.q)}</div><div class="row">${srcTag(tq)}<span class="tag ar">${tq.a}</span><button class="snd" data-act="mute" aria-pressed="${S.mute?'true':'false'}" title="${S.mute?'알림음 켜기':'알림음 끄기'}" aria-label="${S.mute?'알림음 꺼짐. 누르면 켜기':'알림음 켜짐. 누르면 끄기'}">${S.mute?'🔇':'🔊'}</button></div><div style="margin-top:12px"><button class="btn pri wide" data-act="one" data-id="${tq.id}">이 질문으로 연습</button></div></div>
+<div class="card"><div class="sub">오늘의 연습</div><div style="font-weight:700;font-size:18px;margin:6px 0 10px">${esc(tq.q)}</div><div class="row">${srcTag(tq)}<span class="tag ar">${tq.a}</span></div><div style="margin-top:12px"><button class="btn pri wide" data-act="one" data-id="${tq.id}">이 질문으로 연습</button></div></div>
 <div class="card"><h3 style="margin-top:0">준비 상황</h3><div class="stat"><span>기본 답변</span><b>${cDone}/5</b></div>${bar(cDone,5)}<div class="stat" style="margin-top:10px"><span>활동 카드 완성</span><b>${kDone}/${CARDS.length}</b></div>${bar(kDone,CARDS.length)}<div class="stat" style="margin-top:10px"><span>8분 모의면접</span><b>${mocks}회</b></div></div>
 <button class="btn pri wide" data-act="mockgo">8분 모의면접 시작</button>
 <div class="card"><h3 style="margin-top:0">최근 연습</h3>${recent}</div>`}
@@ -145,7 +145,7 @@ function leastPick(pool){const min=Math.min(...pool.map(q=>S.cnt[q.id]||0));cons
 /* ONE QUESTION */
 function vOne(){const v=V.view,q=QM[v.id];const c=q.c?CM[q.c]:null;
 let h=`<button class="back" data-act="close">← 나가기</button><div class="row">${srcTag(q)}<span class="tag ar">${q.a}</span></div><div class="qbig">${esc(q.q)}</div>`;
-if(v.ph==='ready'){h+=`<div class="order"><b>답변 순서</b> 결론 → 이유 → 내 경험 → 교사가 되면</div><div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}</div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
+if(v.ph==='ready'){h+=`<div class="order"><b>답변 순서</b> 결론 → 이유 → 내 경험 → 교사가 되면</div><div class="sub">말할 시간</div><div class="row" style="margin:6px 0 14px">${[60,90,120].map(s=>`<button class="chip ${v.dur===s?'on':''}" data-act="dur" data-s="${s}">${mmss(s)}</button>`).join('')}<button class="snd" data-act="mute" aria-pressed="${S.mute?'true':'false'}" title="${S.mute?'알림음 켜기':'알림음 끄기'}" aria-label="${S.mute?'알림음 꺼짐. 누르면 켜기':'알림음 켜짐. 누르면 끄기'}">${S.mute?'🔇':'🔊'}</button></div><button class="btn pri wide" data-act="start1">말하기 시작</button>${c?`<details><summary>관련 활동 카드 보기</summary><p class="sub">${esc(c.p)}</p><p class="rec">${esc(brk(c.rec))}</p></details>`:''}`}
 else if(v.ph==='run'){h+=`<div class="timer ${v.left<=15?'low':''}" id="tm">${mmss(v.left)}</div><p class="sub" style="text-align:center">소리 내어 답해 보세요. 끝나면 버튼을 누르세요.</p><button class="btn pri wide" data-act="end1">끝냈어요</button>`}
 else{h+=`<div class="card"><div class="sub">걸린 시간 ${mmss(v.used)}</div><h3>AI 예시 답안</h3><p class="sub aiwarn">AI가 생기부 기록으로 만든 <b>예시</b>입니다. 외우지 말고 핵심 단어만 가져가 내 말로 바꾸세요.</p><div class="ans">${fmt(q.ans)}</div>${q.tip?`<div class="tip">${esc(q.tip)}</div>`:''}<p class="sub" style="margin-top:8px">노란 부분은 ${esc(WHO)}만 알 수 있는 내용입니다. 실제 있었던 일로 채우세요.</p></div>
 <label for="my">내 답변 (AI 예시를 참고해 내 말로 고쳐 저장)</label><textarea id="my" data-save="my" data-id="${q.id}" placeholder="여기에 내 답변을 적어 두면 다음에 다시 볼 수 있어요.">${esc(S.my[q.id]||'')}</textarea>
