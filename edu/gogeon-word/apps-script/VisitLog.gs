@@ -39,9 +39,9 @@ function visitMigrateTab_(s){
  s.showColumns(5,2);s.hideColumns(7,2);
 }
 
-function visitRecord_(a,s,app,isNew){
+function visitRecord_(a,s,app,isNew,knownLayout){
  const label=VISIT_LABELS[app]||String(app);
- const layout=deviceLayout_(s,a),first=layout.dailyRow+1,n=Math.max(0,s.getLastRow()-layout.dailyRow);
+ const layout=knownLayout||deviceLayout_(s,a),first=layout.dailyRow+1,n=Math.max(0,s.getLastRow()-layout.dailyRow);
  const rows=n?s.getRange(first,1,n,5).getDisplayValues():[];
  const cache=CacheService.getScriptCache(),key='visit:'+a.id+':'+app,last=Number(cache.get(key)||0);
  const now=Date.now(),day=visitDay_(now),stamp=visitTime_(now);
@@ -51,7 +51,6 @@ function visitRecord_(a,s,app,isNew){
  if(i<0){const blank=rows.findIndex(r=>r.every(c=>String(c).trim()===''));row=blank<0?first+n:first+blank;values=[label,day,stamp,isNew?1:0,visitDuration_(add)];}
  else{const r=rows[i];row=first+i;values=[label,day,isNew?stamp:r[2],(Number(r[3])||0)+(isNew?1:0),visitDuration_(visitParseDuration_(r[4])+add)];}
  s.getRange(row,1,1,5).setNumberFormat('@').setValues([values.map(String)]);
- if(isNew)s.getRange('C2').setValue(new Date(now));
+
  cache.put(key,String(now),21600);
 }
-function visitAfterLogin_(id,app){return lock_(()=>{const a=account_(id);if(a)visitRecord_(a,tab_(a),app,true);});}

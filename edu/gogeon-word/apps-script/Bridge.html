@@ -1,6 +1,6 @@
 <!doctype html><html><meta charset="utf-8"><script>
 // No user interface, vocabulary or credentials in this fixed transport bridge.
-const nonce='__BRIDGE_NONCE__';const origins=new Set(['https://www.marihome.co.kr','https://marihome.co.kr']);const methods=new Set(['mariSignIn','mariRestore','mariCheck','mariSave','signOut','examRecordingReady']);
+const nonce='__BRIDGE_NONCE__';const origins=new Set(['https://www.marihome.co.kr','https://marihome.co.kr']);const methods=new Set(['mariSignIn','mariReplaceDevice','mariRestore','mariCheck','mariSave','signOut','examRecordingReady']);
 window.addEventListener('message',e=>{if(e.source!==window.top||!origins.has(e.origin)||e.data?.channel!=='mari-rpc'||e.data.nonce!==nonce||!methods.has(e.data.method)||!Array.isArray(e.data.args))return;const request=e.data;const reply=value=>window.top.postMessage({channel:'mari-rpc-result',nonce,id:request.id,...value},e.origin);const run=google.script.run.withSuccessHandler(result=>reply({ok:true,result})).withFailureHandler(error=>reply({ok:false,error:error.message||'서버 연결 실패'}));run[request.method](...request.args);});
 for(const origin of origins)window.top.postMessage({channel:'mari-bridge-ready',nonce,accessVersion:1},origin);
 </script></html>
