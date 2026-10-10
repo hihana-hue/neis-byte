@@ -2,7 +2,7 @@
  const loader=document.getElementById('loading'),canvas=document.getElementById('economyDance');
  if(!loader||!canvas)return;
  const ctx=canvas.getContext('2d'),video=document.createElement('video');
- video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src='./loading-dancer.mp4';
+ video.muted=true;video.loop=true;video.playsInline=true;video.preload='auto';video.src='./loading-dancer-v2.mp4';
  let started=0,frame=0,active=false;
  function draw(now){
   if(!active)return;
