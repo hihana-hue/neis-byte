@@ -24,7 +24,7 @@ function deviceMigrateHeader_(s){
  if(s.getRange('C1').getDisplayValue()!=='최초등록일'){
   s.getRange('C1').setValue('최초등록일');s.getRange('C2').clearContent();
  }
- s.getRange('C2').setNumberFormat('yyyy-mm-dd');s.getRange('A3:B3').setValues([['기기변경 횟수',0]]);
+ s.getRange('C2').setNumberFormat('yyyy-mm-dd HH:mm:ss');s.getRange('A3:B3').setValues([['기기변경 횟수',0]]);
  s.getRange('I4').setValue('기기 판별 정보');s.hideColumns(7,3);
 }
 function deviceLimitResult_(a,rows){return {deviceLimit:true,id:a.id,limit:a.limit,devices:rows.filter(r=>r[3]==='등록').map(r=>({generation:String(r[7]),name:deviceTitle_(r[8]||r[0],r[1]),lastSeen:r[2] instanceof Date?Utilities.formatDate(r[2],'Asia/Seoul','yyyy-MM-dd HH:mm'):'확인 불가'}))};}
@@ -35,7 +35,8 @@ function login(id,pin,remember,device,label,replaceGeneration,app){
   const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');
   const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);
   const permissions=app?mariRequire_(a,app):null;if(!app&&replaceGeneration)throw Error('앱 설정을 확인하세요.');
-  const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),dh=hash_(device),registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);
+  const payload=app?mariPayload_(a.id,app):null;
+  const s=tab_(a,true),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),dh=hash_(device),registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);
   let slot=deviceSlot_(rows,dh,identity),changed=false;const now=new Date();
   if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 관리자에게 문의하세요.');
   if(slot<0){
@@ -50,7 +51,7 @@ function login(id,pin,remember,device,label,replaceGeneration,app){
   }else{rows[slot][2]=now;rows[slot][8]=identity.label;rows[slot][0]=deviceTitle_(identity.label,rows[slot][1]);rows[slot][6]=[...new Set([...deviceHashes_(rows[slot][6]),dh])].join(' ');}
   s.getRange(5+slot,1,1,9).setValues([rows[slot]]);if(changed)s.getRange('B3').setValue((Number(s.getRange('B3').getValues()[0][0])||0)+1);
   const token=Utilities.getUuid()+Utilities.getUuid(),p=PropertiesService.getScriptProperties();cleanSessions_();p.setProperty('session:'+hash_(token),JSON.stringify({id:a.id,device:dh,generation:rows[slot][7],version:a.version,expiry:Date.now()+(remember?30:1)*86400000}));
-  return {token,id:a.id,permissions,a,s,layout};
+  return {token,id:a.id,permissions,a,s,layout,payload};
  });
 }
 function deviceRefresh_(token,device,label){
@@ -64,8 +65,21 @@ function deviceMemberLink_(id,tab){
  const i=rows.findIndex(r=>r[col].trim()===id);if(i<0)return;
  const url=book.getUrl()+'#gid='+tab.getSheetId();s.getRange(i+2,col+1).setRichTextValue(SpreadsheetApp.newRichTextValue().setText(id).setLinkUrl(url).build());
 }
-// 서버 반영 뒤 한 번 실행. 기존 회원 탭 상단을 바꾸고 시트1 아이디 링크를 준비합니다.
+// 기존 회원 탭만 정리합니다. 아직 로그인하지 않은 회원 탭은 만들지 않습니다.
 function setupDeviceManagement(){return lock_(()=>{
- const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getDisplayValues(),h=rows.shift(),col=h.indexOf('아이디');if(col<0)throw Error('아이디 열이 없습니다.');let n=0;
- rows.forEach(r=>{const id=String(r[col]||'').trim();if(!id)return;const a=account_(id);let tab=db_().getSheetByName(id);if(a){tab=tab_(a);deviceLayout_(tab,a);}else if(tab&&tab.getRange('A2').getDisplayValue()===id){visitMigrateTab_(tab);deviceMigrateHeader_(tab);}else return;if(a){const layout=deviceLayout_(tab,a),devices=tab.getRange(5,1,layout.capacity,9).getValues();devices.forEach((d,i)=>{const identity=deviceIdentity_(d[8]||d[0]);if(identity)tab.getRange(5+i,1).setValue(identity.label);});}deviceMemberLink_(id,tab);n++;});return n+'개 회원 탭과 아이디 링크를 준비했습니다.';
+ const book=db_(),members=book.getSheetByName('시트1'),rows=members.getDataRange().getDisplayValues(),headers=rows.shift(),col=headers.indexOf('아이디');
+ if(col<0)throw Error('아이디 열이 없습니다.');
+ let count=0;
+ rows.forEach(r=>{
+  const id=String(r[col]||'').trim(),tab=id&&book.getSheetByName(id);
+  if(!tab||tab.getRange('A2').getDisplayValue()!==id)return;
+  visitMigrateTab_(tab);deviceMigrateHeader_(tab);
+  const labels=tab.getRange(1,1,Math.min(tab.getLastRow(),110),1).getDisplayValues(),dailyRow=labels.findIndex(r=>r[0]==='접속구분'||r[0]==='날짜')+1;
+  if(dailyRow<10)throw Error('접속 기록 헤더를 찾을 수 없습니다.');
+  const devices=tab.getRange(5,1,dailyRow-7,9).getValues();
+  devices.forEach((d,i)=>{const identity=deviceIdentity_(d[8]||d[0]);if(identity&&d[0]!==identity.label)tab.getRange(5+i,1).setValue(identity.label);});
+  tab.getRange('C2').setNumberFormat('yyyy-mm-dd HH:mm:ss');
+  deviceMemberLink_(id,tab);count++;
+ });
+ return count+'개 기존 회원 탭과 아이디 링크를 정리했습니다.';
 });}
