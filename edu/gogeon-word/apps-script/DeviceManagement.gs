@@ -1,4 +1,4 @@
-// 기기 정보는 I열에 보존하고, 사용자에게는 이름·등록일·마지막 접속만 표시합니다.
+// 기기명·운영체제·화면 크기를 표시하고, 세 항목이 같으면 같은 기기로 인정합니다.
 function deviceIdentity_(label){
  const p=String(label||'').trim().split(/\s*·\s*/),size=p[2]&&p[2].match(/^(\d{1,6})[×x](\d{1,6})$/);
  if(p.length!==3||!p[0]||p[0].length>40||/^[=+@-]/.test(p[0])||!['Android','Windows','iOS','macOS','ChromeOS','Linux','기타'].includes(p[1])||!size)return null;
@@ -6,12 +6,13 @@ function deviceIdentity_(label){
  const name=p[0]==='폰'?'모바일':p[0]==='노트북'?'PC':p[0];
  return {name,label:[name,p[1],dims.join('×')].join(' · '),generic:['PC','모바일','태블릿'].includes(name)};
 }
-function deviceTitle_(label,date){const name=deviceIdentity_(label)?.name||String(label||'기기').split(' · ')[0];return name+' · '+(date instanceof Date&&!isNaN(date.getTime())?Utilities.formatDate(date,'Asia/Seoul','yyMMdd'):'등록일 미상');}
+function deviceTitle_(label,date){return deviceIdentity_(label)?.label||String(label||'기기');}
 function deviceSlot_(rows,hash,identity){
- // 모델명이 없으면 같은 화면이어도 브라우저별 등록값으로 구분합니다.
- const byHash=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(hash));if(byHash>=0)return byHash;
- if(identity&&!identity.generic)return rows.findIndex(r=>r[3]==='등록'&&deviceIdentity_(r[8]||r[0])?.label===identity.label);
- return -1;
+ if(!identity)return -1;
+ const same=rows.findIndex(r=>r[3]==='등록'&&deviceIdentity_(r[8]||r[0])?.label===identity.label);
+ if(same>=0)return same;
+ // 상세 정보가 없는 예전 등록만 기존 브라우저 식별값으로 복구합니다.
+ return rows.findIndex(r=>r[3]==='등록'&&!deviceIdentity_(r[8]||r[0])&&deviceHashes_(r[6]).includes(hash));
 }
 function deviceMigrateHeader_(s){
  if(s.getRange('I4').getDisplayValue()==='기기 판별 정보')return;
@@ -66,5 +67,5 @@ function deviceMemberLink_(id,tab){
 // 서버 반영 뒤 한 번 실행. 기존 회원 탭 상단을 바꾸고 시트1 아이디 링크를 준비합니다.
 function setupDeviceManagement(){return lock_(()=>{
  const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getDisplayValues(),h=rows.shift(),col=h.indexOf('아이디');if(col<0)throw Error('아이디 열이 없습니다.');let n=0;
- rows.forEach(r=>{const id=String(r[col]||'').trim();if(!id)return;const a=account_(id);let tab=db_().getSheetByName(id);if(a){tab=tab_(a);deviceLayout_(tab,a);}else if(tab&&tab.getRange('A2').getDisplayValue()===id){visitMigrateTab_(tab);deviceMigrateHeader_(tab);}else return;deviceMemberLink_(id,tab);n++;});return n+'개 회원 탭과 아이디 링크를 준비했습니다.';
+ rows.forEach(r=>{const id=String(r[col]||'').trim();if(!id)return;const a=account_(id);let tab=db_().getSheetByName(id);if(a){tab=tab_(a);deviceLayout_(tab,a);}else if(tab&&tab.getRange('A2').getDisplayValue()===id){visitMigrateTab_(tab);deviceMigrateHeader_(tab);}else return;if(a){const layout=deviceLayout_(tab,a),devices=tab.getRange(5,1,layout.capacity,9).getValues();devices.forEach((d,i)=>{const identity=deviceIdentity_(d[8]||d[0]);if(identity)tab.getRange(5+i,1).setValue(identity.label);});}deviceMemberLink_(id,tab);n++;});return n+'개 회원 탭과 아이디 링크를 준비했습니다.';
 });}
