@@ -22,11 +22,26 @@ function rpc(method,args){if(!accessVersion){const legacy={mariSignIn:MARI_APP_I
 function fail(error){document.body.classList.remove('authenticated');token='';$('loading').hidden=true;$('login').hidden=false;$('status').textContent=error.message||'연결 실패';frame.hidden=true;busy=false;}
 function clearSession(){try{localStorage.removeItem('mari-session');sessionStorage.removeItem('mari-session')}catch{}}
 async function showApp(r){const response=await fetch('./app.html',{cache:'no-store'});if(!response.ok)throw Error('학습 화면을 불러오지 못했습니다.');const html=await response.text();const bootstrap=JSON.stringify({MARI_ACCOUNT:r.id,MARI_COMPLETED:r.completed||[],MARI_DATA:r.data,MARI_COVERAGE:r.coverage}).replace(/</g,'\\u003c');frame.onload=()=>{document.body.classList.add('authenticated');$('loading').hidden=true;frame.hidden=false;};frame.srcdoc=html.replace('<head>','<head><script>Object.assign(window,'+bootstrap+');<\/script>');$('login').hidden=true;busy=false;}
-async function restore(){const t=storageGet(localStorage,'mari-session')||storageGet(sessionStorage,'mari-session');if(!t){$('loading').hidden=true;$('login').hidden=false;return}token=t;try{await showApp(await rpc('mariRestore',[token,MARI_APP_ID,deviceId,await window.MariDevice.label()]))}catch(error){clearSession();fail(error)}}
+
+function invalidSession(error){return /^(다시 로그인하세요\.|로그인이 만료되었습니다\.|관리자가 이 기기를 해제했습니다\.|관리자가 기기한도를 줄였습니다\.)$/.test(error.message||'');}
+function handleAuthError(error){if(invalidSession(error))clearSession();fail(error);}
+let restoreRetry=null;
+function setRestoreRetry(show){
+ if(!restoreRetry){restoreRetry=document.createElement('button');restoreRetry.type='button';restoreRetry.textContent='저장된 로그인으로 다시 시도';restoreRetry.style.cssText='display:block;margin:16px auto;padding:12px 18px';restoreRetry.onclick=()=>{if(!busy)restore();};$('login').after(restoreRetry);}
+ restoreRetry.hidden=!show;restoreRetry.style.display=show?'block':'none';
+}
+async function restore(){
+ const t=storageGet(localStorage,'mari-session')||storageGet(sessionStorage,'mari-session');
+ setRestoreRetry(false);
+ if(!t){$('loading').hidden=true;$('login').hidden=false;return}
+ busy=true;token=t;$('login').hidden=true;$('loading').hidden=false;
+ try{await showApp(await rpc('mariRestore',[token,MARI_APP_ID,deviceId,await window.MariDevice.label()]))}
+ catch(error){handleAuthError(error);if(!invalidSession(error)){setRestoreRetry(true);$('status').textContent=(error.message||'연결 실패')+' 저장된 로그인은 유지됩니다.';}}
+}
 let pendingDeviceLogin=null,devicePanel=null;
 async function acceptSignIn(r){
  if(r.deviceLimit){showDeviceLimit(r);return;}
- if(devicePanel)devicePanel.hidden=true;pendingDeviceLogin=null;clearSession();token=r.token;
+ setRestoreRetry(false);if(devicePanel)devicePanel.hidden=true;pendingDeviceLogin=null;clearSession();token=r.token;
  try{($('remember').checked?localStorage:sessionStorage).setItem('mari-session',token)}catch{}
  $('pin').value='';await showApp(r);
 }
@@ -45,10 +60,10 @@ function showDeviceLimit(r){
  try{await acceptSignIn(await rpc('mariReplaceDevice',[...pendingDeviceLogin,chosen.value]));}catch(error){if(devicePanel.hidden)fail(error);else status.textContent=error.message||'기기 변경 실패';}finally{busy=false;submit.disabled=false;cancel.disabled=false;}};
 }
 $('login').onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;$('login').hidden=true;$('loading').hidden=false;try{deviceLabel=await window.MariDevice.label();pendingDeviceLogin=[$('id').value,$('pin').value,$('remember').checked,deviceId,deviceLabel,MARI_APP_ID];await acceptSignIn(await rpc('mariSignIn',pendingDeviceLogin));}catch(error){pendingDeviceLogin=null;fail(error)}};
-function signOut(){const previous=token;clearSession();token='';frame.srcdoc='';fail({message:'로그아웃되었습니다.'});rpc('signOut',[previous]).catch(()=>{});}
-window.addEventListener('message',async e=>{const d=e.data;if(e.source===frame.contentWindow){if(!token)return;if(d?.channel==='mari-logout'){signOut();return}if(d?.channel==='mari-progress'){try{await rpc('mariSave',[token,d.event,MARI_APP_ID]);frame.contentWindow.postMessage({channel:'mari-ack',eventId:d.event.eventId},location.origin)}catch(error){if(/로그인|기기|만료|권한/.test(error.message))fail(error)} }return}
+function signOut(){setRestoreRetry(false);const previous=token;clearSession();token='';frame.srcdoc='';fail({message:'로그아웃되었습니다.'});rpc('signOut',[previous]).catch(()=>{});}
+window.addEventListener('message',async e=>{const d=e.data;if(e.source===frame.contentWindow){if(!token)return;if(d?.channel==='mari-logout'){signOut();return}if(d?.channel==='mari-progress'){try{await rpc('mariSave',[token,d.event,MARI_APP_ID]);frame.contentWindow.postMessage({channel:'mari-ack',eventId:d.event.eventId},location.origin)}catch(error){if(invalidSession(error)||/이 앱의 이용 권한이 없습니다/.test(error.message))handleAuthError(error)} }return}
  const trusted=e.origin==='https://script.googleusercontent.com'||/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/.test(e.origin);if(!trusted||d?.nonce!==nonce)return;
  if(d.channel==='mari-bridge-ready'&&!endpoint){accessVersion=d.accessVersion===1?1:0;endpoint=e.source;endpointOrigin=e.origin;bridge.style.display='none';restore();return}
  if(e.source!==endpoint||d.channel!=='mari-rpc-result')return;const request=requests.get(d.id);if(!request)return;clearTimeout(request.timer);requests.delete(d.id);d.ok?request.resolve(d.result):request.reject(Error(d.error));});
-setInterval(()=>{if(token)rpc('mariCheck',[token,MARI_APP_ID]).catch(error=>{if(/로그인|기기|만료|권한/.test(error.message))fail(error)})},60000);
+setInterval(()=>{if(token)rpc('mariCheck',[token,MARI_APP_ID]).catch(error=>{if(invalidSession(error)||/이 앱의 이용 권한이 없습니다/.test(error.message))handleAuthError(error)})},60000);
 if(typeof window.MARI_APP_URL==='string'&&/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(window.MARI_APP_URL)){bridge.src=window.MARI_APP_URL+'?nonce='+encodeURIComponent(nonce);}else fail(Error('서버 주소 설정이 필요합니다.'));
