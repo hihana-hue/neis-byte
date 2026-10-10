@@ -21,7 +21,8 @@ function cleanSessions_(){const p=PropertiesService.getScriptProperties(),all=p.
 function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(v.device)&&r[7]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s,layout,rows,v};}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
 function recordProgress(token,event){return lock_(()=>saveClassic_(session_(token,true).a,event));}
-function saveClassic_(a,event){if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');const valid=new Set(cardIds_());const ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));if(event.type==='answer'&&(!valid.has(String(event.cardId))||typeof event.correct!=='boolean'))throw Error('문항 오류');PropertiesService.getScriptProperties().setProperty('state:'+hash_(a.id),JSON.stringify(ids));return {ok:true};}
+function saveClassic_(a,event){return learningSave_(a.id,'classic',event,new Set(cardIds_()));}
+
 
 function corpus_(){
  const id=PropertiesService.getScriptProperties().getProperty('DATA_SHEET_ID');if(!id)throw Error('DATA_SHEET_ID 설정이 필요합니다.');
@@ -56,7 +57,7 @@ function deviceLayout_(s,a){
  if(s.getRange('A3').getDisplayValue()!=='기기변경 횟수')s.getRange('A3:B3').setValues([['기기변경 횟수',0]]);return {capacity,dailyRow};
 }
 
-function studentPayload_(id){const c=corpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('state:'+hash_(id))||'[]')};}
+function studentPayload_(id){const c=corpus_(),state=learningRead_(id,'classic');return {id,data:c.data,coverage:c.coverage,...state};}
 function saveLearning(token,event){return recordProgress(token,event);}
 function signOut(token){return logout(token);}
 
@@ -72,10 +73,25 @@ function economyCorpus_(){
  data.push({id:cid,word:get(r,'단어'),genre:get(r,'갈래')||'경제',cat:get(r,'분류')||'기타',def:get(r,'뜻'),title:get(r,'작품명')||'경제 전제지식',displayQuote:get(r,'원문 예문'),modernExplanation:get(r,'뜻풀이'),caution:get(r,'주의'),displaySource:get(r,'교재')+' · '+get(r,'쪽수'),displayCitation:{title:get(r,'작품명')},catalogBooks:['수능특강','수능완성 수록작'].filter(b=>get(r,'교재').includes(b==='수능특강'?'수능특강':'수능완성')),sources:['수능특강','수능완성 수록작'].filter(b=>get(r,'교재').includes(b==='수능특강'?'수능특강':'수능완성')).map(book=>({book,title:get(r,'작품명')||'경제 전제지식'})),linkedWorks:[],hanjaExplanation:get(r,'한자 설명')?[{character:'',meaning:get(r,'한자 설명'),reading:''}]:[]});}
  return {data,coverage:{cardCount:data.length,works:[],suwanWorks:[]}};
 }
-function economyPayload_(id){const c=economyCorpus_();return {id,data:c.data,coverage:c.coverage,completed:JSON.parse(PropertiesService.getScriptProperties().getProperty('economy:state:'+hash_(id))||'[]')};}
+function economyPayload_(id){const c=economyCorpus_(),state=learningRead_(id,'economy');return {id,data:c.data,coverage:c.coverage,...state};}
 function saveEconomy(token,event){return lock_(()=>saveEconomy_(session_(token,false).a,event));}
-function saveEconomy_(a,event){if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||''))throw Error('잘못된 기록');
- const valid=new Set(economyCorpus_().data.map(d=>d.id)),ids=[...new Set((event.completed||[]).map(String))].filter(id=>valid.has(id));
+function saveEconomy_(a,event){return learningSave_(a.id,'economy',event,new Set(economyCorpus_().data.map(d=>d.id)));}
+
+function learningKey_(id,app){return (app==='economy'?'economy:state:':'state:')+hash_(id);}
+function learningRead_(id,app){
+ const value=JSON.parse(PropertiesService.getScriptProperties().getProperty(learningKey_(id,app))||'[]');
+ if(Array.isArray(value))return {completed:value,revision:0};
+ return {completed:value.completed||[],...(Array.isArray(value.starred)?{starred:value.starred}:{}),revision:Number(value.revision)||0};
+}
+function learningSave_(id,app,event,valid){
+ if(!event||!['answer','finish','progress'].includes(event.type)||!/^[a-zA-Z0-9-]{8,100}$/.test(event.eventId||'')||!Array.isArray(event.completed))throw Error('잘못된 기록');
  if(event.type==='answer'&&(!valid.has(String(event.cardId))||typeof event.correct!=='boolean'))throw Error('문항 오류');
- PropertiesService.getScriptProperties().setProperty('economy:state:'+hash_(a.id),JSON.stringify(ids));return {ok:true};
+ const state=learningRead_(id,app),clean=list=>[...new Set(list.map(String))].filter(id=>valid.has(id)).sort();
+ const completed=clean(event.completed),starred=Array.isArray(event.starred)?clean(event.starred):state.starred;
+ const same=JSON.stringify(completed)===JSON.stringify(clean(state.completed))&&JSON.stringify(starred)===JSON.stringify(state.starred===undefined?undefined:clean(state.starred));
+ if(same)return {ok:true,...state};
+ if((event.revision===undefined&&state.revision!==0)||(event.revision!==undefined&&event.revision!==state.revision))return {ok:false,conflict:true,...state};
+ const next={completed,revision:state.revision+1};if(starred!==undefined)next.starred=starred;
+ PropertiesService.getScriptProperties().setProperty(learningKey_(id,app),JSON.stringify(next));
+ return {ok:true,...next};
 }

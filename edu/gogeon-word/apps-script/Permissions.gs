@@ -10,7 +10,7 @@ function mariFinishLogin_(auth,app){
  if(auth.deviceLimit)return auth;
  try{
   const payload=auth.payload;
-  lock_(()=>{visitRecord_(auth.a,auth.s,app,true,auth.layout);mariFirstLogin_(auth.s);});
+  lock_(()=>{visitRecord_(auth.a,auth.s,app,true,auth.layout);mariFirstLogin_(auth.s);mariLearningCounts_(auth.s,app,payload);});
   return {...payload,token:auth.token,permissions:auth.permissions};
  }catch(error){logout(auth.token);throw error;}
 }
@@ -23,7 +23,7 @@ function mariReplaceDevice(id,pin,remember,device,label,app,generation){
 function mariRestore(token,app,device,label){return lock_(()=>{
  const context=device&&label?deviceRefresh_(token,device,label):session_(token,false),{a,s,layout}=context;
  const permissions=mariRequire_(a,app),payload=mariPayload_(a.id,app);
- visitRecord_(a,s,app,true,layout);mariFirstLogin_(s);
+ visitRecord_(a,s,app,true,layout);mariFirstLogin_(s);mariLearningCounts_(s,app,payload);
  return {...payload,permissions};
 });}
 function mariCheck(token,app){return lock_(()=>{
@@ -33,6 +33,7 @@ function mariCheck(token,app){return lock_(()=>{
 function mariSave(token,event,app){return lock_(()=>{
  const {a,s,layout}=session_(token,false);mariRequire_(a,app);
  const result=app==='classic'?saveClassic_(a,event):app==='economy'?saveEconomy_(a,event):app==='gyodae'?{ok:true}:saveExam(token,event);
+ mariLearningCounts_(s,app,result);
  visitRecord_(a,s,app,false,layout);return result;
 });}
 function setupAppPermissions(){
@@ -41,4 +42,11 @@ function setupAppPermissions(){
  for(const name of names){let col=headers.indexOf(name)+1;if(!col){col=headers.length+1;if(col>sheet.getMaxColumns())sheet.insertColumnsAfter(sheet.getMaxColumns(),col-sheet.getMaxColumns());sheet.getRange(1,col).setValue(name);headers.push(name);}
  const n=sheet.getLastRow()-1;if(n>0){const range=sheet.getRange(2,col,n,1);const values=range.getValues().map(r=>[r[0]===true]);range.setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().setAllowInvalid(false).build());range.setValues(values);}}
  return Object.values(MARI_ACCESS_COLUMNS).join('·')+' 체크박스를 준비했습니다. 허용할 앱을 체크하세요.';
+}
+
+function mariLearningCounts_(s,app,state){
+ const row=app==='classic'?2:app==='economy'?3:0;if(!row||!Array.isArray(state.completed))return;
+ if(s.getRange('D1').getDisplayValue()!=='학습 현황')s.getRange('D1:F3').setValues([['학습 현황','별표 수','완료 수'],['고전어휘','',''],['경제어휘','','']]);
+ const range=s.getRange(row,5,1,2),old=range.getValues()[0],next=[Array.isArray(state.starred)?state.starred.length:old[0],state.completed.length];
+ if(old[0]!==next[0]||old[1]!==next[1])range.setNumberFormat('0').setValues([next]);
 }
