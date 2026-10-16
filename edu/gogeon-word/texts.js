@@ -180,6 +180,14 @@ window.MARI_WORK_TEXTS = {
    "suwan-buyearojeonggi-2"
   ]
  },
+ "수능완성수록작|상춘곡": {
+  "b": "수능완성 수록작",
+  "t": "상춘곡",
+  "a": "정극인",
+  "keys": [
+   "suwan-sangchungok-1"
+  ]
+ },
  "2027수특|원가": {
   "b": "수능특강",
   "t": "원가",
@@ -358,6 +366,14 @@ window.MARI_WORK_TEXTS = {
   "keys": [
    "suwan-buyearojeonggi-1",
    "suwan-buyearojeonggi-2"
+  ]
+ },
+ "2027수완|상춘곡": {
+  "b": "수능완성 수록작",
+  "t": "상춘곡",
+  "a": "정극인",
+  "keys": [
+   "suwan-sangchungok-1"
   ]
  }
 };
