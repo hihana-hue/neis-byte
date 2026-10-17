@@ -1,0 +1,9 @@
+name = "choi-river-notion"
+main = "worker.mjs"
+compatibility_date = "2026-10-17"
+
+[vars]
+ALLOWED_ORIGIN = "https://www.marihome.co.kr"
+SCHOOL_DATA_SOURCE_ID = "2a9215b9-b774-8167-be3a-000bcc48a1f5"
+
+# Set NOTION_TOKEN and RIVER_ACCESS_KEY as encrypted Worker secrets.
