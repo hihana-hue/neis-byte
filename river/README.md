@@ -32,3 +32,16 @@ API 자료: https://developers.notion.com/reference/query-a-data-source , https:
 ## 강이 디자인 적용
 
 블루 눈동자 포인트, 펄 화이트/라일락 배경, 둥근 카드와 버튼을 적용했다. 과제 제목 클릭 시 상세 카드가 열린다. 모바일 상세 카드는 화면 너비 80vw, 높이 50dvh이며 긴 내용은 카드 본문에서 스크롤한다. 노션 원문 링크는 해당 항목 URL이 있을 때만 표시한다. 연결 전에는 샘플이 자동으로 표시되며 실제 데이터가 아님을 화면에 명시한다. 산이 테마는 구현하지 않았다. 푸시 알림은 아직 구현되지 않았다.
+
+
+## Academy lessons
+
+`academy.html` reads and writes the existing Notion academy data source. One page is one lesson. Fields are 수업명 (title), 학원 (select 운동/과학), 수업일시 (date with time), 출결 (select 예정/출석/결석), 변경 전 일시 (date), 변경 이력 (rich text), 회차 차감 (checkbox), 메모 (rich text).
+
+API: authenticated `GET /academy`, `POST /academy` and `PATCH /academy/:id`. Rescheduling changes the same row, resets attendance to 예정 and clears the absence charge; it appends an audit note with previous attendance and old/new dates. Attendance can be returned to 예정. Updates reject stale last_edited_time values; Notion has no atomic compare-and-swap, so simultaneous writes from multiple clients still require care.
+
+Counts use recorded lessons only: attended = 1, absent + charge = 1, otherwise = 0. Workout uses packs of 5; science packs of 4. No opening balance or historical lessons are invented. Formula fields in Notion mirror this rule.
+
+The deployed Cloudflare editor must be updated with `server/worker.mjs` before academy requests work. Existing secrets remain unchanged. ACADEMY_DATA_SOURCE_ID is optional because this user's source ID is the code default. Never place Notion tokens or access keys in GitHub.
+
+Push notifications are NOT implemented: no service worker, subscription store, VAPID credentials or Cron trigger exists yet. Planned academy reminders are previous day 20:00 Asia/Seoul and one hour before class. Date edits must invalidate obsolete reminders; marked absence excludes reminders. UI explicitly labels notifications as not connected.

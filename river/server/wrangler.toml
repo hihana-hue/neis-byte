@@ -7,3 +7,6 @@ ALLOWED_ORIGIN = "https://www.marihome.co.kr"
 SCHOOL_DATA_SOURCE_ID = "2a9215b9-b774-8167-be3a-000bcc48a1f5"
 
 # Set NOTION_TOKEN and RIVER_ACCESS_KEY as encrypted Worker secrets.
+
+
+ACADEMY_DATA_SOURCE_ID = "3fd215b9-b774-806e-9ed3-000b1b1df0f9"
