@@ -9,7 +9,7 @@ async function rpNotion(env,path,method='GET',body){const r=await fetch('https:/
 async function rpPages(env,ds){const pages=[];let cursor;do{const r=await rpNotion(env,'data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...r.results.filter(p=>!p.archived&&!p.in_trash));cursor=r.has_more?r.next_cursor:null;}while(cursor);return pages;}
 function rpJobs(school,academy,now){
  const jobs=[],day=86400000,text=a=>(a||[]).map(x=>x.plain_text??x.text?.content??'').join('');
- const add=(p,type,start,at,title,body,slot,until)=>{if(!Number.isFinite(at)||at>now||now-at>10*60000||at<Date.parse(p.created_time||0)||now>=until)return;jobs.push({id:p.id+':'+start+':'+slot,page:p.id,type,start,at,until,title,body,url:type==='academy'?'/river/academy.html':'/river/'});};
+ const add=(p,type,start,at,title,body,slot,until)=>{if(!Number.isFinite(at)||at>now||now-at>10*60000||at<Date.parse(p.created_time||0)||now>=until)return;jobs.push({id:p.id+':'+start+':'+slot,page:p.id,type,start,at,until,title,body,url:'/river/?'+(type==='academy'?'lesson=':'task=')+encodeURIComponent(p.id)});};
  for(const p of school){const a=p.properties,status=a['상태']?.status?.name,due=a['기한']?.date?.start;if(['완료','봉사완료'].includes(status)||!due)continue;const key=due.slice(0,10),mid=Date.parse(key+'T00:00:00+09:00');if(!Number.isFinite(mid))continue;for(const d of [7,2,1]){const at=mid-d*day+20*3600000;add(p,'school',due,at,(a['과목']?.multi_select||[]).map(x=>x.name).join(' · ')+' · D-'+d,text(a['주제']?.title)+(d===7?' — 이번 주말에 꼭 준비해 둬!':d===2?' — 이틀 남았어. 남은 부분을 준비하자.':' — 내일 마감이야. 제출할 것을 확인하자.'),'d'+d,Math.min(at+3600000,mid+day));}}
  for(const p of academy){const a=p.properties,start=a['수업일시']?.date?.start,status=a['출결']?.select?.name||'예정';if(status!=='예정'||!start||!start.includes('T'))continue;const n=Date.parse(start);if(!Number.isFinite(n))continue;const local=new Date(n+9*3600000).toISOString().slice(0,10),kind=a['학원']?.select?.name||'학원',label=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(n));const before=Date.parse(local+'T20:00:00+09:00')-day;add(p,'academy',start,before,kind+' · 내일 수업',label+' 수업이 있어. 미리 준비해 두자.','eve',Math.min(before+3600000,n));add(p,'academy',start,n-3600000,kind+' · 1시간 뒤 수업',label+' 수업이야. 준비하고 출발하자.','hour',n);}
  return jobs;
@@ -45,7 +45,7 @@ async function rpPushRoute(request,env,reply){
  if(path==='/push/unsubscribe'){await kv.delete('device:'+id);return reply({ok:true});}
  const record=await rpJson(kv,'device:'+id);if(!record)return reply({error:'이 기기의 알림 받기를 먼저 켜 주세요.'},400);
  const now=Date.now();if(await kv.get('test:'+id))return reply({error:'테스트는 1분 뒤에 다시 할 수 있어요.'},429);
- const state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/notifications.html'},keys);await kv.put('test:'+id,'1',{expirationTtl:60});return reply({ok:state==='accepted',state});
+ const state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);await kv.put('test:'+id,'1',{expirationTtl:60});return reply({ok:state==='accepted',state});
 }
 async function rpScheduled(env){
  const kv=env.RIVER_KV;if(!kv)return;const started=Date.now();try{const keys=await rpJson(kv,'vapid:v1'),listed=await rpList(kv,'device:');if(!keys||!listed.length){await kv.put('cron:last',JSON.stringify({at:started,state:'waiting',accepted:0}));return;}
@@ -76,7 +76,8 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const ds=env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9';
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
-   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',start:a['수업일시']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
+   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
+   const validSubtype=(kind,value)=>kind==='과학'?['수업','클리닉'].includes(value):['바디PT','운동'].includes(kind)&&['수업','연습'].includes(value);
    const validStart=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+09:00$/.test(s))return false;const n=Date.parse(s);return Number.isFinite(n)&&new Date(n+9*3600000).toISOString().slice(0,19)===s.slice(0,19);};
    if(path==='/academy'&&request.method==='GET'){
     const pages=[];let cursor;do{const d=await notion('data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...d.results);cursor=d.has_more?d.next_cursor:null;}while(cursor);
@@ -87,7 +88,8 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    let input;try{input=JSON.parse(raw);}catch{return reply({error:'입력 형식을 확인해 주세요.'},400);}
    if(path==='/academy'&&request.method==='POST'){
     if(!['바디PT','운동','과학'].includes(input.kind)||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
-    const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:input.kind+' 수업'}}]},'학원':{select:{name:input.kind}},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)}}});
+    const subtype=input.subtype||'수업';if(!validSubtype(input.kind,subtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);
+    const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:input.kind+' 수업'}}]},'학원':{select:{name:input.kind}},'수업 구분':{select:{name:subtype}},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)}}});
     return reply({ok:true,item:lesson(p)},201);
    }
    const m=path.match(/^\/academy\/([a-f0-9-]{32,36})$/i);
@@ -95,7 +97,8 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const p=await notion('pages/'+m[1]);
    if(p.archived||p.in_trash||p.parent?.type!=='data_source_id'||normalized(p.parent.data_source_id)!==normalized(ds))return reply({error:'학원 DB에 속한 수업이 아닙니다.'},403);
    if(input.action==='attendanceNext'){
-    const old=lesson(p);
+    const old=lesson(p),nextSubtype=input.nextSubtype||old.subtype||'수업';
+    if(!validSubtype(old.kind,nextSubtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);
     if(!['예정','출석'].includes(old.status))return reply({error:'출결이 변경됐어요. 새로고침해 주세요.'},409);
     if(old.status!=='출석'&&(!input.updated||input.updated!==p.last_edited_time))return reply({error:'다른 곳에서 변경된 수업입니다. 새로고침 후 다시 시도해 주세요.'},409);
     if(input.nextStart!==null&&(!validStart(input.nextStart)||Date.parse(input.nextStart)<=Date.parse(old.start||'')))return reply({error:'다음 수업은 이번 수업 이후 날짜로 입력해 주세요.'},400);
@@ -105,10 +108,10 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
      next=linked.results.find(x=>!x.archived&&!x.in_trash)||null;
      if(!next){
       // Reuse an already registered lesson at this exact time rather than duplicate it.
-      const existing=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{and:[{property:'학원',select:{equals:old.kind}},{property:'수업일시',date:{equals:input.nextStart}}]}});
+      const existing=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{and:[{property:'학원',select:{equals:old.kind}},{property:'수업 구분',select:{equals:nextSubtype}},{property:'수업일시',date:{equals:input.nextStart}}]}});
       next=existing.results.find(x=>!x.archived&&!x.in_trash&&x.id!==p.id&&x.properties?.['출결']?.select?.name==='예정')||null;
       if(next)next=await notion('pages/'+next.id,'PATCH',{properties:{'이전 수업 ID':{rich_text:rich(p.id)}}});
-      else next=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:old.kind+' 수업'}}]},'학원':{select:{name:old.kind}},'수업일시':{date:{start:input.nextStart}},'출결':{select:{name:'예정'}},'이전 수업 ID':{rich_text:rich(p.id)}}});
+      else next=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:old.kind+' 수업'}}]},'학원':{select:{name:old.kind}},'수업 구분':{select:{name:nextSubtype}},'수업일시':{date:{start:input.nextStart}},'출결':{select:{name:'예정'}},'이전 수업 ID':{rich_text:rich(p.id)}}});
      }
     }
     if(old.status==='출석')return reply({ok:true,item:old,next:next?lesson(next):null});
@@ -122,7 +125,9 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const old=lesson(p),props={};let entry='';
    if(input.action==='reschedule'){
     if(!validStart(input.start))return reply({error:'새 날짜와 시간을 확인해 주세요.'},400);
-    if(input.start===old.start)return reply({ok:true,item:old});
+    const subtype=input.subtype||old.subtype||'수업';if(!validSubtype(old.kind,subtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);
+    if(input.start===old.start&&subtype===old.subtype)return reply({ok:true,item:old});
+    props['수업 구분']={select:{name:subtype}};
     props['변경 전 일시']={date:old.start?{start:old.start}:null};
     props['수업일시']={date:{start:input.start}};
     // Moving an attended/absent lesson resets it to scheduled, avoiding duplicate counts.
