@@ -2,7 +2,7 @@
 #detail{width:80vw;max-width:420px;height:50vh;height:50dvh;max-height:75dvh;border-radius:12px;padding:0;border:1px solid white;overflow:visible;background:linear-gradient(130deg,#fff,#faf7fb 60%,#f3f9fc);box-shadow:0 20px 60px #58768c40}#detail::backdrop{background:#687d9355}.detail-shell{height:100%;display:flex;flex-direction:column;position:relative}.detail-eyes{position:absolute;top:-37px;left:calc(50% - 43px);display:flex;gap:10px;background:linear-gradient(#fdfcff,#eae4ee);border:2px solid #fff;padding:10px 13px;border-radius:12px;box-shadow:0 5px 12px #5f73842b}.detail-eyes i{width:24px;height:29px}.detail-top{display:flex;align-items:center;justify-content:space-between;padding:17px 13px 0 20px;gap:8px}.detail-subject{background:#e3f1f8;color:#186a92;border:1px solid #d5e8f4;border-radius:12px;padding:6px 12px;font-size:12px;max-width:calc(100% - 44px);overflow-wrap:anywhere}.detail-close{width:44px;height:44px;background:transparent;border:0;color:#8596a6;font-size:26px;flex:none}.detail-body{padding:0 20px;flex:1;min-height:0;overflow:auto}.detail-body h2{font-size:23px;line-height:1.4;font-weight:650;letter-spacing:-.8px;margin:10px 0 17px;overflow-wrap:anywhere}.detail-body dl{display:grid;grid-template-columns:45px 1fr;gap:8px 10px;font-size:12px;line-height:1.5;margin:0}.detail-body dt{color:#657e92}.detail-body dd{margin:0;overflow-wrap:anywhere}#detail-due{color:#146e98;font-weight:650}.detail-reminder{background:#e7f2f8;color:#33627b;border-radius:8px;font-size:12px;line-height:1.65;padding:10px 12px;margin:15px 0 0}.detail-actions{padding:14px 18px 18px;display:flex;gap:8px}.detail-actions>*{min-height:44px;display:flex;align-items:center;justify-content:center;font:650 12px/1.4 system-ui;border-radius:12px;padding:10px;flex:1}.detail-actions a{background:#ecedf3;color:#516278;border:1px solid #e1e3ed}.detail-actions button{border:0;background:linear-gradient(160deg,#43a1c8,#19799f);color:#fff;box-shadow:0 4px 0 #126080,inset 0 1px 2px #c8ecfb}#detail-error{padding:0 20px 12px;margin:0;color:#a04762;font-size:12px}#detail-task{font-size:12px;color:#627c92;margin-top:-8px}
 
 /* Mobile: compact spacing, natural letter spacing, controls on shared rows. */
-@media(max-width:800px){
+@media(min-width:0px){
  body{font-size:14px;line-height:1.4;letter-spacing:0}
  header{padding:6px 8px 0}
  .top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:8px 10px;gap:6px;border-radius:8px}
@@ -66,7 +66,7 @@
 
 /* Desktop: overview on the left, schedules start at the top right. */
 .overview,.schedule-workspace{min-width:0}
-@media(min-width:801px){
+@media(min-width:100000px){
  header{padding:12px 20px 0}
  .top{max-width:1400px;padding:11px 16px;border-radius:12px}
  main{max-width:1400px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start;padding:18px 20px 30px}
@@ -95,11 +95,11 @@
  .schedule-workspace .empty{padding:16px 0;line-height:1.4}
  main>footer{grid-column:1/-1;margin-top:0}
 }
-@media(min-width:801px) and (max-width:1100px){
+@media(min-width:100000px) and (max-width:1100px){
  main{grid-template-columns:250px minmax(0,1fr);gap:14px;padding-left:16px;padding-right:16px}
  .schedule-workspace .layout{grid-template-columns:minmax(0,1fr)}
 }
-@media(max-width:800px){
+@media(min-width:0px){
  .overview,.schedule-workspace{display:contents}
 }
 
@@ -116,7 +116,7 @@
 .task-grid .tags{gap:3px;margin-bottom:4px}
 .task-grid .tag{font-size:10px;padding:3px 6px}
 .task-grid .card-body{overflow-wrap:anywhere}
-@media(min-width:801px){
+@media(min-width:100000px){
  .overview{padding:12px}
  .overview .summary{margin:0}
  .schedule-workspace .layout{grid-template-columns:minmax(0,1fr)}
@@ -125,7 +125,7 @@
  .schedule-workspace .task-grid .meta{font-size:11px}
  .workspace-actions{margin-bottom:9px}
 }
-@media(max-width:800px){
+@media(min-width:0px){
  .top{display:flex;flex-wrap:nowrap;gap:5px;padding:8px}
  .top .brand{font-size:15px;margin-right:auto;gap:3px;min-width:0;flex:none;padding:0;letter-spacing:0}
  .top .btn{width:auto;flex:none;min-height:30px;font-size:10px;line-height:1.2;padding:5px 8px;white-space:nowrap}
@@ -148,7 +148,7 @@
 .write-note{font-size:12px;line-height:1.4;color:#647e93;margin:10px 0}
 .write-result{font-size:12px;line-height:1.4;margin:10px 0 0;color:#146e98}
 .write-result.error{color:#a04762}
-@media(max-width:800px){.write-page{padding:10px}.write-panel{padding:13px}.write-field{margin-bottom:10px}.write-panel h1{font-size:20px;margin-bottom:12px}}
+@media(min-width:0px){.write-page{padding:10px}.write-panel{padding:13px}.write-field{margin-bottom:10px}.write-panel h1{font-size:20px;margin-bottom:12px}}
 
 /* Denser controls and cards: no added title-to-metadata gap. */
 .top{border-radius:12px}
@@ -171,7 +171,7 @@
 #detail{border-radius:16px}
 .detail-reminder{border-radius:8px}
 .detail-actions>*{border-radius:10px}
-@media(max-width:800px){
+@media(min-width:0px){
  .top{padding-top:5px;padding-bottom:5px}
  .top .btn{min-height:26px;padding-top:3px;padding-bottom:3px}
  .summary{margin-bottom:7px}
@@ -193,3 +193,12 @@ main:not(.write-page){display:block;max-width:1100px}
 .completion-hint{font-size:11px;margin-left:8px;color:#697d90}
 .remember-option{display:flex;align-items:center;gap:7px;font-size:13px;margin:0 0 12px}
 dialog .remember-option input{width:17px;height:17px;margin:0;padding:0;flex:none}
+
+/* Phone-width layout on every device. Shared mobile layout. */
+body{width:100%;max-width:480px;margin-inline:auto;min-height:100dvh}
+header{width:100%;padding:6px 8px 0}
+main:not(.write-page),main.write-page{width:100%;max-width:480px;display:block;padding:10px 10px 20px}
+.top{max-width:100%;margin:0}
+.layout{display:block}
+.task-grid{grid-template-columns:minmax(0,1fr)}
+#detail{width:min(80vw,384px)}
