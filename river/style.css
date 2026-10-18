@@ -63,3 +63,42 @@
  .detail-eyes{top:-30px;padding:7px 10px;gap:7px;left:calc(50% - 34px)}
  .detail-eyes i{width:20px;height:24px}
 }
+
+/* Desktop: overview on the left, schedules start at the top right. */
+.overview,.schedule-workspace{min-width:0}
+@media(min-width:801px){
+ header{padding:12px 20px 0}
+ .top{max-width:1400px;padding:11px 16px;border-radius:22px}
+ main{max-width:1400px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start;padding:18px 20px 30px}
+ .overview{position:sticky;top:18px;background:linear-gradient(145deg,#ffffffeb,#f2eef8d9 65%,#eaf4fae6);border:1px solid #fff;border-radius:25px;padding:19px 16px}
+ .overview .intro{display:block;margin-bottom:17px}
+ .overview h1{font-size:30px;line-height:1.23;letter-spacing:-.6px;margin:9px 0}
+ .overview .intro p{font-size:12px;line-height:1.4}
+ .overview .date{margin-top:10px;padding:0;font-size:12px}
+ .overview .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:13px}
+ .overview .stat{padding:11px 12px;border-radius:17px}
+ .overview .stat strong{font-size:25px;line-height:1.2;margin-top:4px}
+ .overview .stat label{font-size:11px}
+ .overview .notice{padding:11px 12px;gap:9px;flex-direction:column;align-items:stretch;margin:0;border-radius:16px;line-height:1.4}
+ .overview .notice .btn{min-height:36px;padding:7px 10px}
+ .schedule-workspace .toolbar{margin:0 0 8px;gap:8px}
+ .schedule-workspace .toolbar input{max-width:none;min-width:0;flex:1;padding:9px 14px}
+ .schedule-workspace .toolbar .btn{padding:8px 13px;min-height:40px}
+ .schedule-workspace .chips{padding:0 0 9px;gap:6px}
+ .schedule-workspace .chip{padding:7px 12px;min-height:36px}
+ .schedule-workspace .layout{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px;margin-top:0}
+ .schedule-workspace .layout>div{min-width:0}
+ .schedule-workspace .panel{padding:16px;margin-bottom:14px;border-radius:22px}
+ .schedule-workspace .range{margin:5px 0 7px;line-height:1.4}
+ .schedule-workspace .card{padding:12px 0;gap:9px}
+ .schedule-workspace .title{line-height:1.4}
+ .schedule-workspace .empty{padding:16px 0;line-height:1.4}
+ main>footer{grid-column:1/-1;margin-top:0}
+}
+@media(min-width:801px) and (max-width:1100px){
+ main{grid-template-columns:250px minmax(0,1fr);gap:14px;padding-left:16px;padding-right:16px}
+ .schedule-workspace .layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:800px){
+ .overview,.schedule-workspace{display:contents}
+}
