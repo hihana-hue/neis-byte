@@ -1,3 +1,4 @@
+import {createAcademy} from './main-academy.mjs?v=1';
 import {groups,todayKey,weekBounds,dayNumber,complete,active} from './model.mjs';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
@@ -13,6 +14,7 @@ function remembered(){try{return localStorage.getItem(authKey)||'';}catch{return
 function forget(){try{localStorage.removeItem(authKey);}catch{}}
 function remember(){try{if($('remember').checked)localStorage.setItem(authKey,token);else forget();}catch{}}
 const displayStatus=s=>complete(s)?'완료':active(s)?'진행 중':'시작 전';
+const academy=createAcademy(api,toast);
 const saving=new Set();let detailItem=null;
 function safeNotionUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&['app.notion.com','www.notion.so','notion.so'].includes(u.hostname)?u.href:null;}catch{return null;}}
 function dueLabel(x){if(!x.due)return '기한 미정';const d=dayNumber(x.due)-dayNumber(todayKey());return `${compact(dayNumber(x.due))} · ${d<0?Math.abs(d)+'일 지남':d===0?'오늘 마감':'D−'+d}`;}
@@ -56,10 +58,10 @@ function render(){const shown=items.filter(x=>!selected||x.subjects.includes(sel
  
  $('left').replaceChildren();$('right').replaceChildren();if(g.overdue.length)panel('left','기한 지난 미완료',g.overdue,'먼저 확인해 주세요.',true);panel('left','이번 주 할 일',g.thisWeek,`${compact(w.start)} — ${compact(w.end-1)} · 오늘부터 남은 일정`);panel('left','다음 주 할 일',g.nextWeek,`${compact(w.end)} — ${compact(w.nextEnd-1)}`);panel('right','진행 중',g.active,'작성 완료는 제출 확인 전까지 표시합니다.');panel('right','시작 예정',g.planned);if(g.undated.length)panel('right','기한을 정해주세요',g.undated);if(g.later.length)panel('left','그 이후 일정',g.later);completedList(shown.filter(x=>complete(x.status)&&Date.parse(x.completedAt||'')>=Date.now()-7*86400000).sort((a,b)=>Date.parse(b.completedAt)-Date.parse(a.completedAt)));}
 async function api(path,opts={}){const r=await fetch(base+path,{...opts,cache:'no-store',headers:{Authorization:'Bearer '+token,...opts.headers}});let data;try{data=await r.json();}catch{throw Error('일정 서버의 응답을 확인하지 못했어요.');}if(r.status===401){forget();token='';}if(!r.ok)throw Error(r.status===401?'접근 암호를 확인해 주세요.':data.error||'저장하지 못했어요. 다시 시도해 주세요.');return data;}
-async function load(){if(loading)return;loading=true;$('connect').disabled=true;try{const data=await api('/tasks');if(!Array.isArray(data.items))throw Error('일정 데이터 형식을 확인해 주세요.');items=data.items;loaded=true;demo=false;selected='';message('노션 연결됨');$('logout').hidden=false;$('connect').textContent='새로고침';$('sync').textContent='최근 불러옴 '+new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}).format(new Date())+' · 월~일 기준';chips();render();}catch(e){message(e.message);throw e;}finally{loading=false;$('connect').disabled=false;}}
+async function load(){if(loading)return;loading=true;$('connect').disabled=true;try{const data=await api('/tasks');if(!Array.isArray(data.items))throw Error('일정 데이터 형식을 확인해 주세요.');items=data.items;loaded=true;demo=false;selected='';message('노션 연결됨');$('logout').hidden=false;$('connect').textContent='새로고침';$('sync').textContent='최근 불러옴 '+new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}).format(new Date())+' · 월~일 기준';chips();render();await academy.load();}catch(e){message(e.message);throw e;}finally{loading=false;$('connect').disabled=false;}}
 $('connect').onclick=()=>{if(!base){message('실제 일정 연결은 준비 중입니다. 노션 DB 바로가기는 지금 사용할 수 있어요.');return;}if(token){load().catch(e=>toast(e.message));return;}$('login').showModal();};
 $('login-form').onsubmit=async e=>{e.preventDefault();token=$('password').value;$('password').value='';$('login').close();try{await load();remember();}catch(e){token='';toast(e.message);}};$('cancel').onclick=()=>$('login').close();
-$('logout').onclick=()=>{$('detail').close();detailItem=null;forget();token='';items=[];loaded=false;selected='';$('logout').hidden=true;$('connect').textContent='불러오기';message('일정 화면을 잠갔어요. 다시 열려면 접근 암호를 입력해 주세요.');chips();render();};
+$('logout').onclick=()=>{$('detail').close();detailItem=null;academy.reset();forget();token='';items=[];loaded=false;selected='';$('logout').hidden=true;$('connect').textContent='불러오기';message('일정 화면을 잠갔어요. 다시 열려면 접근 암호를 입력해 주세요.');chips();render();};
 function showSamples(){demo=true;loaded=true;const w=weekBounds(todayKey()), key=n=>new Date(n*86400000).toISOString().slice(0,10);items=[{id:'sample-1',title:'에세이 초안 다듬기',subjects:['영어 · 샘플'],due:todayKey(),status:'진행 중',submission:'리로스쿨'},{id:'sample-2',title:'탐구 보고서 자료 정리',subjects:['과학 · 샘플'],due:key(w.end+2),status:'시작전',submission:'서면제출'},{id:'sample-3',title:'새로운 멜로디 스케치',subjects:['개인 · 샘플'],due:null,status:'진행 중'}];selected='';message('샘플 화면 · 노션 연결 전');chips();render();};
 $('detail-close').onclick=()=>$('detail').close();
 $('detail-complete').onclick=()=>{if(detailItem)chooseStatus(detailItem);};

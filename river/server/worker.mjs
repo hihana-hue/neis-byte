@@ -86,7 +86,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const raw=await request.text();if(raw.length>12000)return reply({error:'입력 내용이 너무 깁니다.'},413);
    let input;try{input=JSON.parse(raw);}catch{return reply({error:'입력 형식을 확인해 주세요.'},400);}
    if(path==='/academy'&&request.method==='POST'){
-    if(!['운동','과학'].includes(input.kind)||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
+    if(!['바디PT','운동','과학'].includes(input.kind)||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
     const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:input.kind+' 수업'}}]},'학원':{select:{name:input.kind}},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)}}});
     return reply({ok:true,item:lesson(p)},201);
    }
@@ -94,6 +94,30 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    if(!m||request.method!=='PATCH')return reply({error:'요청을 찾지 못했습니다.'},404);
    const p=await notion('pages/'+m[1]);
    if(p.archived||p.in_trash||p.parent?.type!=='data_source_id'||normalized(p.parent.data_source_id)!==normalized(ds))return reply({error:'학원 DB에 속한 수업이 아닙니다.'},403);
+   if(input.action==='attendanceNext'){
+    const old=lesson(p);
+    if(!['예정','출석'].includes(old.status))return reply({error:'출결이 변경됐어요. 새로고침해 주세요.'},409);
+    if(old.status!=='출석'&&(!input.updated||input.updated!==p.last_edited_time))return reply({error:'다른 곳에서 변경된 수업입니다. 새로고침 후 다시 시도해 주세요.'},409);
+    if(input.nextStart!==null&&(!validStart(input.nextStart)||Date.parse(input.nextStart)<=Date.parse(old.start||'')))return reply({error:'다음 수업은 이번 수업 이후 날짜로 입력해 주세요.'},400);
+    let next=null;
+    if(input.nextStart!==null){
+     const linked=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{property:'이전 수업 ID',rich_text:{equals:p.id}}});
+     next=linked.results.find(x=>!x.archived&&!x.in_trash)||null;
+     if(!next){
+      // Reuse an already registered lesson at this exact time rather than duplicate it.
+      const existing=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{and:[{property:'학원',select:{equals:old.kind}},{property:'수업일시',date:{equals:input.nextStart}}]}});
+      next=existing.results.find(x=>!x.archived&&!x.in_trash&&x.id!==p.id&&x.properties?.['출결']?.select?.name==='예정')||null;
+      if(next)next=await notion('pages/'+next.id,'PATCH',{properties:{'이전 수업 ID':{rich_text:rich(p.id)}}});
+      else next=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:old.kind+' 수업'}}]},'학원':{select:{name:old.kind}},'수업일시':{date:{start:input.nextStart}},'출결':{select:{name:'예정'}},'이전 수업 ID':{rich_text:rich(p.id)}}});
+     }
+    }
+    if(old.status==='출석')return reply({ok:true,item:old,next:next?lesson(next):null});
+    const stamp=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',dateStyle:'short',timeStyle:'short'}).format(new Date());
+    const history=(old.history?old.history+'\n':'')+stamp+' 출결 변경: '+old.status+' → 출석';
+    if(history.length>40000)return reply({error:'변경 이력이 길어 저장할 수 없어요. 노션에서 확인해 주세요.'},400);
+    const updated=await notion('pages/'+p.id,'PATCH',{properties:{'출결':{select:{name:'출석'}},'회차 차감':{checkbox:false},'변경 이력':{rich_text:rich(history)}}});
+    return reply({ok:true,item:lesson(updated),next:next?lesson(next):null});
+   }
    if(!input.updated||input.updated!==p.last_edited_time)return reply({error:'다른 곳에서 변경된 수업입니다. 새로고침 후 다시 시도해 주세요.'},409);
    const old=lesson(p),props={};let entry='';
    if(input.action==='reschedule'){
