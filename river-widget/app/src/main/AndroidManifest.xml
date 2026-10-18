@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<uses-permission android:name="android.permission.INTERNET"/>
+<application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="CHOI RIVER 위젯" android:icon="@drawable/ic_river" android:allowBackup="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
+ <activity android:name=".SetupActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+  <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+  <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/></intent-filter>
+ </activity>
+ <activity android:name=".OpenTaskActivity" android:exported="false" android:excludeFromRecents="true" android:theme="@android:style/Theme.NoDisplay"/>
+ <receiver android:name=".RiverWidget" android:exported="false">
+  <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+  <meta-data android:name="android.appwidget.provider" android:resource="@xml/river_widget"/>
+ </receiver>
+ <service android:name=".RiverListService" android:exported="false" android:permission="android.permission.BIND_REMOTEVIEWS"/>
+<service android:name=".SyncJob" android:exported="false" android:permission="android.permission.BIND_JOB_SERVICE"/></application></manifest>

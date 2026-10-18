@@ -1,0 +1,7 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+ android:minWidth="180dp" android:minHeight="48dp" android:minResizeWidth="140dp" android:minResizeHeight="48dp"
+ android:targetCellWidth="3" android:targetCellHeight="1" android:resizeMode="horizontal|vertical"
+ android:initialLayout="@layout/widget" android:previewLayout="@layout/widget"
+ android:updatePeriodMillis="1800000" android:widgetCategory="home_screen"
+ android:configure="kr.co.marihome.riverwidget.SetupActivity" android:widgetFeatures="reconfigurable"
+ android:description="@string/widget_description"/>

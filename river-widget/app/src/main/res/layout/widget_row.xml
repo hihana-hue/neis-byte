@@ -1,0 +1,4 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/row" android:layout_width="match_parent" android:layout_height="22dp" android:orientation="horizontal" android:gravity="center_vertical">
+ <TextView android:id="@+id/marker" android:layout_width="17dp" android:layout_height="match_parent" android:gravity="center_vertical" android:textColor="#19799F" android:textSize="12sp"/>
+ <TextView android:id="@+id/caption" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:gravity="center_vertical" android:singleLine="true" android:ellipsize="end" android:textColor="#23485E" android:textSize="11sp"/>
+</LinearLayout>
