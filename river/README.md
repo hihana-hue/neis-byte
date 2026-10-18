@@ -44,4 +44,21 @@ Counts use recorded lessons only: attended = 1, absent + charge = 1, otherwise =
 
 The deployed Cloudflare editor must be updated with `server/worker.mjs` before academy requests work. Existing secrets remain unchanged. ACADEMY_DATA_SOURCE_ID is optional because this user's source ID is the code default. Never place Notion tokens or access keys in GitHub.
 
-Push notifications are NOT implemented: no service worker, subscription store, VAPID credentials or Cron trigger exists yet. Planned academy reminders are previous day 20:00 Asia/Seoul and one hour before class. Date edits must invalidate obsolete reminders; marked absence excludes reminders. UI explicitly labels notifications as not connected.
+Push notification source is now implemented, but is active only after Cloudflare worker code deployment, RIVER_KV binding, a Cron trigger, and per-device opt-in. Actual phone delivery must be tested separately.
+
+
+## Push setup and verification
+
+1. In Cloudflare, bind KV namespace choi-river-notifications as RIVER_KV.
+2. Replace the dashboard worker code with the complete server/worker.mjs (it includes push-core.mjs inline; no bundler or imports needed). Existing NOTION_TOKEN and RIVER_ACCESS_KEY secrets stay in Cloudflare.
+3. Settings > Trigger events > Cron Triggers: add `*/5 * * * *`. Do not enable duplicate Cron schedules.
+4. Open /river/notifications.html, sign in, and click 알림 서버 준비 once. The server generates VAPID keys inside Cloudflare and stores them in KV; the private key is never returned or committed.
+5. On Galaxy Chrome, allow notifications and enable this device. Wait about a minute for KV propagation before the test. Check a visible phone notification; provider acceptance alone does not prove delivery.
+
+School reminders: D-7/D-2/D-1 at 20:00 Asia/Seoul (D-7 says prepare this weekend). Academy reminders: previous day 20:00 and one hour before class. Only future triggers after record creation/device registration are eligible. Cron catches up at most ten minutes. Marked complete/attended/absent and changed dates are checked again when content is retrieved. Past alerts are not replayed.
+
+Empty VAPID-authenticated Web Push wakes a service worker; the service worker fetches content over HTTPS using a separate device token restricted to its notification inbox/ack. Notion tokens and the site access key are not stored in the service worker. Notification data is in KV for at most one hour; acknowledged messages are deleted. Device registrations persist until disabled or push-provider expiry.
+
+KV is eventually consistent and browser/OS delivery can be delayed. Sent markers, notification tags and acknowledgments reduce duplicates but are not an exactly-once delivery guarantee. A generic update notification is shown if content is unavailable or no longer current. A provider HTTP 201 is acceptance, not a receipt from the phone. No notification action silently changes attendance.
+
+Use `node --check` on the Worker and frontend files after edits. The helper source is server/push-core.mjs; keep its inline copy at the beginning of server/worker.mjs in sync.

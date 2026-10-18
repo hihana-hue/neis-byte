@@ -1,0 +1,4 @@
+const name='choi-river-push-v1';
+function open(){return new Promise((resolve,reject)=>{const r=indexedDB.open(name,1);r.onupgradeneeded=()=>r.result.createObjectStore('settings');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+export async function readPush(){const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction('settings','readonly'),r=tx.objectStore('settings').get('connection');r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);tx.oncomplete=()=>db.close();});}
+export async function writePush(value){const db=await open();return new Promise((resolve,reject)=>{const tx=db.transaction('settings','readwrite');if(value)tx.objectStore('settings').put(value,'connection');else tx.objectStore('settings').delete('connection');tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);});}
