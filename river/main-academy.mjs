@@ -11,7 +11,7 @@ export function createAcademy(api,notify){
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(el('span',icon(x.kind),'academy-icon'),el('strong',kindLabel(x.kind)),el('span',x.subtype||'수업','academy-subtype'),el('span',label(x.start),'academy-time'),el('span',x.start&&Date.parse(x.start)<Date.now()?'확인 필요':'◷ 예정','academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
- function types(kind,selected='수업'){const values=kind==='과학'?['수업','클리닉']:['수업','연습'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
+ function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
  function open(action,x=null){
   if(busy)return;if(!connected){notify('먼저 일정을 불러와 주세요.');return;}
   current=x;mode=action;$('academy-error').textContent='';
