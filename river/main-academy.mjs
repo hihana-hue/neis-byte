@@ -22,7 +22,7 @@ export function createAcademy(api,notify){
   $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':'수업 날짜 · 시간';$('academy-kind').value=x?.kind==='과학'?'과학':'바디PT';types($('academy-kind').value,x?.subtype);
   const next=x?.start?new Date(Date.parse(x.start)+7*86400000).toISOString():null;
   $('academy-date').value=action==='next'?localInput(next):x?localInput(x.start):'';$('academy-date').required=!['status','absent'].includes(action);$('academy-date').disabled=['status','absent'].includes(action);
-  $('academy-save').textContent=action==='next'||action==='add'?'수업 등록하기':'확인';$('academy-cancel').textContent=action==='next'?'지금은 등록 안 함':'닫기';
+  $('academy-save').textContent=action==='next'||action==='add'?'수업 등록하기':'확인';$('academy-cancel').title=action==='next'?'다음 수업을 등록하지 않고 닫기':'닫기';
   if(!$('academy-dialog').open)$('academy-dialog').showModal();
  }
  async function persist(path,body,success){
