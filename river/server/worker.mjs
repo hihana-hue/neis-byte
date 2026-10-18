@@ -135,8 +135,8 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
     entry='일정 변경: '+(old.start||'미정')+' → '+input.start+' / 이전 출결 '+old.status;
    }else if(input.action==='attendance'){
     if(!['예정','출석','결석'].includes(input.status)||typeof input.charge!=='boolean')return reply({error:'출결을 확인해 주세요.'},400);
-    props['출결']={select:{name:input.status}};props['회차 차감']={checkbox:input.status==='결석'&&input.charge};
-    entry='출결 변경: '+old.status+' → '+input.status+(input.status==='결석'?(input.charge?' (회차 차감)':' (차감 없음)'):'');
+    props['출결']={select:{name:input.status}};props['회차 차감']={checkbox:input.status==='결석'&&input.charge&&!['클리닉','연습'].includes(old.subtype)};
+    entry='출결 변경: '+old.status+' → '+input.status+(input.status==='결석'?(input.charge&&!['클리닉','연습'].includes(old.subtype)?' (회차 차감)':' (차감 없음)'):'');
    }else return reply({error:'변경 내용을 확인해 주세요.'},400);
    const stamp=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',dateStyle:'short',timeStyle:'short'}).format(new Date());
    const history=(old.history?old.history+'\n':'')+stamp+' '+entry;

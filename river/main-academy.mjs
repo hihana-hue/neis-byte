@@ -1,4 +1,4 @@
-import {toStart,localInput} from './academy-model.mjs';
+import {toStart,localInput} from './academy-model.mjs?v=2';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false;
@@ -18,7 +18,7 @@ export function createAcademy(api,notify){
   $('academy-dialog-title').textContent=action==='status'?'출석했나요?':action==='next'?'다음 수업을 등록할까요?':action==='change'?'수업 날짜 변경':action==='absent'?'결석으로 기록할까요?':'수업 등록';
   $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start):'';
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';
-  $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent';
+  $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent'||['클리닉','연습'].includes(x?.subtype);
   $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':'수업 날짜 · 시간';$('academy-kind').value=x?.kind==='과학'?'과학':'바디PT';types($('academy-kind').value,x?.subtype);
   const next=x?.start?new Date(Date.parse(x.start)+7*86400000).toISOString():null;
   $('academy-date').value=action==='next'?localInput(next):x?localInput(x.start):'';$('academy-date').required=!['status','absent'].includes(action);$('academy-date').disabled=['status','absent'].includes(action);
@@ -39,7 +39,7 @@ export function createAcademy(api,notify){
  $('academy-form').onsubmit=async e=>{
   e.preventDefault();if(busy||mode==='status')return;let start;try{if(mode!=='absent')start=toStart($('academy-date').value);}catch(err){$('academy-error').textContent=err.message;return;}
   const subtype=$('academy-type').value;
-  const body=mode==='add'?{kind:$('academy-kind').value,start,subtype,note:''}:mode==='change'?{action:'reschedule',start,subtype,updated:current.updated}:mode==='absent'?{action:'attendance',status:'결석',charge:$('academy-charge').checked,updated:current.updated}:{action:'attendanceNext',nextStart:start,nextSubtype:subtype,updated:current.updated};
+  const body=mode==='add'?{kind:$('academy-kind').value,start,subtype,note:''}:mode==='change'?{action:'reschedule',start,subtype,updated:current.updated}:mode==='absent'?{action:'attendance',status:'결석',charge:!['클리닉','연습'].includes(current.subtype)&&$('academy-charge').checked,updated:current.updated}:{action:'attendanceNext',nextStart:start,nextSubtype:subtype,updated:current.updated};
   await persist(mode==='add'?'/academy':'/academy/'+encodeURIComponent(current.id),body,d=>{$('academy-dialog').close();notify(mode==='next'?'다음 수업을 등록했어요.':'노션에 저장했어요.');});
  };
  render();
