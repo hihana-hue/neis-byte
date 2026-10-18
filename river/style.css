@@ -182,3 +182,14 @@
  .chips{padding-top:0;padding-bottom:5px}
  .panel{margin-bottom:8px}
 }
+
+/* Single-column task list without duplicate summary sidebar. */
+main:not(.write-page){display:block;max-width:1100px}
+.task-grid{grid-template-columns:minmax(0,1fr)}
+.pending-complete .title{text-decoration:line-through;color:#778996}
+.pending-complete{background:#edf5f8!important}
+.pending-complete .done{background:#19799f;color:white;border-color:#19799f}
+.confirm-complete{margin-top:5px;min-height:28px;padding:4px 10px;font-size:12px}
+.completion-hint{font-size:11px;margin-left:8px;color:#697d90}
+.remember-option{display:flex;align-items:center;gap:7px;font-size:13px;margin:0 0 12px}
+dialog .remember-option input{width:17px;height:17px;margin:0;padding:0;flex:none}
