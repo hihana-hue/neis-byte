@@ -4,10 +4,8 @@ import android.os.Bundle;
 import android.content.*;
 import android.net.Uri;
 public class OpenTaskActivity extends Activity {
- @Override public void onCreate(Bundle b){super.onCreate(b);String kind=getIntent().getStringExtra("kind"),id=getIntent().getStringExtra("id");
-  Uri.Builder uri=Uri.parse("https://www.marihome.co.kr/river/").buildUpon();
-  if(Data.validId(id)&&("lesson".equals(kind)||"task".equals(kind)))uri.appendQueryParameter(kind,id);
-  try{startActivity(new Intent(Intent.ACTION_VIEW,uri.build()));}catch(ActivityNotFoundException ignored){}
+ @Override public void onCreate(Bundle b){super.onCreate(b);
+  try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://www.marihome.co.kr/river/")));}catch(ActivityNotFoundException ignored){}
   finish();
  }
 }

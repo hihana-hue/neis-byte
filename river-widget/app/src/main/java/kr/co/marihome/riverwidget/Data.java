@@ -13,7 +13,7 @@ final class Data {
   try{
    conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(6000);conn.setReadTimeout(6000);conn.setRequestProperty("Authorization","Bearer "+token);conn.setRequestProperty("Cache-Control","no-cache");
    int code=conn.getResponseCode();
-   if(code==401)throw new Exception("접근 암호를 다시 연결해 주세요.");
+   if(code==401)throw new Exception("위젯 연결이 해제됐어요. 새 연결 코드를 등록해 주세요.");
    if(code!=200)throw new Exception("일정 연결 실패 · 새로고침해 주세요.");
    try(InputStream in=conn.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){
     byte[] buffer=new byte[4096];int n;while((n=in.read(buffer))!=-1){out.write(buffer,0,n);if(out.size()>2000000)throw new Exception("일정 데이터가 너무 많아요.");}
@@ -21,11 +21,24 @@ final class Data {
    }
   }finally{conn.disconnect();}
  }
+ static String pair(String code) throws Exception {
+  HttpURLConnection conn=(HttpURLConnection)new URL(API+"/widget/pair").openConnection();
+  try{conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(6000);conn.setReadTimeout(6000);conn.setRequestMethod("POST");conn.setDoOutput(true);conn.setRequestProperty("Content-Type","application/json");
+   byte[] bytes=new JSONObject().put("code",code).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+   try(OutputStream out=conn.getOutputStream()){out.write(bytes);}
+   int status=conn.getResponseCode();
+   if(status!=200)throw new Exception(status==401?"코드가 만료됐거나 아직 연결되지 않았어요. 잠시 후 재시도하거나 새 코드를 받아 주세요.":"위젯 연결 코드를 확인해 주세요. 서버 코드도 최신 버전이어야 해요.");
+   try(InputStream in=conn.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buf=new byte[1024];int n;while((n=in.read(buf))!=-1){out.write(buf,0,n);if(out.size()>4096)throw new Exception("응답 오류");}
+    String token=new JSONObject(out.toString("UTF-8")).optString("deviceToken");if(!token.matches("[A-Za-z0-9_-]{43}"))throw new Exception("위젯 연결 결과를 확인해 주세요.");return token;}
+  }finally{conn.disconnect();}
+ }
+ static void disconnect(Context c,String token){if(token.isEmpty())return;try{
+  HttpURLConnection conn=(HttpURLConnection)new URL(API+"/widget/disconnect").openConnection();try{conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(5000);conn.setReadTimeout(5000);conn.setRequestMethod("POST");conn.setRequestProperty("Authorization","Bearer "+token);conn.getResponseCode();}finally{conn.disconnect();}
+ }catch(Exception ignored){}}
  static void sync(Context c,String token) throws Exception {
-  JSONObject school=get("/tasks",token),academy=get("/academy",token);
-  if(!(school.opt("items") instanceof JSONArray)||!(academy.opt("items") instanceof JSONArray))throw new Exception("서버의 일정 형식을 확인해 주세요.");
-  JSONObject all=new JSONObject();all.put("school",school.getJSONArray("items"));all.put("academy",academy.getJSONArray("items"));all.put("at",Instant.now().toString());
-  Vault.put(c,"cache",all.toString());c.getSharedPreferences("river-state",0).edit().remove("error").apply();
+  JSONObject all=get("/widget/feed",token);
+  if(!(all.opt("school") instanceof JSONArray)||!(all.opt("academy") instanceof JSONArray))throw new Exception("조회 전용 위젯 서버를 확인해 주세요.");
+  all.put("at",Instant.now().toString());Vault.put(c,"cache",all.toString());c.getSharedPreferences("river-state",0).edit().remove("error").apply();
  }
  static List<Row> rows(Context c){
   List<Row> academy=new ArrayList<>(),school=new ArrayList<>();Instant now=Instant.now();

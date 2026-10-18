@@ -15,7 +15,7 @@ public class RiverWidget extends AppWidgetProvider {
   RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget);
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
-  v.setTextViewText(R.id.empty,!configured?"⚙ 접근 암호를 연결해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");
+  v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");
   v.setTextViewText(R.id.heading,!error.isEmpty()?"학원 · 이번 주 할 일 · 갱신 필요":"학원 · 이번 주 할 일");
   v.setOnClickPendingIntent(R.id.refresh,PendingIntent.getBroadcast(c,id,new Intent(c,RiverWidget.class).setAction(REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.settings,PendingIntent.getActivity(c,id,new Intent(c,SetupActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));

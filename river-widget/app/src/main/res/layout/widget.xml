@@ -6,6 +6,6 @@
  </LinearLayout>
  <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
   <ListView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="match_parent" android:divider="@android:color/transparent" android:dividerHeight="0dp" android:scrollbars="none"/>
-  <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:text="접근 암호를 연결해 주세요." android:textColor="#486B7C" android:textSize="11sp"/>
+  <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:text="위젯 연결 코드를 등록해 주세요." android:textColor="#486B7C" android:textSize="11sp"/>
  </FrameLayout>
 </LinearLayout>

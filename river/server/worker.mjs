@@ -1,3 +1,41 @@
+// Read-only widget credentials are distinct from the dashboard access password.
+async function rpWidgetRoute(request,env,reply){
+ const kv=env.RIVER_KV,path=new URL(request.url).pathname;
+ if(!kv)return reply({error:'Cloudflare RIVER_KV 연결을 확인해 주세요.'},503);
+ const bearer=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');
+ async function input(){const raw=await request.text();if(raw.length>1000)throw Error('request too large');try{return JSON.parse(raw);}catch{return {};}}
+ if(path==='/widget/pairing'||path==='/widget/revoke'){
+  if(request.method!=='POST')return reply({error:'지원하지 않는 요청입니다.'},405);
+  if(!env.RIVER_ACCESS_KEY||!await same(bearer,env.RIVER_ACCESS_KEY))return reply({error:'사이트 접근 암호를 확인해 주세요.'},401);
+  if(path==='/widget/revoke'){for(const prefix of ['widget-device:','widget-pair:'])for(const key of await rpList(kv,prefix))await kv.delete(key.name);return reply({ok:true});}
+  if((await rpList(kv,'widget-device:')).length>=10)return reply({error:'연결된 위젯 기기를 해제한 후 다시 연결해 주세요.'},400);
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',random=crypto.getRandomValues(new Uint8Array(12));
+  const code=Array.from(random,x=>alphabet[x&31]).join(''),token=rpB64(crypto.getRandomValues(new Uint8Array(32))),expiresAt=Date.now()+5*60000;
+  await kv.put('widget-pair:'+await rpHash(code),JSON.stringify({token,expiresAt}),{expirationTtl:300});
+  return reply({ok:true,code:code.match(/.{4}/g).join('-'),expiresAt});
+ }
+ if(path==='/widget/pair'&&request.method==='POST'){
+  const body=await input(),code=String(body.code||'').replaceAll('-','').replaceAll(' ','').toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{12}$/.test(code))return reply({error:'메인 대시보드에서 받은 위젯 연결 코드를 입력해 주세요.'},400);
+  const key='widget-pair:'+await rpHash(code),pair=await rpJson(kv,key);
+  if(!pair||Date.now()>pair.expiresAt)return reply({error:'코드가 없거나 만료됐어요. 대시보드에서 새 코드를 만들어 주세요.'},401);
+  if((await rpList(kv,'widget-device:')).length>=10)return reply({error:'위젯 기기 수를 확인해 주세요.'},400);
+  const id=await rpHash(pair.token);await kv.put('widget-device:'+id,JSON.stringify({id,scope:'widget:read',createdAt:Date.now()}));
+  await kv.delete(key);return reply({ok:true,deviceToken:pair.token});
+ }
+ if(!/^[A-Za-z0-9_-]{43}$/.test(bearer))return reply({error:'위젯 연결 코드를 다시 등록해 주세요.'},401);
+ const id=await rpHash(bearer),device=await rpJson(kv,'widget-device:'+id);
+ if(!device||device.scope!=='widget:read')return reply({error:'해제된 위젯 연결입니다. 새 코드로 연결해 주세요.'},401);
+ if(path==='/widget/disconnect'&&request.method==='POST'){await kv.delete('widget-device:'+id);return reply({ok:true});}
+ if(path!=='/widget/feed'||request.method!=='GET')return reply({error:'위젯에서는 일정 조회만 할 수 있어요.'},405);
+ if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
+ const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9')]);
+ const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
+ const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
+ const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:'예정'};});
+ return reply({school,academy});
+}
+
 // Empty Web Push wakes the service worker; content is fetched over authenticated HTTPS.
 const rpEnc=new TextEncoder();
 function rpB64(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');}
@@ -64,6 +102,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
  const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers});
  if(origin&&origin!==allowed)return reply({error:'허용되지 않은 주소입니다.'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
+ if(new URL(request.url).pathname.startsWith('/widget/')){try{return await rpWidgetRoute(request,env,reply);}catch{return reply({error:'위젯 연결에 실패했어요. 잠시 후 다시 시도해 주세요.'},502);}}
  if(new URL(request.url).pathname.startsWith('/push/')){try{return await rpPushRoute(request,env,reply);}catch{return reply({error:'알림 서버 요청에 실패했어요. 설정을 확인해 주세요.'},502);}}
  if(!env.NOTION_TOKEN||!env.RIVER_ACCESS_KEY||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정이 완료되지 않았습니다.'},503);
  const auth=request.headers.get('Authorization')||'';

@@ -1,4 +1,4 @@
-import {createNotifications} from './notification-popup.mjs?v=1';
+import {createNotifications} from './notification-popup.mjs?v=2';
 import {createAcademy} from './main-academy.mjs?v=5';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
