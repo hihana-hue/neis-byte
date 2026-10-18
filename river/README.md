@@ -28,3 +28,7 @@ GitHub Pages는 정적 화면을 제공하므로 `server/worker.mjs`를 별도 �
 새 글 등록/본문 편집은 이 첫 버전의 범위에 포함되지 않는다.
 
 API 자료: https://developers.notion.com/reference/query-a-data-source , https://developers.notion.com/reference/patch-page
+
+## 강이 디자인 적용
+
+블루 눈동자 포인트, 펄 화이트/라일락 배경, 둥근 카드와 버튼을 적용했다. 과제 제목 클릭 시 상세 카드가 열린다. 모바일 상세 카드는 화면 너비 80vw, 높이 50dvh이며 긴 내용은 카드 본문에서 스크롤한다. 노션 원문 링크는 해당 항목 URL이 있을 때만 표시한다. 연결 전에는 샘플이 자동으로 표시되며 실제 데이터가 아님을 화면에 명시한다. 산이 테마는 구현하지 않았다. 푸시 알림은 아직 구현되지 않았다.
