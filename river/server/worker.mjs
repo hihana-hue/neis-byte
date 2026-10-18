@@ -132,8 +132,23 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    return reply({ok:true,id:page.id,url:page.url},201);
   }
   if(path==='/tasks'&&request.method==='GET'){
-   const pages=[];let cursor;do{const data=await notion(`data_sources/${env.SCHOOL_DATA_SOURCE_ID}/query`,'POST',{page_size:100,filter:{and:[{property:'상태',status:{does_not_equal:'완료'}},{property:'상태',status:{does_not_equal:'봉사완료'}}]},...(cursor?{start_cursor:cursor}:{})});pages.push(...data.results);cursor=data.has_more?data.next_cursor:null;}while(cursor);
-   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({items});
+   const pages=[];let cursor;do{const data=await notion(`data_sources/${env.SCHOOL_DATA_SOURCE_ID}/query`,'POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...data.results);cursor=data.has_more?data.next_cursor:null;}while(cursor);
+   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({items:items.filter(x=>!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000)});
+  }
+  const statusMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/status$/i);
+  if(statusMatch&&request.method==='PATCH'){
+   const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);
+   let input;try{input=JSON.parse(raw);}catch{return reply({error:'변경 내용을 확인해 주세요.'},400);}
+   if(!['시작전','진행 중','완료'].includes(input.status)||typeof input.from!=='string')return reply({error:'변경할 상태를 확인해 주세요.'},400);
+   const page=await notion('pages/'+statusMatch[1]);
+   if(page.archived||page.in_trash||page.parent?.type!=='data_source_id'||normalized(page.parent.data_source_id)!==normalized(env.SCHOOL_DATA_SOURCE_ID))return reply({error:'이 일정표에 속한 항목이 아닙니다.'},403);
+   const current=page.properties?.['상태']?.status?.name||'';
+   if(current!==input.from)return reply({error:'노션에서 상태가 변경됐어요. 새로고침 후 다시 선택해 주세요.'},409);
+   const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
+   if(!source.properties?.['완료일'])await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID,'PATCH',{properties:{'완료일':{date:{}}}});
+   else if(source.properties['완료일'].type!=='date')return reply({error:'노션의 완료일 속성을 날짜 형식으로 설정해 주세요.'},409);
+   const completedAt=input.status==='완료'?new Date().toISOString():null;
+   await notion('pages/'+statusMatch[1],'PATCH',{properties:{'상태':{status:{name:input.status}},'완료일':{date:completedAt?{start:completedAt}:null}}});return reply({ok:true,status:input.status,completedAt});
   }
   const match=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/complete$/i);
   if(match&&request.method==='PATCH'){
