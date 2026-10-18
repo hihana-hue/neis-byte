@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#19799f"><title>일정 쓰기 · CHOI RIVER</title><link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./style.css?v=5"></head>
+<body><header><div class="top"><a class="brand" href="./">CHOI <span>RIVER</span></a><a class="btn" href="./">목록</a><button class="btn primary" id="unlock" type="button">연결</button></div></header>
+<main class="write-page"><section class="write-panel"><h1>일정 쓰기</h1><form id="write-form">
+<label class="write-field"><span>과목</span><select id="subject" required><option value="">과목 선택</option></select></label>
+<label class="write-field"><span>마감일</span><input type="date" id="due" required></label>
+<label class="write-field"><span>주제</span><input type="text" id="topic" maxlength="200" placeholder="해야 할 일을 적어 주세요" required></label>
+<div class="write-actions"><a class="btn" href="./">취소</a><button class="btn primary" id="save" type="submit" disabled>노션에 저장</button></div>
+</form><p id="write-note" class="write-note">노션 연결을 확인하고 있어요.</p><p id="write-result" class="write-result" role="status" aria-live="polite"></p></section></main>
+<dialog id="write-login" aria-labelledby="write-login-title"><form id="access-form"><h2 id="write-login-title">노션 연결</h2><label for="access">접근 암호</label><input type="password" id="access" autocomplete="current-password" required><div class="actions"><button class="btn" type="button" id="access-cancel">취소</button><button class="btn primary" type="submit">연결</button></div></form></dialog>
+<script src="./config.js"></script><script type="module" src="./write.mjs"></script></body></html>
