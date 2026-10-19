@@ -14,11 +14,11 @@ public class RiverWidget extends AppWidgetProvider {
  static void render(Context c,AppWidgetManager m,int id){
   RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget);
   v.setImageViewResource(android.R.id.background,WidgetStyle.drawable(c));v.setInt(android.R.id.background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
-  v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,Math.max(12,WidgetStyle.font(c)-2));v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
+  v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,12);v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
   v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");
-  v.setTextViewText(R.id.heading,!error.isEmpty()?"학원 · 이번 주 할 일 · 갱신 필요":"학원 · 이번 주 할 일");
+  v.setTextViewText(R.id.heading,"CHOI RIVER 포레버");v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));v.setTextColor(R.id.refresh,WidgetStyle.secondary(c));v.setTextColor(R.id.settings,WidgetStyle.secondary(c));
   v.setOnClickPendingIntent(R.id.refresh,PendingIntent.getBroadcast(c,id,new Intent(c,RiverWidget.class).setAction(REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.settings,PendingIntent.getActivity(c,id,new Intent(c,SetupActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.heading,PendingIntent.getActivity(c,id+10000,new Intent(c,OpenTaskActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));

@@ -7,7 +7,7 @@ on:
       - '.github/workflows/river-widget-android.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,6 +27,17 @@ jobs:
           gradle-version: '8.9'
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Keep widget signing identity for subsequent builds
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: choi-river-widget-signing-v1
+      - name: Check push delivery and server syntax
+        run: |
+          node --check river/server/worker.mjs
+          node --check river/notification-popup.mjs
+          node --check river/notifications.mjs
+          node river/server/push-delivery.test.mjs
       - name: Test and build widget APK
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
@@ -46,3 +57,11 @@ jobs:
             river-widget/app/build/reports/tests/
             river-widget/app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+      - name: Publish direct APK download
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.3.apk
+          gh release view widget-1.3 >/dev/null 2>&1 || gh release create widget-1.3 --title "CHOI RIVER Widget 1.3" --notes "Three-column academy panel, school list, white or black background, transparency and font size settings. Browser push notifications require the updated Cloudflare Worker. Device notification receipt is verified separately."
+          gh release upload widget-1.3 CHOI-RIVER-Widget-1.3.apk --clobber

@@ -70,7 +70,8 @@ async function rpDeliver(env,record,job,keys){
  if(r.status===404||r.status===410){await kv.delete('device:'+record.id);return 'expired';}
  if(!r.ok){
   const message=r.status===401||r.status===403?'푸시 서비스가 알림 인증을 거부했어요. 이 기기 알림을 끈 뒤 다시 켜 주세요.':r.status===429?'푸시 서비스 요청이 많아요. 잠시 후 다시 시도해 주세요.':'푸시 서비스가 전송을 거부했어요. HTTP '+r.status;
-  throw rpPushError('PUSH_HTTP_'+r.status,message);
+  let detail='';try{const response=(await r.text()).slice(0,4096);detail=['UnauthorizedRegistration','InvalidRegistration','NotRegistered','InvalidToken','InvalidAudience','InvalidSubject','BadJwtToken','VapidPkHashMismatch','InvalidPublicKey','InvalidVapidToken','MismatchSenderId','InvalidTtl','InvalidTopic'].find(code=>response.includes(code))||'';}catch{}
+  throw rpPushError('PUSH_HTTP_'+r.status+(detail?'_'+detail:''),message);
  }
  // Once the provider accepts the wake-up, a bookkeeping error must not report a send failure.
  try{await kv.put(sent,'1',{expirationTtl:32*86400});}catch{}
@@ -83,12 +84,12 @@ async function rpPushRoute(request,env,reply){
  if(path==='/push/inbox'||path==='/push/ack'){
   const device=await rpDevice(request,env);if(!device)return reply({error:'기기 알림 연결을 다시 설정해 주세요.'},401);
   if(path==='/push/inbox'&&request.method==='GET'){const keys=await rpList(kv,'notice:'+device.id+':'),items=[];for(const k of keys.slice(-20)){const j=await rpJson(kv,k.name);if(j&&Date.now()<j.until&&await rpCurrent(env,j))items.push(j);}return reply({items});}
-  if(path==='/push/ack'&&request.method==='POST'){const raw=await request.text();if(raw.length>2000)return reply({error:'요청이 너무 깁니다.'},413);const body=JSON.parse(raw);if(!Array.isArray(body.ids)||body.ids.length>20||body.ids.some(x=>typeof x!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(x)))return reply({error:'잘못된 요청입니다.'},400);for(const id of body.ids)await kv.delete('notice:'+device.id+':'+id);return reply({ok:true});}
+  if(path==='/push/ack'&&request.method==='POST'){const raw=await request.text();if(raw.length>2000)return reply({error:'요청이 너무 깁니다.'},413);const body=JSON.parse(raw);if(!Array.isArray(body.ids)||body.ids.length>20||body.ids.some(x=>typeof x!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(x)))return reply({error:'잘못된 요청입니다.'},400);for(const id of body.ids)await kv.delete('notice:'+device.id+':'+id);if(body.ids.length)await kv.put('push:last-received',JSON.stringify({at:Date.now(),count:body.ids.length}));return reply({ok:true});}
   return reply({error:'지원하지 않는 요청입니다.'},405);
  }
  const auth=request.headers.get('Authorization')||'';if(!env.RIVER_ACCESS_KEY||!auth.startsWith('Bearer ')||!await same(auth.slice(7),env.RIVER_ACCESS_KEY))return reply({error:'사이트 접근 암호를 확인해 주세요.'},401);
  let keys=await rpPushStage('PUSH_STORAGE','알림 저장소의 인증 키를 읽지 못했어요.',()=>rpJson(kv,'vapid:v1'));
- if(path==='/push/config'&&request.method==='GET')return reply({ready:!!keys,publicKey:keys?.publicKey||null,lastRun:await rpJson(kv,'cron:last')});
+ if(path==='/push/config'&&request.method==='GET')return reply({ready:!!keys,publicKey:keys?.publicKey||null,lastRun:await rpJson(kv,'cron:last'),lastDelivery:await rpJson(kv,'push:last-delivery'),lastReceived:await rpJson(kv,'push:last-received')});
  if(path==='/push/setup'&&request.method==='POST'){
   if(!keys){const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);keys={publicKey:rpB64(await crypto.subtle.exportKey('raw',pair.publicKey)),privateKey:await crypto.subtle.exportKey('jwk',pair.privateKey)};await kv.put('vapid:v1',JSON.stringify(keys));}
   return reply({ok:true,publicKey:keys.publicKey});
@@ -104,12 +105,12 @@ async function rpPushRoute(request,env,reply){
  if(path==='/push/unsubscribe'){await kv.delete('device:'+id);return reply({ok:true});}
  const record=await rpJson(kv,'device:'+id);if(!record)return reply({error:'이 기기의 알림 받기를 먼저 켜 주세요.'},400);
  const now=Date.now();if(await kv.get('test:'+id))return reply({error:'테스트는 1분 뒤에 다시 할 수 있어요.'},429);
- const state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);try{await kv.put('test:'+id,'1',{expirationTtl:60});}catch{}return reply({ok:state==='accepted',state});
+ let state;try{state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);await kv.put('push:last-delivery',JSON.stringify({at:now,state}));}catch(e){try{await kv.put('push:last-delivery',JSON.stringify({at:now,state:'error',code:e.pushCode||'PUSH_INTERNAL'}));}catch{}throw e;}try{await kv.put('test:'+id,'1',{expirationTtl:60});}catch{}return reply({ok:state==='accepted',state});
 }
 async function rpScheduled(env){
  const kv=env.RIVER_KV;if(!kv)return;const started=Date.now();try{const keys=await rpJson(kv,'vapid:v1'),listed=await rpList(kv,'device:');if(!keys||!listed.length){await kv.put('cron:last',JSON.stringify({at:started,state:'waiting',accepted:0}));return;}
  const devices=(await Promise.all(listed.map(k=>rpJson(kv,k.name)))).filter(Boolean),[school,academy]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9')]);const jobs=rpJobs(school,academy,started);let accepted=0;
- for(const device of devices)for(const job of jobs){if(job.at<device.enabledAt)continue;try{if(await rpDeliver(env,device,job,keys)==='accepted')accepted++;}catch{await kv.put('cron:last-error',JSON.stringify({at:Date.now(),error:'푸시 전송 실패'}),{expirationTtl:86400});}}
+ for(const device of devices)for(const job of jobs){if(job.at<device.enabledAt)continue;try{if(await rpDeliver(env,device,job,keys)==='accepted')accepted++;}catch(e){await kv.put('cron:last-error',JSON.stringify({at:Date.now(),error:e?.pushCode||'PUSH_INTERNAL'}),{expirationTtl:86400});}}
  await kv.put('cron:last',JSON.stringify({at:started,state:'ran',accepted}));
  }catch{await kv.put('cron:last',JSON.stringify({at:started,state:'error',error:'노션 또는 알림 서버 연결을 확인해 주세요.'}));}
 }

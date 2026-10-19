@@ -7,7 +7,7 @@ import java.time.*;
 import java.util.*;
 final class Data {
  static final String API="https://choi-river-notion.hihana77.workers.dev";
- static final class Row {String id,kind,caption,sort;Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
+ static final class Row {String id,kind,caption,sort,subject="",title="",due="",date="",time="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
  static JSONObject get(String path,String token) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+path).openConnection();
   try{
@@ -49,12 +49,12 @@ final class Data {
     String kind=x.optString("kind"),name="과학".equals(kind)?"과학":"PT",type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
     String late=OffsetDateTime.parse(start).toInstant().isBefore(now)?" · 출석 확인":"";
-    academy.add(new Row(id,"lesson",name+" "+type+" · "+Schedule.lessonTime(start)+late,start));
+    Row r=new Row(id,"lesson",name+" "+type+" · "+Schedule.lessonTime(start)+late,start);r.subject=name+" "+type;r.title=late.isEmpty()?"":"출석 확인";r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||!Schedule.schoolVisible(x.optString("status"),due,now))continue;
     JSONArray subjects=x.optJSONArray("subjects");String subject=subjects!=null&&subjects.length()>0?subjects.optString(0):"학교";
-    school.add(new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due));
+    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.title=x.optString("title","할 일");r.due=Schedule.dueTime(due);school.add(r);
    }
   }catch(Exception ignored){}
   academy.sort(Comparator.comparing(x->x.sort));school.sort(Comparator.comparing(x->x.sort));academy.addAll(school);return academy;
