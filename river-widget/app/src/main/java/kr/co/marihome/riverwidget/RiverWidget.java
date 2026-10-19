@@ -13,6 +13,8 @@ public class RiverWidget extends AppWidgetProvider {
  static void renderAll(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);int[] ids=m.getAppWidgetIds(new ComponentName(c,RiverWidget.class));for(int id:ids)render(c,m,id);m.notifyAppWidgetViewDataChanged(ids,R.id.list);}
  static void render(Context c,AppWidgetManager m,int id){
   RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget);
+  v.setImageViewResource(android.R.id.background,WidgetStyle.drawable(c));v.setInt(android.R.id.background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
+  v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,Math.max(12,WidgetStyle.font(c)-2));v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
   v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");

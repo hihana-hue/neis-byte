@@ -10,6 +10,7 @@ public class RiverListService extends RemoteViewsService {
   public int getCount(){return rows.size();}public long getItemId(int position){return position;}public boolean hasStableIds(){return false;}public int getViewTypeCount(){return 1;}public RemoteViews getLoadingView(){return null;}
   public RemoteViews getViewAt(int position){
    if(position<0||position>=rows.size())return null;Data.Row row=rows.get(position);RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget_row);
+   v.setTextViewTextSize(R.id.caption,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));v.setTextViewTextSize(R.id.marker,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
    v.setTextViewText(R.id.marker,"lesson".equals(row.kind)?"◷":"·");v.setTextViewText(R.id.caption,row.caption);
    v.setOnClickFillInIntent(R.id.row,new Intent().putExtra("kind",row.kind).putExtra("id",row.id));return v;
   }
