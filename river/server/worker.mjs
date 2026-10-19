@@ -36,6 +36,9 @@ async function rpWidgetRoute(request,env,reply){
  return reply({school,academy});
 }
 
+function rpPushError(code,message){const e=new Error(message);e.pushCode=code;return e;}
+async function rpPushStage(code,message,fn){try{return await fn();}catch(e){if(e?.pushCode)throw e;throw rpPushError(code,message);}}
+function rpPushReplyError(e){return e?.pushCode?{error:e.message+' ['+e.pushCode+']',code:e.pushCode}:{error:'알림 서버 요청을 처리하지 못했어요. Cloudflare 설정을 확인해 주세요. [PUSH_INTERNAL]',code:'PUSH_INTERNAL'};}
 // Empty Web Push wakes the service worker; content is fetched over authenticated HTTPS.
 const rpEnc=new TextEncoder();
 function rpB64(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');}
@@ -53,8 +56,26 @@ function rpJobs(school,academy,now){
  return jobs;
 }
 function rpEndpoint(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&!u.hash&&value.length<3000&&((u.hostname==='fcm.googleapis.com'&&/^\/(fcm\/send|wp)\//.test(u.pathname))||(u.hostname==='updates.push.services.mozilla.com'&&u.pathname.startsWith('/wpush/')));}catch{return false;}}
-async function rpWake(record,keys,topic){if(!rpEndpoint(record.endpoint))throw Error('지원하지 않는 푸시 주소입니다.');const aud=new URL(record.endpoint).origin,h=rpB64(rpEnc.encode(JSON.stringify({typ:'JWT',alg:'ES256'}))),p=rpB64(rpEnc.encode(JSON.stringify({aud,exp:Math.floor(Date.now()/1000)+3600,sub:'https://www.marihome.co.kr/river/'})));const key=await crypto.subtle.importKey('jwk',keys.privateKey,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);const sig=rpB64(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,rpEnc.encode(h+'.'+p)));return fetch(record.endpoint,{method:'POST',redirect:'error',headers:{Authorization:'vapid t='+h+'.'+p+'.'+sig+', k='+keys.publicKey,TTL:'600',Urgency:'high',Topic:topic},signal:AbortSignal.timeout(12000)});}
-async function rpDeliver(env,record,job,keys){const kv=env.RIVER_KV,id=await rpHash(job.id),sent='sent:'+record.id+':'+id;if(await kv.get(sent))return 'skipped';await kv.put('notice:'+record.id+':'+id,JSON.stringify({...job,id}),{expirationTtl:3600});const r=await rpWake(record,keys,id.slice(0,32));if(r.status===404||r.status===410){await kv.delete('device:'+record.id);return 'expired';}if(!r.ok)throw Error('푸시 서비스 전송 실패 ('+r.status+')');await kv.put(sent,'1',{expirationTtl:32*86400});return 'accepted';}
+async function rpWake(record,keys,topic){
+ if(!rpEndpoint(record.endpoint))throw rpPushError('PUSH_ENDPOINT','이 기기의 알림 주소를 확인하지 못했어요. 알림 끄기 후 다시 켜 주세요.');
+ const aud=new URL(record.endpoint).origin,h=rpB64(rpEnc.encode(JSON.stringify({typ:'JWT',alg:'ES256'}))),p=rpB64(rpEnc.encode(JSON.stringify({aud,exp:Math.floor(Date.now()/1000)+3600,sub:'https://www.marihome.co.kr/river/'})));
+ const sig=await rpPushStage('PUSH_SIGN','서버의 알림 인증 키로 서명하지 못했어요.',async()=>{const key=await crypto.subtle.importKey('jwk',keys.privateKey,{name:'ECDSA',namedCurve:'P-256'},false,['sign']);return rpB64(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,rpEnc.encode(h+'.'+p)));});
+ return rpPushStage('PUSH_NETWORK','푸시 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.',()=>fetch(record.endpoint,{method:'POST',body:'',redirect:'error',headers:{Authorization:'vapid t='+h+'.'+p+'.'+sig+', k='+keys.publicKey,TTL:'600',Urgency:'high',Topic:topic},signal:AbortSignal.timeout(12000)}));
+}
+async function rpDeliver(env,record,job,keys){
+ const kv=env.RIVER_KV,id=await rpHash(job.id),sent='sent:'+record.id+':'+id;
+ const previous=await rpPushStage('PUSH_STORAGE','알림 저장소 연결을 확인해 주세요.',()=>kv.get(sent));if(previous)return 'skipped';
+ await rpPushStage('PUSH_QUEUE','알림 내용을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',()=>kv.put('notice:'+record.id+':'+id,JSON.stringify({...job,id}),{expirationTtl:3600}));
+ const r=await rpWake(record,keys,id.slice(0,32));
+ if(r.status===404||r.status===410){await kv.delete('device:'+record.id);return 'expired';}
+ if(!r.ok){
+  const message=r.status===401||r.status===403?'푸시 서비스가 알림 인증을 거부했어요. 이 기기 알림을 끈 뒤 다시 켜 주세요.':r.status===429?'푸시 서비스 요청이 많아요. 잠시 후 다시 시도해 주세요.':'푸시 서비스가 전송을 거부했어요. HTTP '+r.status;
+  throw rpPushError('PUSH_HTTP_'+r.status,message);
+ }
+ // Once the provider accepts the wake-up, a bookkeeping error must not report a send failure.
+ try{await kv.put(sent,'1',{expirationTtl:32*86400});}catch{}
+ return 'accepted';
+}
 async function rpDevice(request,env){const token=(request.headers.get('Authorization')||'').replace(/^Bearer /,'');if(!/^[A-Za-z0-9_-]{43}$/.test(token))return null;return rpJson(env.RIVER_KV,'device:'+await rpHash(token));}
 async function rpCurrent(env,job){if(job.type==='test')return true;const p=await rpNotion(env,'pages/'+job.page);if(p.archived||p.in_trash)return false;const ds=job.type==='academy'?(env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'):env.SCHOOL_DATA_SOURCE_ID;if(p.parent?.type!=='data_source_id'||p.parent.data_source_id.replaceAll('-','')!==ds.replaceAll('-',''))return false;const a=p.properties;if(job.type==='academy')return (a['출결']?.select?.name||'예정')==='예정'&&a['수업일시']?.date?.start===job.start;return !['완료','봉사완료'].includes(a['상태']?.status?.name)&&a['기한']?.date?.start===job.start;}
 async function rpPushRoute(request,env,reply){
@@ -66,7 +87,7 @@ async function rpPushRoute(request,env,reply){
   return reply({error:'지원하지 않는 요청입니다.'},405);
  }
  const auth=request.headers.get('Authorization')||'';if(!env.RIVER_ACCESS_KEY||!auth.startsWith('Bearer ')||!await same(auth.slice(7),env.RIVER_ACCESS_KEY))return reply({error:'사이트 접근 암호를 확인해 주세요.'},401);
- let keys=await rpJson(kv,'vapid:v1');
+ let keys=await rpPushStage('PUSH_STORAGE','알림 저장소의 인증 키를 읽지 못했어요.',()=>rpJson(kv,'vapid:v1'));
  if(path==='/push/config'&&request.method==='GET')return reply({ready:!!keys,publicKey:keys?.publicKey||null,lastRun:await rpJson(kv,'cron:last')});
  if(path==='/push/setup'&&request.method==='POST'){
   if(!keys){const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);keys={publicKey:rpB64(await crypto.subtle.exportKey('raw',pair.publicKey)),privateKey:await crypto.subtle.exportKey('jwk',pair.privateKey)};await kv.put('vapid:v1',JSON.stringify(keys));}
@@ -83,7 +104,7 @@ async function rpPushRoute(request,env,reply){
  if(path==='/push/unsubscribe'){await kv.delete('device:'+id);return reply({ok:true});}
  const record=await rpJson(kv,'device:'+id);if(!record)return reply({error:'이 기기의 알림 받기를 먼저 켜 주세요.'},400);
  const now=Date.now();if(await kv.get('test:'+id))return reply({error:'테스트는 1분 뒤에 다시 할 수 있어요.'},429);
- const state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);await kv.put('test:'+id,'1',{expirationTtl:60});return reply({ok:state==='accepted',state});
+ const state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);try{await kv.put('test:'+id,'1',{expirationTtl:60});}catch{}return reply({ok:state==='accepted',state});
 }
 async function rpScheduled(env){
  const kv=env.RIVER_KV;if(!kv)return;const started=Date.now();try{const keys=await rpJson(kv,'vapid:v1'),listed=await rpList(kv,'device:');if(!keys||!listed.length){await kv.put('cron:last',JSON.stringify({at:started,state:'waiting',accepted:0}));return;}
@@ -103,7 +124,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
  if(origin&&origin!==allowed)return reply({error:'허용되지 않은 주소입니다.'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(new URL(request.url).pathname.startsWith('/widget/')){try{return await rpWidgetRoute(request,env,reply);}catch{return reply({error:'위젯 연결에 실패했어요. 잠시 후 다시 시도해 주세요.'},502);}}
- if(new URL(request.url).pathname.startsWith('/push/')){try{return await rpPushRoute(request,env,reply);}catch{return reply({error:'알림 서버 요청에 실패했어요. 설정을 확인해 주세요.'},502);}}
+ if(new URL(request.url).pathname.startsWith('/push/')){try{return await rpPushRoute(request,env,reply);}catch(e){return reply(rpPushReplyError(e),502);}}
  if(!env.NOTION_TOKEN||!env.RIVER_ACCESS_KEY||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정이 완료되지 않았습니다.'},503);
  const auth=request.headers.get('Authorization')||'';
  if(!auth.startsWith('Bearer ')||!await same(auth.slice(7),env.RIVER_ACCESS_KEY))return reply({error:'접근 암호를 확인해 주세요.'},401);
