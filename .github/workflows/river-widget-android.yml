@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths:
       - 'river-widget/**'
+      - 'river/server/worker.mjs'
+      - 'river/server/push-delivery.test.mjs'
+      - 'river/notification-popup.mjs'
+      - 'river/notifications.mjs'
       - '.github/workflows/river-widget-android.yml'
   workflow_dispatch:
 permissions:

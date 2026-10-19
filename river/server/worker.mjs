@@ -84,7 +84,7 @@ async function rpPushRoute(request,env,reply){
  if(path==='/push/inbox'||path==='/push/ack'){
   const device=await rpDevice(request,env);if(!device)return reply({error:'기기 알림 연결을 다시 설정해 주세요.'},401);
   if(path==='/push/inbox'&&request.method==='GET'){const keys=await rpList(kv,'notice:'+device.id+':'),items=[];for(const k of keys.slice(-20)){const j=await rpJson(kv,k.name);if(j&&Date.now()<j.until&&await rpCurrent(env,j))items.push(j);}return reply({items});}
-  if(path==='/push/ack'&&request.method==='POST'){const raw=await request.text();if(raw.length>2000)return reply({error:'요청이 너무 깁니다.'},413);const body=JSON.parse(raw);if(!Array.isArray(body.ids)||body.ids.length>20||body.ids.some(x=>typeof x!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(x)))return reply({error:'잘못된 요청입니다.'},400);for(const id of body.ids)await kv.delete('notice:'+device.id+':'+id);if(body.ids.length)await kv.put('push:last-received',JSON.stringify({at:Date.now(),count:body.ids.length}));return reply({ok:true});}
+  if(path==='/push/ack'&&request.method==='POST'){const raw=await request.text();if(raw.length>2000)return reply({error:'요청이 너무 깁니다.'},413);const body=JSON.parse(raw);if(!Array.isArray(body.ids)||body.ids.length>20||body.ids.some(x=>typeof x!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(x)))return reply({error:'잘못된 요청입니다.'},400);for(const id of body.ids)await kv.delete('notice:'+device.id+':'+id);if(body.ids.length){const receipt=JSON.stringify({at:Date.now(),ids:body.ids,count:body.ids.length});await kv.put('push:last-received',receipt);await kv.put('push:received:'+device.id,receipt,{expirationTtl:86400});}return reply({ok:true});}
   return reply({error:'지원하지 않는 요청입니다.'},405);
  }
  const auth=request.headers.get('Authorization')||'';if(!env.RIVER_ACCESS_KEY||!auth.startsWith('Bearer ')||!await same(auth.slice(7),env.RIVER_ACCESS_KEY))return reply({error:'사이트 접근 암호를 확인해 주세요.'},401);
@@ -95,7 +95,7 @@ async function rpPushRoute(request,env,reply){
   return reply({ok:true,publicKey:keys.publicKey});
  }
  if(!keys)return reply({error:'먼저 알림 서버 준비 버튼을 눌러 주세요.'},503);
- if(!['/push/subscribe','/push/unsubscribe','/push/test'].includes(path)||request.method!=='POST')return reply({error:'요청을 찾지 못했습니다.'},404);
+ if(!['/push/subscribe','/push/unsubscribe','/push/test','/push/status'].includes(path)||request.method!=='POST')return reply({error:'요청을 찾지 못했습니다.'},404);
  const raw=await request.text();if(raw.length>7000)return reply({error:'요청이 너무 깁니다.'},413);const body=JSON.parse(raw);if(!/^[A-Za-z0-9_-]{43}$/.test(body.deviceToken||''))return reply({error:'기기 연결값이 올바르지 않아요.'},400);const id=await rpHash(body.deviceToken);
  if(path==='/push/subscribe'){
   if(!rpEndpoint(body.endpoint)||body.publicKey!==keys.publicKey)return reply({error:'지원하지 않는 기기이거나 알림 키가 변경됐어요. 다시 연결해 주세요.'},400);
@@ -104,8 +104,9 @@ async function rpPushRoute(request,env,reply){
  }
  if(path==='/push/unsubscribe'){await kv.delete('device:'+id);return reply({ok:true});}
  const record=await rpJson(kv,'device:'+id);if(!record)return reply({error:'이 기기의 알림 받기를 먼저 켜 주세요.'},400);
- const now=Date.now();if(await kv.get('test:'+id))return reply({error:'테스트는 1분 뒤에 다시 할 수 있어요.'},429);
- let state;try{state=await rpDeliver(env,record,{id:crypto.randomUUID(),type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);await kv.put('push:last-delivery',JSON.stringify({at:now,state}));}catch(e){try{await kv.put('push:last-delivery',JSON.stringify({at:now,state:'error',code:e.pushCode||'PUSH_INTERNAL'}));}catch{}throw e;}try{await kv.put('test:'+id,'1',{expirationTtl:60});}catch{}return reply({ok:state==='accepted',state});
+ if(path==='/push/status')return reply({lastReceived:await rpJson(kv,'push:received:'+id)});
+ const now=Date.now(),testId=crypto.randomUUID();if(await kv.get('test:'+id))return reply({error:'테스트는 1분 뒤에 다시 할 수 있어요.'},429);
+ let state;try{state=await rpDeliver(env,record,{id:testId,type:'test',at:now,until:now+10*60000,title:'CHOI RIVER · 알림 테스트',body:'강아, 알림이 잘 도착했어! 수업과 과제도 함께 챙겨보자.',url:'/river/?settings=notifications'},keys);await kv.put('push:last-delivery',JSON.stringify({at:now,state}));}catch(e){try{await kv.put('push:last-delivery',JSON.stringify({at:now,state:'error',code:e.pushCode||'PUSH_INTERNAL'}));}catch{}throw e;}try{await kv.put('test:'+id,'1',{expirationTtl:60});}catch{}return reply({ok:state==='accepted',state,noticeId:await rpHash(testId)});
 }
 async function rpScheduled(env){
  const kv=env.RIVER_KV;if(!kv)return;const started=Date.now();try{const keys=await rpJson(kv,'vapid:v1'),listed=await rpList(kv,'device:');if(!keys||!listed.length){await kv.put('cron:last',JSON.stringify({at:started,state:'waiting',accepted:0}));return;}
