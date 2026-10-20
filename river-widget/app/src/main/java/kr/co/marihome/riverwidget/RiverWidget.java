@@ -11,6 +11,12 @@ public class RiverWidget extends AppWidgetProvider {
  @Override public void onUpdate(Context c,AppWidgetManager manager,int[] ids){for(int id:ids)render(c,manager,id);SyncJob.request(c);}
  @Override public void onAppWidgetOptionsChanged(Context c,AppWidgetManager m,int id,Bundle options){render(c,m,id);}
  static void renderAll(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);int[] ids=m.getAppWidgetIds(new ComponentName(c,RiverWidget.class));for(int id:ids)render(c,m,id);m.notifyAppWidgetViewDataChanged(ids,R.id.list);}
+ static void icon(Context c,RemoteViews views,int viewId,int resource){
+  android.graphics.drawable.Drawable drawable=c.getDrawable(resource).mutate();drawable.setTint(WidgetStyle.secondary(c));
+  int pixels=Math.max(16,Math.round(16*c.getResources().getDisplayMetrics().density));
+  android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(pixels,pixels,android.graphics.Bitmap.Config.ARGB_8888);
+  drawable.setBounds(0,0,pixels,pixels);drawable.draw(new android.graphics.Canvas(bitmap));views.setImageViewBitmap(viewId,bitmap);
+ }
  static void render(Context c,AppWidgetManager m,int id){
   RemoteViews v=new RemoteViews(c.getPackageName(),R.layout.widget);
   v.setImageViewResource(android.R.id.background,WidgetStyle.drawable(c));v.setInt(android.R.id.background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
@@ -18,7 +24,7 @@ public class RiverWidget extends AppWidgetProvider {
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
   v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");
-  v.setTextViewText(R.id.heading,"CHOI RIVER 포레버");v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));v.setTextColor(R.id.refresh,WidgetStyle.secondary(c));v.setTextColor(R.id.settings,WidgetStyle.secondary(c));
+  v.setTextViewText(R.id.heading,"CHOI RIVER 포레버");v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));icon(c,v,R.id.refresh,R.drawable.widget_refresh);icon(c,v,R.id.settings,R.drawable.widget_settings);
   v.setOnClickPendingIntent(R.id.refresh,PendingIntent.getBroadcast(c,id,new Intent(c,RiverWidget.class).setAction(REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.settings,PendingIntent.getActivity(c,id,new Intent(c,SetupActivity.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.heading,PendingIntent.getActivity(c,id+10000,new Intent(c,OpenTaskActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));

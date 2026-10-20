@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'kr.co.marihome.riverwidget'
  compileSdk 35
- defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 5; versionName '1.4-subject-colors' }
+ defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 6; versionName '1.5-scroll-insets' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  testOptions { unitTests.returnDefaultValues = true }
 }

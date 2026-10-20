@@ -66,6 +66,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.4.apk
-          gh release view widget-1.4 >/dev/null 2>&1 || gh release create widget-1.4 --title "CHOI RIVER Widget 1.4" --notes "School subject labels follow Notion color names. Green, black and sky themes remain independent of Notion. Updated Cloudflare Worker required for subject-color metadata."
-          gh release upload widget-1.4 CHOI-RIVER-Widget-1.4.apk --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.5.apk
+          gh release view widget-1.5 >/dev/null 2>&1 || gh release create widget-1.5 --title "CHOI RIVER Widget 1.5" --notes "Added outer content insets and a visible vertical scrollbar. Header uses equally sized image icons. Inner panels and Notion subject colors remain unchanged."
+          gh release upload widget-1.5 CHOI-RIVER-Widget-1.5.apk --clobber
