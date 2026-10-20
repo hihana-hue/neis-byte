@@ -33,3 +33,18 @@ const broken={...kv,put:async()=>{throw Error('private database detail');}};
 await assert.rejects(context.rpDeliver({RIVER_KV:broken},record,job('queue-failure'),keys),err=>err.pushCode==='PUSH_QUEUE'&&!err.message.includes('private'));
 assert.equal(context.rpEndpoint('https://example.com/steal'),false);
 console.log('PASS: VAPID signature, provider acceptance, duplicate suppression, safe 403 detail, expired subscription, queue failure, endpoint allowlist.');
+// Feed regression: only the school subject label carries Notion color metadata.
+const token='A'.repeat(43),deviceHash=await context.rpHash(token);
+store.set('widget-device:'+deviceHash,JSON.stringify({scope:'widget:read'}));
+const schoolPage={id:'subject-test',properties:{'상태':{status:{name:'시작전'}},'과목':{multi_select:[{name:'공통과학2',color:'green'}]},'주제':{title:[{plain_text:'과제 제목'}]},'기한':{date:{start:'2026-10-23'}}}};
+const academyPage={id:'academy-test',properties:{'출결':{select:{name:'예정'}},'학원':{select:{name:'과학'}},'수업 구분':{select:{name:'수업'}},'수업일시':{date:{start:'2026-10-25T18:00:00+09:00'}}}};
+context.rpPages=async(env,ds)=>ds==='school'?[schoolPage]:[academyPage];
+const feed=await context.rpWidgetRoute({url:'https://test.invalid/widget/feed',method:'GET',headers:new Headers({Authorization:'Bearer '+token})},{RIVER_KV:kv,NOTION_TOKEN:'test',SCHOOL_DATA_SOURCE_ID:'school',ACADEMY_DATA_SOURCE_ID:'academy'},body=>body);
+assert.deepEqual(Array.from(feed.school[0].subjects),['공통과학2']);
+assert.equal(feed.school[0].subjectColors['공통과학2'],'green');
+assert.equal(feed.school[0].title,'과제 제목');
+assert.equal('subjectColors' in feed.academy[0],false);
+schoolPage.properties['과목'].multi_select[0].color='purple';
+const nextFeed=await context.rpWidgetRoute({url:'https://test.invalid/widget/feed',method:'GET',headers:new Headers({Authorization:'Bearer '+token})},{RIVER_KV:kv,NOTION_TOKEN:'test',SCHOOL_DATA_SOURCE_ID:'school',ACADEMY_DATA_SOURCE_ID:'academy'},body=>body);
+assert.equal(nextFeed.school[0].subjectColors['공통과학2'],'purple');
+console.log('PASS: Notion subject-color changes propagate on the next feed fetch; academy and task title stay unchanged.');

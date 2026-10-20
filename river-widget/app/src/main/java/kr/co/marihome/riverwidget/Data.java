@@ -7,7 +7,7 @@ import java.time.*;
 import java.util.*;
 final class Data {
  static final String API="https://choi-river-notion.hihana77.workers.dev";
- static final class Row {String id,kind,caption,sort,subject="",title="",due="",date="",time="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
+ static final class Row {String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
  static JSONObject get(String path,String token) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+path).openConnection();
   try{
@@ -54,7 +54,7 @@ final class Data {
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||!Schedule.schoolVisible(x.optString("status"),due,now))continue;
     JSONArray subjects=x.optJSONArray("subjects");String subject=subjects!=null&&subjects.length()>0?subjects.optString(0):"학교";
-    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.title=x.optString("title","할 일");r.due=Schedule.dueTime(due);school.add(r);
+    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?"default":x.optJSONObject("subjectColors").optString(subject,"default");r.title=x.optString("title","할 일");r.due=Schedule.dueTime(due);school.add(r);
    }
   }catch(Exception ignored){}
   academy.sort(Comparator.comparing(x->x.sort));school.sort(Comparator.comparing(x->x.sort));academy.addAll(school);return academy;

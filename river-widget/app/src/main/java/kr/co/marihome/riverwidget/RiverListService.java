@@ -15,10 +15,10 @@ public class RiverListService extends RemoteViewsService {
   public RemoteViews getViewAt(int p){
    if(p<0||p>=groups.size())return null;List<Data.Row> rows=groups.get(p);boolean academy="lesson".equals(rows.get(0).kind);
    RemoteViews v=new RemoteViews(c.getPackageName(),academy?R.layout.widget_academy:R.layout.widget_row);
-   v.setImageViewResource(R.id.panel_background,WidgetStyle.drawable(c));v.setInt(R.id.panel_background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
+   v.setImageViewResource(R.id.panel_background,WidgetStyle.panel(c,academy));v.setInt(R.id.panel_background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
    if(academy){int[] cells={R.id.cell0,R.id.cell1,R.id.cell2},labels={R.id.label0,R.id.label1,R.id.label2},dates={R.id.date0,R.id.date1,R.id.date2},times={R.id.time0,R.id.time1,R.id.time2};
-    for(int i=0;i<3;i++){v.setViewVisibility(cells[i],i<rows.size()?View.VISIBLE:View.INVISIBLE);if(i>=rows.size())continue;Data.Row row=rows.get(i);text(v,labels[i],row.subject,false);text(v,dates[i],row.date,false);text(v,times[i],row.time,false);v.setOnClickFillInIntent(cells[i],new Intent());}
-   }else{Data.Row row=rows.get(0);text(v,R.id.subject,row.subject,true);text(v,R.id.caption,row.title,false);text(v,R.id.due,row.due,true);v.setOnClickFillInIntent(R.id.row,new Intent());}
+    for(int i=0;i<3;i++){v.setViewVisibility(cells[i],i<rows.size()?View.VISIBLE:View.INVISIBLE);if(i>=rows.size())continue;Data.Row row=rows.get(i);text(v,labels[i],row.subject,false);text(v,dates[i],row.date,false);text(v,times[i],row.time,false);for(int textId:new int[]{labels[i],dates[i],times[i]})v.setTextColor(textId,WidgetStyle.academyText(c));v.setOnClickFillInIntent(cells[i],new Intent());}
+   }else{Data.Row row=rows.get(0);text(v,R.id.subject,row.subject,true);v.setInt(R.id.subject,"setBackgroundColor",SubjectPalette.background(row.subjectColor));v.setTextColor(R.id.subject,SubjectPalette.foreground(row.subjectColor));v.setTextViewTextSize(R.id.subject,TypedValue.COMPLEX_UNIT_SP,12);text(v,R.id.caption,row.title,false);text(v,R.id.due,row.due,true);v.setTextViewTextSize(R.id.due,TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c)-1);v.setOnClickFillInIntent(R.id.row,new Intent());}
    return v;
   }
  }
