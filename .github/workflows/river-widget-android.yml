@@ -72,8 +72,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.17.apk
-          gh release view widget-1.17 >/dev/null 2>&1 || gh release create widget-1.17 --title "CHOI RIVER Widget 1.17" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.17-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.17-source.zip
-          cp river/server/worker.mjs CHOI-RIVER-Worker-1.17.mjs
-          gh release upload widget-1.17 CHOI-RIVER-Widget-1.17.apk CHOI-RIVER-Widget-1.17-source.zip CHOI-RIVER-Worker-1.17.mjs --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.18.apk
+          gh release view widget-1.18 >/dev/null 2>&1 || gh release create widget-1.18 --title "CHOI RIVER Widget 1.18" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.18-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.18-source.zip
+          cp river/server/worker.mjs CHOI-RIVER-Worker-1.18.mjs
+          gh release upload widget-1.18 CHOI-RIVER-Widget-1.18.apk CHOI-RIVER-Widget-1.18-source.zip CHOI-RIVER-Worker-1.18.mjs --clobber
