@@ -42,7 +42,7 @@ public class SetupActivity extends Activity {
   Button applyStyle=new Button(this);applyStyle.setText("모양 적용 · 다시 설치할 필요 없어요");root.addView(applyStyle);
   final TextView styleResult=text("",12);root.addView(styleResult);
   applyStyle.setOnClickListener(v->{WidgetStyle.saveFilters(this,(count.getSelectedItemPosition()+1)*3,showStart.isChecked(),showProgress.isChecked());WidgetStyle.save(this,fontSize.getProgress()+12,background.getSelectedItemPosition(),transparency.getProgress());styleResult.setText("홈 화면 위젯에 적용했어요.");});
-  Button connect=new Button(this);connect.setText(Vault.get(this,"access").isEmpty()?"연결하고 위젯 준비":"저장된 연결로 위젯 사용");root.addView(connect);
+  Button connect=new Button(this);connect.setText("저장 후 닫기");root.addView(connect);
   status=text(Vault.get(this,"access").isEmpty()?"아직 연결되지 않았어요.":"이 기기에 조회 전용 연결이 저장되어 있어요. ↻ 새로고침하거나 홈 화면에서 위젯을 추가해 주세요.",13);root.addView(status);
   Button pin=new Button(this);pin.setText("홈 화면에 위젯 추가");root.addView(pin);pin.setOnClickListener(v->{if(Vault.get(this,"access").isEmpty()){status.setText("먼저 위젯 연결 코드를 등록해 주세요.");return;}AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported())m.requestPinAppWidget(new ComponentName(this,RiverWidget.class),null,null);else status.setText("홈 화면 빈 공간 길게 누르기 → 위젯 → CHOI RIVER에서 추가해 주세요.");});
   Button clear=new Button(this);clear.setText("이 기기의 위젯 연결 해제");root.addView(clear);
@@ -54,8 +54,8 @@ public class SetupActivity extends Activity {
    busy=true;connect.setEnabled(false);pin.setEnabled(false);clear.setEnabled(false);status.setText("학원·학교 일정을 연결하고 있어요…");
    new Thread(()->{String failure=null;try{String value=typed.isEmpty()?saved:Data.pair(typed);Vault.put(getApplicationContext(),"access",value);Data.sync(getApplicationContext(),value);}catch(Exception e){failure=e.getMessage();}
     final String error=failure;runOnUiThread(()->{if(isDestroyed())return;busy=false;connect.setEnabled(true);pin.setEnabled(true);clear.setEnabled(true);
-     if(error!=null){status.setText(error);return;}password.setText("");RiverWidget.renderAll(this);status.setText("연결됐어요. 홈 화면에 위젯을 추가해 주세요.");
-     if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID){RiverWidget.render(this,AppWidgetManager.getInstance(this),widgetId);setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));finish();}
+     if(error!=null){status.setText(error);return;}WidgetStyle.saveFilters(this,(count.getSelectedItemPosition()+1)*3,showStart.isChecked(),showProgress.isChecked());WidgetStyle.save(this,fontSize.getProgress()+12,background.getSelectedItemPosition(),transparency.getProgress());password.setText("");RiverWidget.renderAll(this);status.setText("연결됐어요. 홈 화면에 위젯을 추가해 주세요.");
+     if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID){RiverWidget.render(this,AppWidgetManager.getInstance(this),widgetId);setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));finish();}else finish();
     });
    },"river-widget-connect").start();
   });
