@@ -1,5 +1,5 @@
 import {createNotifications} from './notification-popup.mjs?v=2';
-import {createAcademy} from './main-academy.mjs?v=7';
+import {createAcademy} from './main-academy.mjs?v=8';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
