@@ -11,12 +11,12 @@ public class RiverWidget extends AppWidgetProvider {
  @Override public void onReceive(Context c,Intent intent){super.onReceive(c,intent);if(REFRESH.equals(intent.getAction())){
   if(!refreshing.compareAndSet(false,true))return;
   final PendingResult pending=goAsync();final Context app=c.getApplicationContext();
-  android.widget.Toast.makeText(app,"일정을 새로 불러오는 중…",android.widget.Toast.LENGTH_SHORT).show();
+  renderAll(app);
   new Thread(()->{
    String result;
    try{String token=Vault.get(app,"access");if(token.isEmpty())throw new Exception("위젯을 먼저 연결해 주세요.");Data.sync(app,token);result="일정을 새로 불러왔어요.";}
    catch(Exception e){result=e.getMessage()==null?"새로고침에 실패했어요.":e.getMessage();Data.error(app,result);}
-   try{renderAll(app);final String message=result;new android.os.Handler(android.os.Looper.getMainLooper()).post(()->android.widget.Toast.makeText(app,message,android.widget.Toast.LENGTH_SHORT).show());}
+   try{refreshing.set(false);renderAll(app);final String message=result;new android.os.Handler(android.os.Looper.getMainLooper()).post(()->android.widget.Toast.makeText(app,message,android.widget.Toast.LENGTH_SHORT).show());}
    finally{refreshing.set(false);pending.finish();}
   },"river-widget-manual-refresh").start();
  }}
@@ -24,7 +24,7 @@ public class RiverWidget extends AppWidgetProvider {
  @Override public void onAppWidgetOptionsChanged(Context c,AppWidgetManager m,int id,Bundle options){render(c,m,id);}
  static void renderAll(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);int[] ids=m.getAppWidgetIds(new ComponentName(c,RiverWidget.class));for(int id:ids)render(c,m,id);m.notifyAppWidgetViewDataChanged(ids,R.id.list);}
  static void icon(Context c,RemoteViews views,int viewId,int resource){
-  android.graphics.drawable.Drawable drawable=c.getDrawable(resource).mutate();drawable.setTint(WidgetStyle.secondary(c));
+  android.graphics.drawable.Drawable drawable=c.getDrawable(resource).mutate();drawable.setTint(viewId==R.id.refresh&&refreshing.get()?(WidgetStyle.theme(c)==2?android.graphics.Color.rgb(195,74,20):android.graphics.Color.rgb(255,209,70)):WidgetStyle.secondary(c));
   int pixels=Math.max(16,Math.round(16*c.getResources().getDisplayMetrics().density));
   android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(pixels,pixels,android.graphics.Bitmap.Config.ARGB_8888);
   drawable.setBounds(0,0,pixels,pixels);drawable.draw(new android.graphics.Canvas(bitmap));views.setImageViewBitmap(viewId,bitmap);
@@ -46,6 +46,9 @@ public class RiverWidget extends AppWidgetProvider {
   v.setOnClickPendingIntent(R.id.heading,PendingIntent.getActivity(c,id+10000,new Intent(c,OpenTaskActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   Intent open=new Intent(c,OpenTaskActivity.class);open.setData(Uri.parse("river-widget://open/"+id));
   v.setPendingIntentTemplate(R.id.list,PendingIntent.getActivity(c,id+20000,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_MUTABLE));
+  PendingIntent web=PendingIntent.getActivity(c,id+30000,new Intent(c,OpenTaskActivity.class).setData(Uri.parse("river-widget://panel/"+id)),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+  v.setOnClickPendingIntent(R.id.content_panel,web);
+  v.setOnClickPendingIntent(R.id.empty,web);
   m.updateAppWidget(id,v);
  }
 }

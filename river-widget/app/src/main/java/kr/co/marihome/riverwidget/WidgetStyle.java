@@ -12,5 +12,8 @@ final class WidgetStyle {
  static int drawable(Context c){return theme(c)==0?R.drawable.widget_background_green:theme(c)==1?R.drawable.widget_background_dark:R.drawable.widget_background_sky;}
  static int panel(Context c,boolean academy){if(theme(c)==2&&academy)return R.drawable.widget_academy_blue;return theme(c)==0?R.drawable.widget_panel_green:theme(c)==1?R.drawable.widget_panel_dark:R.drawable.widget_background_sky;}
  static void save(Context c,int font,int theme,int transparency){c.getSharedPreferences("widget-style",0).edit().putInt("font",font).putInt("theme",theme).putInt("transparency",transparency).remove("corner").apply();RiverWidget.renderAll(c);}
+ static int academyLimit(Context c){int n=c.getSharedPreferences("widget-style",0).getInt("academyLimit",3);return n==6||n==9?n:3;}
+ static boolean schoolStatus(Context c,String status){boolean start="시작전".equals(status)||"시작 전".equals(status);return c.getSharedPreferences("widget-style",0).getBoolean(start?"showStart":"showProgress",true);}
+ static void saveFilters(Context c,int limit,boolean start,boolean progress){c.getSharedPreferences("widget-style",0).edit().putInt("academyLimit",limit).putBoolean("showStart",start).putBoolean("showProgress",progress).apply();}
  private WidgetStyle(){}
 }

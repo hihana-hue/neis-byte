@@ -7,7 +7,7 @@
    <TextView android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:minWidth="20dp" android:importantForAccessibility="no"/>
    <ImageView android:id="@+id/settings" android:layout_width="40dp" android:layout_height="40dp" android:padding="12dp" android:scaleType="fitCenter" android:src="@drawable/widget_settings" android:contentDescription="위젯 설정"/>
   </LinearLayout>
-  <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+  <FrameLayout android:id="@+id/content_panel" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
    <ListView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="match_parent" android:divider="@android:color/transparent" android:dividerHeight="0dp" android:scrollbars="vertical" android:fadeScrollbars="false" android:scrollbarSize="3dp" android:scrollbarStyle="insideInset" android:scrollbarThumbVertical="@drawable/widget_scrollbar" android:scrollbarTrackVertical="@android:color/transparent" android:paddingBottom="6dp" android:clipToPadding="true" android:overScrollMode="ifContentScrolls"/>
    <TextView android:id="@+id/empty" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:text="위젯 연결 코드를 등록해 주세요." android:textColor="#486B7C" android:textSize="11sp"/>
   </FrameLayout>

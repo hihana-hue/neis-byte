@@ -72,8 +72,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.10.apk
-          gh release view widget-1.10 >/dev/null 2>&1 || gh release create widget-1.10 --title "CHOI RIVER Widget 1.10" --notes "Manual refresh fetches immediately with visible success/error feedback. Rounded 58dp subject labels with zero horizontal padding; Notion colors preserved. Nearest three academy lessons retained. Debug signature may require reinstall."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.10-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.10-source.zip
-          cp river/server/worker.mjs CHOI-RIVER-Worker-1.10.mjs
-          gh release upload widget-1.10 CHOI-RIVER-Widget-1.10.apk CHOI-RIVER-Widget-1.10-source.zip CHOI-RIVER-Worker-1.10.mjs --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.11.apk
+          gh release view widget-1.11 >/dev/null 2>&1 || gh release create widget-1.11 --title "CHOI RIVER Widget 1.11" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.11-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.11-source.zip
+          cp river/server/worker.mjs CHOI-RIVER-Worker-1.11.mjs
+          gh release upload widget-1.11 CHOI-RIVER-Widget-1.11.apk CHOI-RIVER-Widget-1.11-source.zip CHOI-RIVER-Worker-1.11.mjs --clobber
