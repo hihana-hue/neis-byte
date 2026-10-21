@@ -6,16 +6,16 @@ export function createSettings(request,hasToken){
   if(busy)return;
   if(!hasToken()){status();return;}
   busy=true;$('widget-pair').disabled=true;$('widget-revoke').disabled=true;$('result').textContent='';
-  try{await fn();}catch(e){$('result').textContent=e.message;}
+  try{await fn();}catch(e){$('result').textContent=e.message==='연결된 위젯 기기를 해제한 후 다시 연결해 주세요.'?'서버에 저장된 위젯 연결이 최대 10개에 도달했어요. 앱을 삭제해도 서버의 연결 기록은 남습니다. 아래 ‘위젯 연결 모두 해제’를 누른 뒤 새 코드를 만들어 주세요. 다른 기기의 위젯도 함께 해제됩니다.':e.message;}
   finally{busy=false;$('widget-pair').disabled=false;$('widget-revoke').disabled=false;}
  }
  const post=path=>request(path,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
  $('widget-pair').onclick=()=>run(async()=>{
-  const d=await post('/widget/pairing');$('widget-code').textContent=d.code;$('widget-copy').disabled=!d.code;$('widget-copy').textContent='복사';
+  const d=await post('/widget/pairing');$('widget-code').textContent=d.code;$('widget-copy').disabled=!d.code;$('widget-copy').style.display=d.code?'inline-flex':'none';$('widget-copy').textContent='복사';
   $('widget-result').textContent='5분 안에 위젯 앱에 입력해 주세요.';
  });
  $('widget-revoke').onclick=()=>run(async()=>{
-  await post('/widget/revoke');$('widget-code').textContent='';$('widget-copy').disabled=true;$('widget-copy').textContent='복사';
+  await post('/widget/revoke');$('widget-code').textContent='';$('widget-copy').disabled=true;$('widget-copy').style.display='none';$('widget-copy').textContent='복사';
   $('widget-result').textContent='위젯 연결을 모두 해제했어요.';
  });
  $('widget-copy').onclick=async()=>{
