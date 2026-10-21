@@ -16,5 +16,17 @@ final class SubjectPalette {
   case "purple":return 0xFF694A7A;case "pink":return 0xFF7D3C60;
   case "red":return 0xFF8A382E;default:return 0xFF37352F;
  }}
+ static int drawable(String color){switch(color==null?"default":color){
+ case "gray":return R.drawable.widget_subject_gray;
+ case "brown":return R.drawable.widget_subject_brown;
+ case "orange":return R.drawable.widget_subject_orange;
+ case "yellow":return R.drawable.widget_subject_yellow;
+ case "green":return R.drawable.widget_subject_green;
+ case "blue":return R.drawable.widget_subject_blue;
+ case "purple":return R.drawable.widget_subject_purple;
+ case "pink":return R.drawable.widget_subject_pink;
+ case "red":return R.drawable.widget_subject_red;
+ default:return R.drawable.widget_subject_default;
+ }}
  private SubjectPalette(){}
 }

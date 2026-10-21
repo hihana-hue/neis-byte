@@ -6,8 +6,20 @@ import android.os.Bundle;
 import android.net.Uri;
 import android.widget.RemoteViews;
 public class RiverWidget extends AppWidgetProvider {
+ private static final java.util.concurrent.atomic.AtomicBoolean refreshing=new java.util.concurrent.atomic.AtomicBoolean();
  static final String REFRESH="kr.co.marihome.riverwidget.REFRESH";
- @Override public void onReceive(Context c,Intent intent){super.onReceive(c,intent);if(REFRESH.equals(intent.getAction())){renderAll(c);SyncJob.request(c);}}
+ @Override public void onReceive(Context c,Intent intent){super.onReceive(c,intent);if(REFRESH.equals(intent.getAction())){
+  if(!refreshing.compareAndSet(false,true))return;
+  final PendingResult pending=goAsync();final Context app=c.getApplicationContext();
+  android.widget.Toast.makeText(app,"일정을 새로 불러오는 중…",android.widget.Toast.LENGTH_SHORT).show();
+  new Thread(()->{
+   String result;
+   try{String token=Vault.get(app,"access");if(token.isEmpty())throw new Exception("위젯을 먼저 연결해 주세요.");Data.sync(app,token);result="일정을 새로 불러왔어요.";}
+   catch(Exception e){result=e.getMessage()==null?"새로고침에 실패했어요.":e.getMessage();Data.error(app,result);}
+   try{renderAll(app);final String message=result;new android.os.Handler(android.os.Looper.getMainLooper()).post(()->android.widget.Toast.makeText(app,message,android.widget.Toast.LENGTH_SHORT).show());}
+   finally{refreshing.set(false);pending.finish();}
+  },"river-widget-manual-refresh").start();
+ }}
  @Override public void onUpdate(Context c,AppWidgetManager manager,int[] ids){for(int id:ids)render(c,manager,id);SyncJob.request(c);}
  @Override public void onAppWidgetOptionsChanged(Context c,AppWidgetManager m,int id,Bundle options){render(c,m,id);}
  static void renderAll(Context c){AppWidgetManager m=AppWidgetManager.getInstance(c);int[] ids=m.getAppWidgetIds(new ComponentName(c,RiverWidget.class));for(int id:ids)render(c,m,id);m.notifyAppWidgetViewDataChanged(ids,R.id.list);}
@@ -27,7 +39,7 @@ public class RiverWidget extends AppWidgetProvider {
   v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,12);v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
-  v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"이번 주 예정된 학원·학교 할 일이 없어요.");
+  v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"예정된 학원·이번 주 학교 할 일이 없어요.");
   v.setTextViewText(R.id.heading,"CHOI RIVER 포레버");v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));icon(c,v,R.id.refresh,R.drawable.widget_refresh);icon(c,v,R.id.settings,R.drawable.widget_settings);
   v.setOnClickPendingIntent(R.id.refresh,PendingIntent.getBroadcast(c,id,new Intent(c,RiverWidget.class).setAction(REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.settings,PendingIntent.getActivity(c,id,new Intent(c,SetupActivity.class).setAction("kr.co.marihome.riverwidget.OPEN_SETTINGS").setData(Uri.parse("river-widget://settings/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
