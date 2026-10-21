@@ -24,10 +24,10 @@ final class Data {
  static String pair(String code) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+"/widget/pair").openConnection();
   try{conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(6000);conn.setReadTimeout(6000);conn.setRequestMethod("POST");conn.setDoOutput(true);conn.setRequestProperty("Content-Type","application/json");
-   byte[] bytes=new JSONObject().put("code",code).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+   byte[] bytes=new JSONObject().put("code",code).put("mode","student").toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
    try(OutputStream out=conn.getOutputStream()){out.write(bytes);}
    int status=conn.getResponseCode();
-   if(status!=200)throw new Exception(status==401?"코드가 만료됐거나 아직 연결되지 않았어요. 잠시 후 재시도하거나 새 코드를 받아 주세요.":"위젯 연결 코드를 확인해 주세요. 서버 코드도 최신 버전이어야 해요.");
+   if(status!=200)throw new Exception(status==401?"연결코드가 틀렸거나 학생 연결이 중지됐어요.":"학생 연결 서버를 확인해 주세요. 서버도 최신 버전이어야 해요.");
    try(InputStream in=conn.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buf=new byte[1024];int n;while((n=in.read(buf))!=-1){out.write(buf,0,n);if(out.size()>4096)throw new Exception("응답 오류");}
     String token=new JSONObject(out.toString("UTF-8")).optString("deviceToken");if(!token.matches("[A-Za-z0-9_-]{43}"))throw new Exception("위젯 연결 결과를 확인해 주세요.");return token;}
   }finally{conn.disconnect();}

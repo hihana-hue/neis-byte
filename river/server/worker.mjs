@@ -15,7 +15,15 @@ async function rpWidgetRoute(request,env,reply){
   return reply({ok:true,code:code.match(/.{4}/g).join('-'),expiresAt});
  }
  if(path==='/widget/pair'&&request.method==='POST'){
-  const body=await input(),code=String(body.code||'').replaceAll('-','').replaceAll(' ','').toUpperCase();
+  const body=await input();
+  if(body.mode==='student'){
+   let student;try{student=await rpStudentLogin(env,body.code,request);}catch{return reply({error:'학생 연결 관리표와 DB 접근 권한을 확인해 주세요.'},503);}
+   if(!student)return reply({error:'연결코드를 확인해 주세요. 활성화된 학생만 연결할 수 있어요.'},401);
+   const token=rpB64(crypto.getRandomValues(new Uint8Array(32))),id=await rpHash(token);
+   await kv.put('widget-device:'+id,JSON.stringify({id,scope:'widget:read',studentId:student.STUDENT.id,codeHash:student.STUDENT_CODE_HASH,createdAt:Date.now()}),{expirationTtl:90*86400});
+   return reply({ok:true,deviceToken:token,student:student.STUDENT});
+  }
+  const code=String(body.code||'').replaceAll('-','').replaceAll(' ','').toUpperCase();
   if(!/^[A-HJ-NP-Z2-9]{12}$/.test(code))return reply({error:'메인 대시보드에서 받은 위젯 연결 코드를 입력해 주세요.'},400);
   const key='widget-pair:'+await rpHash(code),pair=await rpJson(kv,key);
   if(!pair||Date.now()>pair.expiresAt)return reply({error:'코드가 없거나 만료됐어요. 대시보드에서 새 코드를 만들어 주세요.'},401);
@@ -27,9 +35,10 @@ async function rpWidgetRoute(request,env,reply){
  const id=await rpHash(bearer),device=await rpJson(kv,'widget-device:'+id);
  if(!device||device.scope!=='widget:read')return reply({error:'해제된 위젯 연결입니다. 새 코드로 연결해 주세요.'},401);
  if(path==='/widget/disconnect'&&request.method==='POST'){await kv.delete('widget-device:'+id);return reply({ok:true});}
+ if(device.studentId){const student=await rpStudentDevice(env,device);if(!student)return reply({error:'학생 연결이 중지되었거나 코드가 변경됐어요.'},401);env=student;}
  if(path!=='/widget/feed'||request.method!=='GET')return reply({error:'위젯에서는 일정 조회만 할 수 있어요.'},405);
  if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
- const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9')]);
+ const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID?Promise.resolve([]):rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'))]);
  const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
  const usedByKind=new Map(),rounds=new Map();
@@ -41,7 +50,7 @@ async function rpWidgetRoute(request,env,reply){
   usedByKind.set(key,used);if(status==='예정')rounds.set(p.id,((used-1)%size+1)+'/'+size);
  }
  const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
- return reply({school,academy});
+ return reply({school,academy,student:env.STUDENT||null});
 }
 
 function rpPushError(code,message){const e=new Error(message);e.pushCode=code;return e;}
@@ -56,6 +65,35 @@ async function rpJson(kv,key){const value=await kv.get(key);return value?JSON.pa
 async function rpList(kv,prefix){const keys=[];let cursor;do{const r=await kv.list({prefix,limit:100,...(cursor?{cursor}:{})});keys.push(...r.keys);cursor=r.list_complete?null:r.cursor;if(keys.length>2000)throw Error('저장 항목이 너무 많습니다.');}while(cursor);return keys;}
 async function rpNotion(env,path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('노션 연결을 확인해 주세요.');return r.json();}
 async function rpPages(env,ds){const pages=[];let cursor;do{const r=await rpNotion(env,'data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...r.results.filter(p=>!p.archived&&!p.in_trash));cursor=r.has_more?r.next_cursor:null;}while(cursor);return pages;}
+
+const RP_STUDENTS='400215b9-b774-80a0-ae62-000b166c0655';
+const rpText=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
+function rpDbId(value){
+ if(typeof value!=='string')throw Error('DB 링크를 확인해 주세요.');
+ const u=new URL(value);if(u.protocol!=='https:'||!['app.notion.com','www.notion.so','notion.so'].includes(u.hostname))throw Error('노션 DB 링크가 아닙니다.');
+ const match=u.pathname.match(/([a-f0-9]{32}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})\/?$/i);if(!match)throw Error('DB ID를 확인해 주세요.');return match[1];
+}
+async function rpStudentEnv(env,page){
+ if(!page||page.archived||page.in_trash||normalized(page.parent?.data_source_id)!==normalized(env.STUDENT_REGISTRY_ID||RP_STUDENTS)||!page.properties?.['연결 활성화']?.checkbox)return null;
+ const p=page.properties,school=p['학교 DB 링크']?.url,academy=p['학원 DB 링크']?.url;
+ async function source(link){const db=await rpNotion(env,'databases/'+rpDbId(link));if(db.data_sources?.length!==1)throw Error('DB의 데이터 원본을 하나로 지정해 주세요.');return db.data_sources[0].id;}
+ return {...env,SCHOOL_DATA_SOURCE_ID:await source(school),ACADEMY_DATA_SOURCE_ID:academy?await source(academy):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
+}
+async function rpStudentLogin(env,code,request){
+ if(typeof code!=='string'||code.length<4||code.length>100||code!==code.trim())return null;
+ const kv=env.RIVER_KV;if(!kv)throw Error('RIVER_KV 연결을 확인해 주세요.');
+ const ip=request.headers.get('CF-Connecting-IP')||'unknown',key='student-attempt:'+await rpHash(ip+':'+Math.floor(Date.now()/60000)),attempts=Number(await kv.get(key)||0);
+ if(attempts>=20)return null;
+ await kv.put(key,String(attempts+1),{expirationTtl:120});
+ const d=await rpNotion(env,'data_sources/'+(env.STUDENT_REGISTRY_ID||RP_STUDENTS)+'/query','POST',{page_size:2,filter:{property:'연결코드',rich_text:{equals:code}}});
+ if(d.results?.length!==1)return null;
+ const e=await rpStudentEnv(env,d.results[0]);if(!e||!await same(e.STUDENT_CODE_HASH,await rpHash(code)))return null;return e;
+}
+async function rpStudentDevice(env,device){
+ const page=await rpNotion(env,'pages/'+device.studentId),e=await rpStudentEnv(env,page);
+ return e&&await same(e.STUDENT_CODE_HASH,device.codeHash||'')?e:null;
+}
+
 function rpJobs(school,academy,now){
  const jobs=[],day=86400000,text=a=>(a||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const add=(p,type,start,at,title,body,slot,until)=>{if(!Number.isFinite(at)||at>now||now-at>10*60000||at<Date.parse(p.created_time||0)||now>=until)return;jobs.push({id:p.id+':'+start+':'+slot,page:p.id,type,start,at,until,title,body,url:'/river/?'+(type==='academy'?'lesson=':'task=')+encodeURIComponent(p.id)});};
@@ -135,14 +173,20 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(new URL(request.url).pathname.startsWith('/widget/')){try{return await rpWidgetRoute(request,env,reply);}catch{return reply({error:'위젯 연결에 실패했어요. 잠시 후 다시 시도해 주세요.'},502);}}
  if(new URL(request.url).pathname.startsWith('/push/')){try{return await rpPushRoute(request,env,reply);}catch(e){return reply(rpPushReplyError(e),502);}}
- if(!env.NOTION_TOKEN||!env.RIVER_ACCESS_KEY||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정이 완료되지 않았습니다.'},503);
+ if(!env.NOTION_TOKEN)return reply({error:'노션 연결 설정이 완료되지 않았습니다.'},503);
  const auth=request.headers.get('Authorization')||'';
- if(!auth.startsWith('Bearer ')||!await same(auth.slice(7),env.RIVER_ACCESS_KEY))return reply({error:'접근 암호를 확인해 주세요.'},401);
+ if(!auth.startsWith('Bearer '))return reply({error:'학생 연결코드를 입력해 주세요.'},401);
+ if(!env.RIVER_ACCESS_KEY||!await same(auth.slice(7),env.RIVER_ACCESS_KEY)){
+  try{const student=await rpStudentLogin(env,auth.slice(7),request);if(!student)return reply({error:'연결코드가 틀렸거나 연결이 중지된 학생입니다.'},401);env=student;}
+  catch{return reply({error:'학생 연결 관리표와 DB 접근 권한을 확인해 주세요.'},503);}
+ }
+ if(!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'학교 DB 링크를 설정해 주세요.'},503);
  async function notion(path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('노션 요청 실패');return r.json();}
  try{const path=new URL(request.url).pathname;
 
   // Academy lessons: each Notion page represents one lesson.
   if(path==='/academy'||path.startsWith('/academy/')){
+   if(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID)return request.method==='GET'?reply({items:[]}):reply({error:'학원 DB가 연결되지 않았어요.'},403);
    const ds=env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9';
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
@@ -217,7 +261,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
 
   if(path==='/options'&&request.method==='GET'){
    const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
-   return reply({subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name)});
+   return reply({student:env.STUDENT||null,subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name)});
   }
   if(path==='/tasks'&&request.method==='POST'){
    if(Number(request.headers.get('Content-Length')||0)>4096)return reply({error:'입력 내용이 너무 깁니다.'},413);
@@ -232,7 +276,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
   }
   if(path==='/tasks'&&request.method==='GET'){
    const pages=[];let cursor;do{const data=await notion(`data_sources/${env.SCHOOL_DATA_SOURCE_ID}/query`,'POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...data.results);cursor=data.has_more?data.next_cursor:null;}while(cursor);
-   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({items:items.filter(x=>['시작전','진행 중','진행 2차','작성 완료','봉사완료','완료'].includes(x.status)&&(!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000))});
+   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({student:env.STUDENT||null,items:items.filter(x=>['시작전','진행 중','진행 2차','작성 완료','봉사완료','완료'].includes(x.status)&&(!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000))});
   }
   const statusMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/status$/i);
   if(statusMatch&&request.method==='PATCH'){

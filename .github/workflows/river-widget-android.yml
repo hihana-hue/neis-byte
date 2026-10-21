@@ -48,6 +48,7 @@ jobs:
           node --check river/server/worker.mjs
           node river/server/push-delivery.test.mjs
           node river/server/widget-rounds.test.mjs
+          node river/server/student-access.test.mjs
       - name: Test and build widget APK
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
@@ -72,8 +73,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.19.apk
-          gh release view widget-1.19 >/dev/null 2>&1 || gh release create widget-1.19 --title "CHOI RIVER Widget 1.19" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.19-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.19-source.zip
-          cp river/server/worker.mjs CHOI-RIVER-Worker-1.19.mjs
-          gh release upload widget-1.19 CHOI-RIVER-Widget-1.19.apk CHOI-RIVER-Widget-1.19-source.zip CHOI-RIVER-Worker-1.19.mjs --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.20.apk
+          gh release view widget-1.20 >/dev/null 2>&1 || gh release create widget-1.20 --title "CHOI RIVER Widget 1.20" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.20-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.20-source.zip
+          cp river/server/worker.mjs CHOI-RIVER-Worker-1.20.mjs
+          gh release upload widget-1.20 CHOI-RIVER-Widget-1.20.apk CHOI-RIVER-Widget-1.20-source.zip CHOI-RIVER-Worker-1.20.mjs --clobber
