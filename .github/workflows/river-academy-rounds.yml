@@ -1,0 +1,15 @@
+name: Check academy round display
+on:
+  push:
+    branches: [main]
+    paths: ['river/academy-model.mjs', 'river/academy-rounds.test.mjs', 'river/main-academy.mjs', '.github/workflows/river-academy-rounds.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check river/main-academy.mjs
+      - run: node river/academy-rounds.test.mjs
