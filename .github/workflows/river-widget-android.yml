@@ -72,8 +72,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.8.apk
-          gh release view widget-1.8 >/dev/null 2>&1 || gh release create widget-1.8 --title "CHOI RIVER Widget 1.8" --notes "Match web academy labels, clinic and round slot, Seoul-day today status. Deploy included worker.mjs for rounds. Header separation retained. Debug signature may require reinstall."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.8-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.8-source.zip
-          cp river/server/worker.mjs CHOI-RIVER-Worker-1.8.mjs
-          gh release upload widget-1.8 CHOI-RIVER-Widget-1.8.apk CHOI-RIVER-Widget-1.8-source.zip CHOI-RIVER-Worker-1.8.mjs --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.9.apk
+          gh release view widget-1.9 >/dev/null 2>&1 || gh release create widget-1.9 --title "CHOI RIVER Widget 1.9" --notes "Show the earliest three pending academy lessons across all dates, matching web eligibility. School week filter retained. Deploy included worker.mjs for rounds. Debug signature may require reinstall."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.9-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.9-source.zip
+          cp river/server/worker.mjs CHOI-RIVER-Worker-1.9.mjs
+          gh release upload widget-1.9 CHOI-RIVER-Widget-1.9.apk CHOI-RIVER-Widget-1.9-source.zip CHOI-RIVER-Worker-1.9.mjs --clobber

@@ -11,7 +11,7 @@ public final class Schedule {
  }
  static boolean academyVisible(String status,String start,Instant now){
   if(!"예정".equals(status))return false;
-  try{return !OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).toLocalDate().isAfter(sunday(now));}catch(Exception e){return false;}
+  try{OffsetDateTime.parse(start);return true;}catch(Exception e){return false;}
  }
  static String lessonTime(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("M/d (E) HH:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
  static String dueTime(String due){try{return LocalDate.parse(due.substring(0,10)).format(DateTimeFormatter.ofPattern("M/d"));}catch(Exception e){return "";}}
