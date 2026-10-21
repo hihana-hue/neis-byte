@@ -67,7 +67,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.6.apk
-          gh release view widget-1.6 >/dev/null 2>&1 || gh release create widget-1.6 --title "CHOI RIVER Widget 1.6" --notes "Final read-only schedule widget. No native notifications or alarms. Configure reminders separately in Notion. Existing design and synchronization retained. Debug signature may require uninstalling an earlier build."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.6-source/ HEAD river-widget .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.6-source.zip
-          gh release upload widget-1.6 CHOI-RIVER-Widget-1.6.apk CHOI-RIVER-Widget-1.6-source.zip --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.7.apk
+          gh release view widget-1.7 >/dev/null 2>&1 || gh release create widget-1.7 --title "CHOI RIVER Widget 1.7" --notes "Refresh beside title; settings at far right with separated touch targets. Background does not open settings. Debug signature may require uninstalling an earlier build."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.7-source/ HEAD river-widget .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.7-source.zip
+          gh release upload widget-1.7 CHOI-RIVER-Widget-1.7.apk CHOI-RIVER-Widget-1.7-source.zip --clobber
