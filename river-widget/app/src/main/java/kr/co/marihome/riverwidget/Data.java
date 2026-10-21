@@ -57,7 +57,7 @@ final class Data {
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||(!Schedule.schoolVisible(x.optString("status"),due,now)||!WidgetStyle.schoolStatus(c,x.optString("status"))))continue;
     JSONArray subjects=x.optJSONArray("subjects");String subject=subjects!=null&&subjects.length()>0?subjects.optString(0):"학교";
-    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?"default":x.optJSONObject("subjectColors").optString(subject,"default");r.title=x.optString("title","할 일");r.due=Schedule.dueTime(due);school.add(r);
+    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.due=Schedule.dueTime(due);school.add(r);
    }
   }catch(Exception ignored){}
   academy.sort(Comparator.comparing((Row x)->OffsetDateTime.parse(x.sort).toInstant()).thenComparing(x->x.id));int limit=WidgetStyle.academyLimit(c);if(academy.size()>limit)academy=new ArrayList<>(academy.subList(0,limit));school.sort(Comparator.comparing(x->x.sort));academy.addAll(school);return academy;
