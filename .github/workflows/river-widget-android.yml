@@ -31,17 +31,18 @@ jobs:
           gradle-version: '8.9'
       - name: Install Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Keep widget signing identity for subsequent builds
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: choi-river-widget-signing-v1
-      - name: Check push delivery and server syntax
+      - name: Check widget has no notification or alarm components
         run: |
-          node --check river/server/worker.mjs
-          node --check river/notification-popup.mjs
-          node --check river/notifications.mjs
-          node river/server/push-delivery.test.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path("river-widget/app/src/main")
+          forbidden = ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM", "NotificationManager", "NotificationChannel", "AlarmManager"]
+          for path in root.rglob("*"):
+              if path.suffix in {".java", ".xml"}:
+                  text = path.read_text()
+                  for token in forbidden:
+                      assert token not in text, f"{path}: unexpected {token}"
+          PY
       - name: Test and build widget APK
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
@@ -66,6 +67,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.5.apk
-          gh release view widget-1.5 >/dev/null 2>&1 || gh release create widget-1.5 --title "CHOI RIVER Widget 1.5" --notes "Added outer content insets and a visible vertical scrollbar. Header uses equally sized image icons. Inner panels and Notion subject colors remain unchanged."
-          gh release upload widget-1.5 CHOI-RIVER-Widget-1.5.apk --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.6.apk
+          gh release view widget-1.6 >/dev/null 2>&1 || gh release create widget-1.6 --title "CHOI RIVER Widget 1.6" --notes "Final read-only schedule widget. No native notifications or alarms. Configure reminders separately in Notion. Existing design and synchronization retained. Debug signature may require uninstalling an earlier build."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.6-source/ HEAD river-widget .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.6-source.zip
+          gh release upload widget-1.6 CHOI-RIVER-Widget-1.6.apk CHOI-RIVER-Widget-1.6-source.zip --clobber

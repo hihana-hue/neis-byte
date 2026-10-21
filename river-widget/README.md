@@ -1,13 +1,15 @@
 # CHOI RIVER Galaxy widget
 Native Android home screen widget, default 3×1. The launcher ultimately chooses cell sizes; resize horizontally/vertically by long-pressing the widget.
 
-- Translucent pearl/blue background; native scrollable list.
+- Green, black and sky themes, adjustable font size and background transparency; native scrollable list.
+- Academy schedules use three columns; school subject badges are fixed at 58dp and follow Notion color names.
+- No app notifications, alarm scheduling, notification permission, or reminder controls. Configure reminders separately in the Notion app; registration through the web dashboard does not automatically configure Notion reminders.
 - Pending academy lessons first (science/PT, class/clinic). Overdue pending academy rows remain until attendance is recorded.
 - School tasks from today through Sunday in Asia/Seoul, only 시작전 / 진행 중 / 진행 2차 / 작성 완료.
 - Click any row to open the existing main web dashboard. Browser login is separate from widget setup.
 - Read-only Cloudflare /widget/feed API. Pair once with a 12-character, 5-minute code generated in the main dashboard notification settings. The app never receives the shared dashboard password or Notion token.
 - Android Keystore AES-GCM encrypts the on-device read-only device token and cached schedules. Backup and cleartext traffic disabled.
-- Android system refresh requested every 30 minutes; delivery may be delayed by battery/background restrictions. Manual ↻ requests a refresh job. This is a read-only widget, not a replacement for push notifications.
+- Android system refresh requested every 30 minutes; delivery may be delayed by battery/background restrictions. Manual ↻ requests a refresh job. This is a read-only schedule widget; refresh does not schedule or send notifications.
 - Clinic counts are controlled by the existing Notion formulas/server. Widget never changes records.
 
 ## Install

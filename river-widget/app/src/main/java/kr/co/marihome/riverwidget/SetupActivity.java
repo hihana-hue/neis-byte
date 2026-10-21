@@ -36,6 +36,7 @@ public class SetupActivity extends Activity {
   Button pin=new Button(this);pin.setText("홈 화면에 위젯 추가");root.addView(pin);pin.setOnClickListener(v->{if(Vault.get(this,"access").isEmpty()){status.setText("먼저 위젯 연결 코드를 등록해 주세요.");return;}AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported())m.requestPinAppWidget(new ComponentName(this,RiverWidget.class),null,null);else status.setText("홈 화면 빈 공간 길게 누르기 → 위젯 → CHOI RIVER에서 추가해 주세요.");});
   Button clear=new Button(this);clear.setText("이 기기의 위젯 연결 해제");root.addView(clear);
   clear.setOnClickListener(v->{if(busy)return;try{final String disconnectToken=Vault.get(this,"access");new Thread(()->Data.disconnect(getApplicationContext(),disconnectToken),"river-widget-disconnect").start();Vault.put(this,"access",null);Vault.put(this,"cache",null);Data.error(this,"");RiverWidget.renderAll(this);status.setText("위젯 연결을 해제했어요.");}catch(Exception e){status.setText("연결 해제에 실패했어요.");}});
+  root.addView(text("알림은 노션 앱에서 별도로 설정해 주세요. 이 위젯은 일정을 표시하며 알림을 보내지 않아요.",12));
   root.addView(text("자동 갱신은 약 30분 간격이며 휴대폰 절전 상태에 따라 늦어질 수 있어요. ↻를 누르면 새로 불러와요. 항목을 누르면 기존 사이트가 열려요.",12));
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("메인 대시보드에서 만든 위젯 연결 코드를 입력해 주세요.");return;}
