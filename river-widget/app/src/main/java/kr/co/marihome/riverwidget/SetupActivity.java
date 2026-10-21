@@ -22,7 +22,7 @@ public class SetupActivity extends Activity {
   setResult(RESULT_CANCELED);
   ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(20),dp(24),dp(20),dp(20));scroll.setBackgroundColor(Color.rgb(245,249,252));scroll.addView(root);setContentView(scroll);
   scroll.setOnApplyWindowInsetsListener((v,insets)->{root.setPadding(dp(20),dp(24)+insets.getSystemWindowInsetTop(),dp(20),dp(20)+insets.getSystemWindowInsetBottom());return insets;});
-  root.addView(text("CHOI RIVER 위젯",24));root.addView(text("학원 먼저 · 이번 주 학교 할 일",16));
+  LinearLayout heading=new LinearLayout(this);heading.setOrientation(LinearLayout.HORIZONTAL);heading.setGravity(Gravity.CENTER_VERTICAL);TextView title=text("CHOI RIVER 위젯",24);heading.addView(title,new LinearLayout.LayoutParams(0,-2,1));Button close=new Button(this);close.setText("닫기 ×");close.setContentDescription("위젯 설정 닫기");flatButton(close);close.setLayoutParams(new LinearLayout.LayoutParams(dp(82),dp(44)));close.setOnClickListener(v->finish());heading.addView(close);root.addView(heading);root.addView(text("학원 먼저 · 이번 주 학교 할 일",16));
   root.addView(text("사이트 상단 설정 → 홈 화면 위젯 연결에서 코드를 만든 뒤 입력해 주세요. 사이트 암호나 노션 토큰은 입력하지 않아요.",14));
   password=new EditText(this);password.setSingleLine(true);password.setHint("위젯 연결 코드 · XXXX-XXXX-XXXX");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);root.addView(password);
   root.addView(text("위젯 모양",18));
