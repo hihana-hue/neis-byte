@@ -49,9 +49,9 @@ final class Data {
     String kind=x.optString("kind"),name="과학".equals(kind)?"과학":"바디PT",type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
     String round="클리닉".equals(type)?"클리닉":x.optString("round","");
-    String status=Schedule.academyStatus(start,now);
+    String status=Schedule.academyStatus(start,now);if("예정".equals(status))status="";
     Row r=new Row(id,"lesson",name+" "+round+" · "+Schedule.lessonTime(start)+" · "+status,start);
-    r.subject=name;r.title=status;r.detail=round.isEmpty()?status:round+" · "+status;
+    r.subject=name;r.title=status;r.detail=round.isEmpty()?status:status.isEmpty()?round:round+" · "+status;
     r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
