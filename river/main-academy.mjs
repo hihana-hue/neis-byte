@@ -2,7 +2,7 @@ import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=3';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false;
- const kindLabel=k=>k==='과학'?'과학':'PT',icon=k=>k==='과학'?'⚗':'◉';
+ const kindLabel=k=>k==='과학'?'과학':'바디PT',icon=k=>k==='과학'?'⚗':'◉';
  const label=s=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(s)):'시간 미정';
  function render(){
   $('academy-rows').replaceChildren();
