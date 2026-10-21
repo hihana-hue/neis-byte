@@ -43,6 +43,11 @@ jobs:
                   for token in forbidden:
                       assert token not in text, f"{path}: unexpected {token}"
           PY
+      - name: Verify widget feed and server
+        run: |
+          node --check river/server/worker.mjs
+          node river/server/push-delivery.test.mjs
+          node river/server/widget-rounds.test.mjs
       - name: Test and build widget APK
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
@@ -67,7 +72,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.7.apk
-          gh release view widget-1.7 >/dev/null 2>&1 || gh release create widget-1.7 --title "CHOI RIVER Widget 1.7" --notes "Refresh beside title; settings at far right with separated touch targets. Background does not open settings. Debug signature may require uninstalling an earlier build."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.7-source/ HEAD river-widget .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.7-source.zip
-          gh release upload widget-1.7 CHOI-RIVER-Widget-1.7.apk CHOI-RIVER-Widget-1.7-source.zip --clobber
+          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.8.apk
+          gh release view widget-1.8 >/dev/null 2>&1 || gh release create widget-1.8 --title "CHOI RIVER Widget 1.8" --notes "Match web academy labels, clinic and round slot, Seoul-day today status. Deploy included worker.mjs for rounds. Header separation retained. Debug signature may require reinstall."
+          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.8-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.8-source.zip
+          cp river/server/worker.mjs CHOI-RIVER-Worker-1.8.mjs
+          gh release upload widget-1.8 CHOI-RIVER-Widget-1.8.apk CHOI-RIVER-Widget-1.8-source.zip CHOI-RIVER-Worker-1.8.mjs --clobber

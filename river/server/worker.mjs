@@ -32,7 +32,15 @@ async function rpWidgetRoute(request,env,reply){
  const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9')]);
  const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
- const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:'예정'};});
+ const usedByKind=new Map(),rounds=new Map();
+ for(const p of [...ap].sort((a,b)=>(a.properties['수업일시']?.date?.start||'').localeCompare(b.properties['수업일시']?.date?.start||'')||a.id.localeCompare(b.id))){
+  const a=p.properties,kind=a['학원']?.select?.name||'',key=kind==='운동'?'바디PT':kind,type=a['수업 구분']?.select?.name||'수업',status=a['출결']?.select?.name||'예정',size=key==='과학'?4:key==='바디PT'?5:0;
+  if(['클리닉','연습'].includes(type)){rounds.set(p.id,'클리닉');continue;}if(!size)continue;
+  let used=usedByKind.get(key)||0;
+  if(status==='출석'||status==='예정'||(status==='결석'&&a['회차 차감']?.checkbox))used++;
+  usedByKind.set(key,used);if(status==='예정')rounds.set(p.id,((used-1)%size+1)+'/'+size);
+ }
+ const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
  return reply({school,academy});
 }
 

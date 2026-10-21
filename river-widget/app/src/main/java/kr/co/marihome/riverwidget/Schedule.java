@@ -17,5 +17,10 @@ public final class Schedule {
  static String dueTime(String due){try{return LocalDate.parse(due.substring(0,10)).format(DateTimeFormatter.ofPattern("M/d"));}catch(Exception e){return "";}}
  static String lessonDate(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("M.dd.(E)",java.util.Locale.KOREAN));}catch(Exception e){return "날짜 확인";}}
  static String lessonClock(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("a h:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
+ static String academyStatus(String start,Instant now){
+  try{LocalDate d=OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).toLocalDate();
+   return d.equals(today(now))?"오늘":d.isBefore(today(now))?"확인 필요":"예정";
+  }catch(Exception e){return "예정";}
+ }
  private Schedule(){}
 }

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const page=(id,kind,status,type='수업',charge=false)=>({id:String(id),properties:{'학원':{select:{name:kind}},'출결':{select:{name:status}},'수업 구분':{select:{name:type}},'수업일시':{date:{start:'2026-10-'+String(id).padStart(2,'0')+'T19:00:00+09:00'}},'회차 차감':{checkbox:charge}}});
+const pages=[page(1,'과학','출석'),page(2,'과학','결석'),page(3,'과학','결석','수업',true),page(4,'과학','예정','클리닉'),page(5,'과학','예정'),page(6,'과학','예정'),page(7,'과학','예정'),page(8,'운동','출석'),page(9,'바디PT','예정')];
+const context=vm.createContext({URL,rpHash:async()=> 'id',rpJson:async()=>({scope:'widget:read'}),rpPages:async(env,ds)=>ds==='school'?[]:[...pages].reverse()});
+vm.runInContext(fs.readFileSync(new URL('./worker.mjs',import.meta.url),'utf8').split('function rpPushError')[0]+';this.route=rpWidgetRoute;',context);
+const feed=await context.route({url:'https://example.test/widget/feed',method:'GET',headers:{get:()=> 'Bearer '+'a'.repeat(43)}},{RIVER_KV:{},NOTION_TOKEN:'token',SCHOOL_DATA_SOURCE_ID:'school'},value=>value);
+const rounds=new Map(feed.academy.map(x=>[x.id,x.round]));
+assert.equal(rounds.get('4'),'클리닉');assert.equal(rounds.get('5'),'3/4');assert.equal(rounds.get('6'),'4/4');assert.equal(rounds.get('7'),'1/4');assert.equal(rounds.get('9'),'2/5');
+assert.equal(feed.academy.length,5);
+console.log('Widget round feed checks passed');

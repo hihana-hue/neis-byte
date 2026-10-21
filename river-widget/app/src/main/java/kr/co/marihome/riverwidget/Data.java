@@ -7,7 +7,7 @@ import java.time.*;
 import java.util.*;
 final class Data {
  static final String API="https://choi-river-notion.hihana77.workers.dev";
- static final class Row {String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
+ static final class Row {String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="",detail="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
  static JSONObject get(String path,String token) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+path).openConnection();
   try{
@@ -46,10 +46,13 @@ final class Data {
    JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONArray aa=cache.optJSONArray("academy"),ss=cache.optJSONArray("school");
    if(aa!=null)for(int i=0;i<aa.length();i++){JSONObject x=aa.getJSONObject(i);String start=x.optString("start"),id=x.optString("id");
     if(!validId(id)||!Schedule.academyVisible(x.optString("status"),start,now))continue;
-    String kind=x.optString("kind"),name="과학".equals(kind)?"과학":"PT",type=x.optString("subtype","수업");
+    String kind=x.optString("kind"),name="과학".equals(kind)?"과학":"바디PT",type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
-    String late=OffsetDateTime.parse(start).toInstant().isBefore(now)?" · 출석 확인":"";
-    Row r=new Row(id,"lesson",name+" "+type+" · "+Schedule.lessonTime(start)+late,start);r.subject=name+" "+type;r.title=late.isEmpty()?"":"출석 확인";r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
+    String round="클리닉".equals(type)?"클리닉":x.optString("round","");
+    String status=Schedule.academyStatus(start,now);
+    Row r=new Row(id,"lesson",name+" "+round+" · "+Schedule.lessonTime(start)+" · "+status,start);
+    r.subject=name;r.title=status;r.detail=round.isEmpty()?status:round+" · "+status;
+    r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||!Schedule.schoolVisible(x.optString("status"),due,now))continue;
