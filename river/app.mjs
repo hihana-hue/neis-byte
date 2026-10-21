@@ -1,4 +1,4 @@
-import {createNotifications} from './notification-popup.mjs?v=2';
+import {createSettings} from './settings-popup.mjs?v=1';
 import {createAcademy} from './main-academy.mjs?v=14';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
@@ -16,7 +16,7 @@ function forget(){try{localStorage.removeItem(authKey);}catch{}}
 function remember(){try{if($('remember').checked)localStorage.setItem(authKey,token);else forget();}catch{}}
 const displayStatus=s=>s==='시작전'?'시작 전':s||'상태 미정';
 const academy=createAcademy(api,toast);
-const notifications=createNotifications(api,()=>Boolean(token));
+const notifications=createSettings(api,()=>Boolean(token));
 $('notifications-open').onclick=()=>notifications.open();
 if(new URL(location.href).searchParams.get('settings')==='notifications')notifications.open();
 const saving=new Set();let detailItem=null;
