@@ -2,7 +2,13 @@ import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=3';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false;
- const kindLabel=k=>k==='과학'?'과학':'바디PT',icon=k=>k==='과학'?'⚗':'◉';
+ const kindLabel=k=>k==='과학'?'과학':'바디PT';
+ function icon(kind){
+  const span=el('span','','academy-icon'),ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');
+  svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','16');svg.setAttribute('height','16');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
+  path.setAttribute('d',kind==='과학'?'M9 3h6M10 3v7L5 19a1.4 1.4 0 0 0 1.2 2h11.6A1.4 1.4 0 0 0 19 19l-5-9V3M8 15h8':'M3 8v8M6 6v12M18 6v12M21 8v8M6 12h12');
+  svg.append(path);span.append(svg);return span;
+ }
  const label=s=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(s)):'시간 미정';
  function render(){
   $('academy-rows').replaceChildren();
@@ -10,7 +16,7 @@ export function createAcademy(api,notify){
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'연결하면 학원 일정이 보여요.','academy-empty'));
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
-   b.append(el('span',icon(x.kind),'academy-icon'),el('strong',kindLabel(x.kind)),el('span',['클리닉','연습'].includes(x.subtype)?'':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',x.start&&Date.parse(x.start)<Date.now()?'확인 필요':'◷ 예정','academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
+   b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',['클리닉','연습'].includes(x.subtype)?'':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',x.start&&Date.parse(x.start)<Date.now()?'확인 필요':'◷ 예정','academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
  function open(action,x=null){
