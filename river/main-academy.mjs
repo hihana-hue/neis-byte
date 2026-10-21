@@ -10,13 +10,19 @@ export function createAcademy(api,notify){
   svg.append(path);span.append(svg);return span;
  }
  const label=s=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(s)):'시간 미정';
+ const seoulDay=value=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
+ const pendingLabel=start=>{
+  if(!start||!Number.isFinite(Date.parse(start)))return '◷ 예정';
+  const day=seoulDay(start),today=seoulDay(Date.now());
+  return day===today?'오늘':day<today?'확인 필요':'◷ 예정';
+ };
  function render(){
   $('academy-rows').replaceChildren();
   const rounds=lessonRounds(rows);
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'연결하면 학원 일정이 보여요.','academy-empty'));
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
-   b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span','◷ 예정','academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
+   b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',pendingLabel(x.start),'academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
  function open(action,x=null){
