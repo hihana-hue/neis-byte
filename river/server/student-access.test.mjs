@@ -39,3 +39,19 @@ r=await worker.fetch(req('/widget/feed',token),env);assert.equal(r.status,401);
 students.push(reg('duplicate','student-b','44444444-4444-4444-4444-444444444444'));
 r=await worker.fetch(req('/tasks','student-b'),env);assert.equal(r.status,401);
 console.log('PASS student-scoped school reads, cross-student write rejection, optional academy, read-only widget, disabled/changed/duplicate codes');
+
+const goodFetch=globalThis.fetch;
+for(const [stage,failedPath,status] of [
+ ['STUDENT_REGISTRY','data_sources/'+registry+'/query',404],
+ ['STUDENT_SCHOOL','databases/33333333333333333333333333333333',404],
+ ['STUDENT_ACADEMY','databases/77777777777777777777777777777777',403]
+]){
+ students[0].properties['연결코드'].rich_text[0].plain_text='student-a';
+ students[0].properties['학원 DB 링크']={url:stage==='STUDENT_ACADEMY'?'https://app.notion.com/p/77777777777777777777777777777777':null};
+ globalThis.fetch=async(url,opts)=>String(url).endsWith('/v1/'+failedPath)?new Response('{}',{status}):goodFetch(url,opts);
+ const response=await worker.fetch(req('/tasks','student-a'),env),body=await response.json();
+ assert.equal(response.status,503);assert.equal(body.code,stage+'_'+status);assert.ok(!JSON.stringify(body).includes('student-a'));
+}
+globalThis.fetch=goodFetch;
+r=await worker.fetch(req('/tasks','student-a'),{...env,RIVER_KV:null});assert.equal((await r.json()).code,'STUDENT_KV');
+console.log('PASS distinct registry/school/academy permissions and KV errors without exposing connection codes');

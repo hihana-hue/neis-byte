@@ -17,7 +17,7 @@ async function rpWidgetRoute(request,env,reply){
  if(path==='/widget/pair'&&request.method==='POST'){
   const body=await input();
   if(body.mode==='student'){
-   let student;try{student=await rpStudentLogin(env,body.code,request);}catch{return reply({error:'학생 연결 관리표와 DB 접근 권한을 확인해 주세요.'},503);}
+   let student;try{student=await rpStudentLogin(env,body.code,request);}catch(e){return reply(rpStudentReply(e),503);}
    if(!student)return reply({error:'연결코드를 확인해 주세요. 활성화된 학생만 연결할 수 있어요.'},401);
    const token=rpB64(crypto.getRandomValues(new Uint8Array(32))),id=await rpHash(token);
    await kv.put('widget-device:'+id,JSON.stringify({id,scope:'widget:read',studentId:student.STUDENT.id,codeHash:student.STUDENT_CODE_HASH,createdAt:Date.now()}),{expirationTtl:90*86400});
@@ -63,8 +63,20 @@ function rpDecode(value){return Uint8Array.from(atob(value.replaceAll('-','+').r
 async function rpHash(value){return rpB64(await crypto.subtle.digest('SHA-256',rpEnc.encode(value)));}
 async function rpJson(kv,key){const value=await kv.get(key);return value?JSON.parse(value):null;}
 async function rpList(kv,prefix){const keys=[];let cursor;do{const r=await kv.list({prefix,limit:100,...(cursor?{cursor}:{})});keys.push(...r.keys);cursor=r.list_complete?null:r.cursor;if(keys.length>2000)throw Error('저장 항목이 너무 많습니다.');}while(cursor);return keys;}
-async function rpNotion(env,path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('노션 연결을 확인해 주세요.');return r.json();}
+async function rpNotion(env,path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok){const e=Error('노션 연결을 확인해 주세요.');e.notionStatus=r.status;throw e;}return r.json();}
 async function rpPages(env,ds){const pages=[];let cursor;do{const r=await rpNotion(env,'data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...r.results.filter(p=>!p.archived&&!p.in_trash));cursor=r.has_more?r.next_cursor:null;}while(cursor);return pages;}
+
+
+function rpStudentError(message,code){const e=Error(message);e.studentCode=code;return e;}
+function rpStudentReply(e){return e?.studentCode?{error:e.message,code:e.studentCode}:{error:'학생 연결 서버의 설정을 확인해 주세요. [STUDENT_INTERNAL]',code:'STUDENT_INTERNAL'};}
+async function rpStudentStage(stage,fn){
+ try{return await fn();}catch(e){
+  if(e?.studentCode)throw e;
+  const status=e?.notionStatus;
+  const reason=status===401?'서버의 Notion 토큰을 확인해 주세요.':status===403||status===404?'해당 DB에 기존 서버용 노션 연동을 추가해 주세요.':status===429?'노션 요청이 많습니다. 잠시 후 다시 연결해 주세요.':status===400?'DB 주소와 속성 이름을 확인해 주세요.':'서버 연결 설정을 확인해 주세요.';
+  const code=stage+(status?'_'+status:'');throw rpStudentError(stage==='STUDENT_REGISTRY'?'학생 연결 관리표를 읽지 못했습니다. '+reason+' ['+code+']':stage==='STUDENT_SCHOOL'?'학교 DB를 읽지 못했습니다. '+reason+' ['+code+']':stage==='STUDENT_ACADEMY'?'학원 DB를 읽지 못했습니다. '+reason+' ['+code+']':'연결 저장소 RIVER_KV를 확인해 주세요. ['+code+']',code);
+ }
+}
 
 const RP_STUDENTS='400215b9-b774-80a0-ae62-000b166c0655';
 const rpText=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
@@ -76,16 +88,16 @@ function rpDbId(value){
 async function rpStudentEnv(env,page){
  if(!page||page.archived||page.in_trash||normalized(page.parent?.data_source_id)!==normalized(env.STUDENT_REGISTRY_ID||RP_STUDENTS)||!page.properties?.['연결 활성화']?.checkbox)return null;
  const p=page.properties,school=p['학교 DB 링크']?.url,academy=p['학원 DB 링크']?.url;
- async function source(link){const db=await rpNotion(env,'databases/'+rpDbId(link));if(db.data_sources?.length!==1)throw Error('DB의 데이터 원본을 하나로 지정해 주세요.');return db.data_sources[0].id;}
- return {...env,SCHOOL_DATA_SOURCE_ID:await source(school),ACADEMY_DATA_SOURCE_ID:academy?await source(academy):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
+ async function source(link,stage){return rpStudentStage(stage,async()=>{const db=await rpNotion(env,'databases/'+rpDbId(link));if(db.data_sources?.length!==1)throw rpStudentError('연결할 DB의 데이터 원본을 하나로 지정해 주세요. ['+stage+'_SOURCE]',stage+'_SOURCE');return db.data_sources[0].id;});}
+ return {...env,SCHOOL_DATA_SOURCE_ID:await source(school,'STUDENT_SCHOOL'),ACADEMY_DATA_SOURCE_ID:academy?await source(academy,'STUDENT_ACADEMY'):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
 }
 async function rpStudentLogin(env,code,request){
  if(typeof code!=='string'||code.length<4||code.length>100||code!==code.trim())return null;
- const kv=env.RIVER_KV;if(!kv)throw Error('RIVER_KV 연결을 확인해 주세요.');
- const ip=request.headers.get('CF-Connecting-IP')||'unknown',key='student-attempt:'+await rpHash(ip+':'+Math.floor(Date.now()/60000)),attempts=Number(await kv.get(key)||0);
+ const kv=env.RIVER_KV;if(!kv)throw rpStudentError('서버에 연결 저장소 RIVER_KV를 연결해 주세요. [STUDENT_KV]','STUDENT_KV');
+ const ip=request.headers.get('CF-Connecting-IP')||'unknown',key='student-attempt:'+await rpHash(ip+':'+Math.floor(Date.now()/60000)),attempts=Number(await rpStudentStage('STUDENT_KV',()=>kv.get(key))||0);
  if(attempts>=20)return null;
- await kv.put(key,String(attempts+1),{expirationTtl:120});
- const d=await rpNotion(env,'data_sources/'+(env.STUDENT_REGISTRY_ID||RP_STUDENTS)+'/query','POST',{page_size:2,filter:{property:'연결코드',rich_text:{equals:code}}});
+ await rpStudentStage('STUDENT_KV',()=>kv.put(key,String(attempts+1),{expirationTtl:120}));
+ const d=await rpStudentStage('STUDENT_REGISTRY',()=>rpNotion(env,'data_sources/'+(env.STUDENT_REGISTRY_ID||RP_STUDENTS)+'/query','POST',{page_size:2,filter:{property:'연결코드',rich_text:{equals:code}}}));
  if(d.results?.length!==1)return null;
  const e=await rpStudentEnv(env,d.results[0]);if(!e||!await same(e.STUDENT_CODE_HASH,await rpHash(code)))return null;return e;
 }
@@ -178,7 +190,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
  if(!auth.startsWith('Bearer '))return reply({error:'학생 연결코드를 입력해 주세요.'},401);
  if(!env.RIVER_ACCESS_KEY||!await same(auth.slice(7),env.RIVER_ACCESS_KEY)){
   try{const student=await rpStudentLogin(env,auth.slice(7),request);if(!student)return reply({error:'연결코드가 틀렸거나 연결이 중지된 학생입니다.'},401);env=student;}
-  catch{return reply({error:'학생 연결 관리표와 DB 접근 권한을 확인해 주세요.'},503);}
+  catch(e){return reply(rpStudentReply(e),503);}
  }
  if(!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'학교 DB 링크를 설정해 주세요.'},503);
  async function notion(path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('노션 요청 실패');return r.json();}
