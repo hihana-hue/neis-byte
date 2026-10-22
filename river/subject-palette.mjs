@@ -1,0 +1,4 @@
+// Notion exposes color names, not exact theme-dependent UI hex values.
+export const palette={default:['#E9E9E7','#37352F'],gray:['#E3E2E0','#454340'],brown:['#EEE0DA','#64473A'],orange:['#FADEC9','#854C1D'],yellow:['#FDECC8','#71551A'],green:['#DBEDDB','#2B593F'],blue:['#D3E5EF','#284F6C'],purple:['#E8DEEE','#694A7A'],pink:['#F5E0E9','#7D3C60'],red:['#FFE2DD','#8A382E']};
+export function fallbackSubject(subject){if(['공통과학2','공통영어2'].includes(subject))return 'green';if(subject==='통합사회2')return 'orange';if(['공통국어1','공통수학1','공통영어1','공통과학1','통합사회','한국사','정보'].includes(subject))return 'blue';if(['과탐실','음악','미술','체육','종교학'].includes(subject))return 'yellow';return 'default';}
+export function paintSubject(el,color,subject){const pair=palette[color]||palette[fallbackSubject(subject)];el.style.backgroundColor=pair[0];el.style.color=pair[1];}

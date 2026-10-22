@@ -40,7 +40,8 @@ async function rpWidgetRoute(request,env,reply){
  if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
  const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID?Promise.resolve([]):rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'))]);
  const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
- const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
+ const subjectColors=await rpSubjectColors(env);
+ const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
  const usedByKind=new Map(),rounds=new Map();
  for(const p of [...ap].sort((a,b)=>(a.properties['수업일시']?.date?.start||'').localeCompare(b.properties['수업일시']?.date?.start||'')||a.id.localeCompare(b.id))){
   const a=p.properties,kind=a['학원']?.select?.name||'',key=kind==='운동'?'바디PT':kind,type=a['수업 구분']?.select?.name||'수업',status=a['출결']?.select?.name||'예정',size=key==='과학'?4:key==='바디PT'?5:0;
@@ -64,6 +65,9 @@ async function rpHash(value){return rpB64(await crypto.subtle.digest('SHA-256',r
 async function rpJson(kv,key){const value=await kv.get(key);return value?JSON.parse(value):null;}
 async function rpList(kv,prefix){const keys=[];let cursor;do{const r=await kv.list({prefix,limit:100,...(cursor?{cursor}:{})});keys.push(...r.keys);cursor=r.list_complete?null:r.cursor;if(keys.length>2000)throw Error('저장 항목이 너무 많습니다.');}while(cursor);return keys;}
 async function rpNotion(env,path,method='GET',body){const r=await fetch('https://api.notion.com/v1/'+path,{method,headers:{Authorization:'Bearer '+env.NOTION_TOKEN,'Notion-Version':'2025-09-03','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});if(!r.ok){const e=Error('노션 연결을 확인해 주세요.');e.notionStatus=r.status;throw e;}return r.json();}
+async function rpSubjectColors(env){
+ try{const source=await rpNotion(env,'data_sources/'+env.SCHOOL_DATA_SOURCE_ID);return Object.fromEntries((source.properties?.['과목']?.multi_select?.options||[]).map(x=>[x.name,x.color||'default']));}catch{return {};}
+}
 async function rpPages(env,ds){const pages=[];let cursor;do{const r=await rpNotion(env,'data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...r.results.filter(p=>!p.archived&&!p.in_trash));cursor=r.has_more?r.next_cursor:null;}while(cursor);return pages;}
 
 
@@ -292,8 +296,9 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    return reply({ok:true,id:page.id,url:page.url},201);
   }
   if(path==='/tasks'&&request.method==='GET'){
+   const subjectColors=await rpSubjectColors(env);
    const pages=[];let cursor;do{const data=await notion(`data_sources/${env.SCHOOL_DATA_SOURCE_ID}/query`,'POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...data.results);cursor=data.has_more?data.next_cursor:null;}while(cursor);
-   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({student:env.STUDENT||null,items:items.filter(x=>['시작전','진행 중','진행 2차','작성 완료','봉사완료','완료'].includes(x.status)&&(!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000))});
+   const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({student:env.STUDENT||null,items:items.filter(x=>['시작전','진행 중','진행 2차','작성 완료','봉사완료','완료'].includes(x.status)&&(!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000))});
   }
   const statusMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/status$/i);
   if(statusMatch&&request.method==='PATCH'){
@@ -319,5 +324,6 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
   return reply({error:'요청을 찾지 못했습니다.'},404);
  }catch{return reply({error:'노션 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.'},502);}
 }};
+
 
 
