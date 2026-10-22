@@ -1,5 +1,5 @@
 import {createSettings} from './settings-popup.mjs?v=4';
-import {createAcademy} from './main-academy.mjs?v=14';
+import {createAcademy} from './main-academy.mjs?v=15';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
