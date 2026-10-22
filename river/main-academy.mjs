@@ -1,5 +1,5 @@
 import {weekday} from './date-weekday.mjs?v=1';
-import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=3';
+import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=4';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false;
@@ -25,17 +25,17 @@ export function createAcademy(api,notify){
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'연결하면 학원 일정이 보여요.','academy-empty'));
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
-   b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',pendingLabel(x.start),'academy-pending'));b.onclick=()=>open('status',x);$('academy-rows').append(b);}
+   b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',pendingLabel(x.start),'academy-pending'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
  function open(action,x=null){
   if(busy)return;if(!connected){notify('먼저 일정을 불러와 주세요.');return;}
   current=x;mode=action;$('academy-error').textContent='';
-  $('academy-dialog-title').textContent=action==='status'?'출석했나요?':action==='next'?'다음 수업을 등록할까요?':action==='change'?'수업 날짜 변경':action==='absent'?'결석으로 기록할까요?':'수업 등록';
-  $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start):'';
+  $('academy-dialog-title').textContent=action==='status'?'출석했나요?':action==='next'?'다음 수업을 등록할까요?':action==='change'?'보강 날짜 선택':action==='absent'?'결석으로 기록할까요?':'수업 등록';
+  $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start)+(x.originalStart?' · '+label(x.originalStart)+' 수업 보강':''):'';
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';
   $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent'||['클리닉','연습'].includes(x?.subtype);
-  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':'수업 날짜 · 시간';$('academy-kind').value=x?.kind==='과학'?'과학':'바디PT';types($('academy-kind').value,x?.subtype);
+  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';$('academy-kind').value=x?.kind==='과학'?'과학':'바디PT';types($('academy-kind').value,x?.subtype);
   const next=x?.start?new Date(Date.parse(x.start)+7*86400000).toISOString():null;
   $('academy-date').value=action==='next'?localInput(next):x?localInput(x.start):'';$('academy-date').required=!['status','absent'].includes(action);$('academy-date').disabled=['status','absent'].includes(action);updateWeekday();
   $('academy-save').textContent=action==='next'||action==='add'?'수업 등록하기':'확인';$('academy-cancel').title=action==='next'?'다음 수업을 등록하지 않고 닫기':'닫기';
@@ -61,3 +61,4 @@ export function createAcademy(api,notify){
  render();
  return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
 }
+

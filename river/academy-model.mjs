@@ -8,7 +8,7 @@ export function localInput(start){if(!start)return '';const n=Date.parse(start);
 // Completed/charged lessons advance the count; clinics never advance it.
 export function lessonRounds(items){
  const counts=new Map(),labels=new Map();
- const ordered=[...items].sort((a,b)=>(a.start||'').localeCompare(b.start||'')||String(a.id).localeCompare(String(b.id)));
+ const ordered=[...items].sort((a,b)=>(a.originalStart||a.start||'').localeCompare(b.originalStart||b.start||'')||String(a.id).localeCompare(String(b.id)));
  for(const x of ordered){
   if(['클리닉','연습'].includes(x.subtype)){labels.set(x.id,'클리닉');continue;}
   const kind=x.kind==='운동'?'바디PT':x.kind,size=packSize[kind];
@@ -20,3 +20,4 @@ export function lessonRounds(items){
  }
  return labels;
 }
+

@@ -49,7 +49,7 @@ async function rpWidgetRoute(request,env,reply){
   if(status==='출석'||status==='예정'||(status==='결석'&&a['회차 차감']?.checkbox))used++;
   usedByKind.set(key,used);if(status==='예정')rounds.set(p.id,((used-1)%size+1)+'/'+size);
  }
- const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
+ const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['보강 원래 수업일']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
  return reply({school,academy,student:env.STUDENT||null});
 }
 
@@ -202,7 +202,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const ds=env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9';
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
-   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
+   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['보강 원래 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
    const validSubtype=(kind,value)=>['과학','바디PT','운동'].includes(kind)&&['수업','클리닉'].includes(value);
    const validStart=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+09:00$/.test(s))return false;const n=Date.parse(s);return Number.isFinite(n)&&new Date(n+9*3600000).toISOString().slice(0,19)===s.slice(0,19);};
    if(path==='/academy'&&request.method==='GET'){
@@ -256,9 +256,14 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
     props['수업 구분']={select:{name:subtype}};
     props['변경 전 일시']={date:old.start?{start:old.start}:null};
     props['수업일시']={date:{start:input.start}};
-    // Moving an attended/absent lesson resets it to scheduled, avoiding duplicate counts.
-    props['출결']={select:{name:'예정'}};props['회차 차감']={checkbox:false};
-    entry='일정 변경: '+(old.start||'미정')+' → '+input.start+' / 이전 출결 '+old.status;
+    // Keep the first lesson date, attendance and charge when moving the same lesson.
+    if(!old.originalStart){
+     const source=await notion('data_sources/'+ds);
+     if(!source.properties?.['보강 원래 수업일'])await notion('data_sources/'+ds,'PATCH',{properties:{'보강 원래 수업일':{date:{}}}});
+     else if(source.properties['보강 원래 수업일'].type!=='date')return reply({error:'보강 원래 수업일 속성을 날짜 형식으로 설정해 주세요.'},409);
+     props['보강 원래 수업일']={date:old.start?{start:old.start}:null};
+    }
+    entry='보강 날짜 변경: '+(old.start||'미정')+' → '+input.start+' / 최초 수업 '+(old.originalStart||old.start||'미정')+' / 출결 유지 '+old.status;
    }else if(input.action==='attendance'){
     if(!['예정','출석','결석'].includes(input.status)||typeof input.charge!=='boolean')return reply({error:'출결을 확인해 주세요.'},400);
     props['출결']={select:{name:input.status}};props['회차 차감']={checkbox:input.status==='결석'&&input.charge&&!['클리닉','연습'].includes(old.subtype)};
@@ -314,4 +319,5 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
   return reply({error:'요청을 찾지 못했습니다.'},404);
  }catch{return reply({error:'노션 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.'},502);}
 }};
+
 
