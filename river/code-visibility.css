@@ -1,0 +1,7 @@
+.code-input{position:relative;display:block;width:100%}
+.code-input input{box-sizing:border-box;width:100%;padding-right:48px!important;margin-bottom:0}
+.code-input .code-visibility{position:absolute;right:3px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:0;margin:0;padding:8px;border:0;border-radius:7px;background:transparent;color:#456a7d;box-shadow:none;cursor:pointer}
+.code-input .code-visibility:hover{background:#edf3f6}
+.code-input .code-visibility:active{background:#dce9ee}
+.code-input .code-visibility:focus-visible{outline:2px solid #19799f;outline-offset:-2px}
+.code-visibility svg{display:block;width:20px;height:20px}
