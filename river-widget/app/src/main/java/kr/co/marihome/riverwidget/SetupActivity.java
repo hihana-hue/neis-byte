@@ -21,6 +21,9 @@ public class SetupActivity extends Activity {
   b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(Color.argb(60,25,121,159)),normal,null));
   b.setPadding(dp(12),dp(10),dp(12),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(6);b.setLayoutParams(lp);
  }
+ @Override protected void onNewIntent(Intent intent){
+  super.onNewIntent(intent);setIntent(intent);recreate();
+ }
  @Override public void onCreate(Bundle state){
   super.onCreate(state);widgetId=getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,AppWidgetManager.INVALID_APPWIDGET_ID);
   setResult(RESULT_CANCELED);

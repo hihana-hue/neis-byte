@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'kr.co.marihome.riverwidget'
  compileSdk 35
- defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 22; versionName '1.21-hide-lesson-count' }
+ defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 23; versionName '1.22-settings-stack' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
  testOptions { unitTests.returnDefaultValues = true }
 }
