@@ -210,3 +210,8 @@ main:not(.write-page),main.write-page{width:100%;max-width:480px;display:block;p
 /* Status sections use a distinct heading color from date-grouped sections. */
 #right > .panel > h2{color:#7956A3}
 #right > .panel > h2 > .badge{color:#7956A3;background:#EDE5F5}
+
+/* Task dates share the subject line; the title stays on its own line. */
+.task-grid .card-heading{display:flex;align-items:center;flex-wrap:wrap;gap:3px 7px;margin-bottom:3px}
+.task-grid .card-heading .tags{margin:0;flex:0 1 auto}
+.task-grid .card-heading .meta,.schedule-workspace .task-grid .card-heading .meta{margin:0;font-size:10px;line-height:1.3;gap:3px 6px}
