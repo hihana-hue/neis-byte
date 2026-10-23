@@ -22,5 +22,6 @@ public final class Schedule {
    return d.equals(today(now))?"오늘":d.isBefore(today(now))?"확인 필요":"예정";
   }catch(Exception e){return "예정";}
  }
+ static boolean isToday(String value,Instant now,boolean timed){try{return (timed?OffsetDateTime.parse(value).atZoneSameInstant(SEOUL).toLocalDate():LocalDate.parse(value.substring(0,10))).equals(today(now));}catch(Exception e){return false;}}
  private Schedule(){}
 }

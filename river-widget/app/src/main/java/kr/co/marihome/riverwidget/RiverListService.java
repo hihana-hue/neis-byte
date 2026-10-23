@@ -4,6 +4,11 @@ import android.view.View;
 import android.widget.*;
 import android.util.TypedValue;
 import java.util.*;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StyleSpan;
+import android.text.style.RelativeSizeSpan;
+import android.graphics.Typeface;
 public class RiverListService extends RemoteViewsService {
  @Override public RemoteViewsFactory onGetViewFactory(Intent intent){return new Factory(getApplicationContext());}
  static class Factory implements RemoteViewsFactory {
@@ -18,8 +23,8 @@ public class RiverListService extends RemoteViewsService {
    v.setImageViewResource(R.id.panel_background,WidgetStyle.panel(c,academy));v.setInt(R.id.panel_background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
    v.setOnClickFillInIntent(R.id.row,new Intent());v.setOnClickFillInIntent(R.id.panel_background,new Intent());
    if(academy){int[] cells={R.id.cell0,R.id.cell1,R.id.cell2},labels={R.id.label0,R.id.label1,R.id.label2},dates={R.id.date0,R.id.date1,R.id.date2},times={R.id.time0,R.id.time1,R.id.time2},details={R.id.detail0,R.id.detail1,R.id.detail2};
-    for(int i=0;i<3;i++){v.setViewVisibility(cells[i],i<rows.size()?View.VISIBLE:View.INVISIBLE);if(i>=rows.size())continue;Data.Row row=rows.get(i);text(v,labels[i],row.subject,false);text(v,details[i],row.detail,false);v.setViewVisibility(details[i],row.detail.isEmpty()?View.GONE:View.VISIBLE);v.setTextViewTextSize(details[i],TypedValue.COMPLEX_UNIT_SP,Math.max(10,WidgetStyle.font(c)-1));text(v,dates[i],row.date,false);text(v,times[i],row.time,false);for(int textId:new int[]{labels[i],details[i],dates[i],times[i]})v.setTextColor(textId,WidgetStyle.academyText(c));v.setOnClickFillInIntent(cells[i],new Intent());}
-   }else{Data.Row row=rows.get(0);text(v,R.id.subject,row.subject,true);v.setInt(R.id.subject,"setBackgroundResource",SubjectPalette.drawable(row.subjectColor));v.setTextColor(R.id.subject,SubjectPalette.foreground(row.subjectColor));v.setTextViewTextSize(R.id.subject,TypedValue.COMPLEX_UNIT_SP,12);text(v,R.id.caption,row.title,false);text(v,R.id.due,row.due,true);v.setTextViewTextSize(R.id.due,TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c)-1);v.setOnClickFillInIntent(R.id.row,new Intent());}
+    for(int i=0;i<3;i++){v.setViewVisibility(cells[i],i<rows.size()?View.VISIBLE:View.INVISIBLE);if(i>=rows.size())continue;Data.Row row=rows.get(i);text(v,labels[i],row.subject,false);String heading=row.subject+(row.auxiliary.isEmpty()?"":" "+row.auxiliary);SpannableString styled=new SpannableString(heading);styled.setSpan(new StyleSpan(Typeface.BOLD),0,row.subject.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);if(!row.auxiliary.isEmpty())styled.setSpan(new RelativeSizeSpan((float)Math.max(10,WidgetStyle.font(c)-1)/WidgetStyle.font(c)),row.subject.length(),heading.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);v.setTextViewText(labels[i],styled);text(v,details[i],row.detail,false);v.setViewVisibility(details[i],row.detail.isEmpty()?View.GONE:View.VISIBLE);v.setTextViewTextSize(details[i],TypedValue.COMPLEX_UNIT_SP,Math.max(10,WidgetStyle.font(c)-1));text(v,dates[i],row.date,false);text(v,times[i],row.time,false);for(int textId:new int[]{labels[i],details[i],dates[i],times[i]})v.setTextColor(textId,WidgetStyle.academyText(c));if(row.today)v.setTextColor(dates[i],WidgetStyle.todayColor(c,true));v.setOnClickFillInIntent(cells[i],new Intent());}
+   }else{Data.Row row=rows.get(0);text(v,R.id.subject,row.subject,true);v.setInt(R.id.subject,"setBackgroundResource",SubjectPalette.drawable(row.subjectColor));v.setTextColor(R.id.subject,SubjectPalette.foreground(row.subjectColor));v.setTextViewTextSize(R.id.subject,TypedValue.COMPLEX_UNIT_SP,12);text(v,R.id.caption,row.title,false);text(v,R.id.due,row.due,true);if(row.today)v.setTextColor(R.id.due,WidgetStyle.todayColor(c,false));v.setInt(R.id.panel_background,"setColorFilter",WidgetStyle.divider(c));v.setInt(R.id.panel_background,"setImageAlpha",255);v.setTextViewTextSize(R.id.due,TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c)-1);v.setOnClickFillInIntent(R.id.row,new Intent());}
    return v;
   }
  }

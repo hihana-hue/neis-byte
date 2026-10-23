@@ -4,10 +4,6 @@ on:
     branches: [main]
     paths:
       - 'river-widget/**'
-      - 'river/server/worker.mjs'
-      - 'river/server/push-delivery.test.mjs'
-      - 'river/notification-popup.mjs'
-      - 'river/notifications.mjs'
       - '.github/workflows/river-widget-android.yml'
   workflow_dispatch:
 permissions:
@@ -49,15 +45,43 @@ jobs:
           node river/server/push-delivery.test.mjs
           node river/server/widget-rounds.test.mjs
           node river/server/student-access.test.mjs
-      - name: Test and build widget APK
+      - name: Test and build unsigned release
         working-directory: river-widget
-        run: gradle :app:testDebugUnitTest :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
-      - name: Upload installable APK
+        run: gradle :app:testDebugUnitTest :app:assembleRelease :app:lintRelease --no-daemon --stacktrace
+      - name: Sign release with persistent key
+        id: signing
+        env:
+          KEY_B64: ${{ secrets.RIVER_SIGNING_KEY_B64 }}
+          STORE_PASSWORD: ${{ secrets.RIVER_SIGNING_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RIVER_SIGNING_ALIAS }}
+          EXPECTED_SHA256: ${{ secrets.RIVER_SIGNING_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$KEY_B64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$EXPECTED_SHA256" ]; then
+            echo '::warning::Signing is not configured. No temporary-signed APK will be published. Run river-widget/scripts/setup-signing.ps1 on the owner PC.'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          umask 077
+          keyfile="$RUNNER_TEMP/river-release.p12"
+          trap 'rm -f "$keyfile"' EXIT
+          printf '%s' "$KEY_B64" | base64 --decode > "$keyfile"
+          mkdir -p signed
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 river-widget/app/build/outputs/apk/release/app-release-unsigned.apk signed/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/CHOI-RIVER-Widget-1.23.apk signed/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/CHOI-RIVER-Widget-1.23.apk > signed/certificate.txt
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signed/certificate.txt | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+          expected=$(printf '%s' "$EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          test -n "$actual" && test "$actual" = "$expected"
+          rm signed/aligned.apk
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+      - name: Upload signed APK
+        if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: choi-river-widget-3x1
-          path: river-widget/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          name: choi-river-widget-signed
+          path: signed/
           retention-days: 90
       - name: Upload test reports
         if: always()
@@ -66,15 +90,17 @@ jobs:
           name: choi-river-widget-test-reports
           path: |
             river-widget/app/build/reports/tests/
-            river-widget/app/build/reports/lint-results-debug.html
+            river-widget/app/build/reports/lint-results-release.html
           if-no-files-found: ignore
-      - name: Publish direct APK download
-        if: github.ref == 'refs/heads/main'
+      - name: Publish signed APK
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp river-widget/app/build/outputs/apk/debug/app-debug.apk CHOI-RIVER-Widget-1.22.apk
-          gh release view widget-1.22 >/dev/null 2>&1 || gh release create widget-1.22 --title "CHOI RIVER Widget 1.22" --notes "Color theme picker, flat pressed-state buttons, 3/6/9 academy items, school status filters, refresh color feedback and panel links. Debug signature may require reinstall."
-          git archive --format=zip --prefix=CHOI-RIVER-Widget-1.22-source/ HEAD river-widget river/server/worker.mjs .github/workflows/river-widget-android.yml > CHOI-RIVER-Widget-1.22-source.zip
-          cp river/server/worker.mjs CHOI-RIVER-Worker-1.22.mjs
-          gh release upload widget-1.22 CHOI-RIVER-Widget-1.22.apk CHOI-RIVER-Widget-1.22-source.zip CHOI-RIVER-Worker-1.22.mjs --clobber
+          set -euo pipefail
+          # Never overwrite an installed version with a different artifact.
+          if gh release view widget-1.23 >/dev/null 2>&1; then
+            echo '::error::Version 1.23 already exists. Increase versionCode, versionName and release tag before publishing.'
+            exit 1
+          fi
+          gh release create widget-1.23 signed/CHOI-RIVER-Widget-1.23.apk signed/certificate.txt --title "CHOI RIVER Widget 1.23" --notes "Persistent release signature. Academy and school today highlighting, inline clinic/round labels, stronger dividers. One-time migration from old debug builds is required. Future releases must retain this key."

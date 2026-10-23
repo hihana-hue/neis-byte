@@ -60,6 +60,7 @@ public class SetupActivity extends Activity {
   Button close=new Button(this);close.setText("닫기");close.setOnClickListener(v->finish());
   LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);root.addView(buttons);
   for(Button button:new Button[]{applyStyle,clear,close}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);button.setPadding(dp(3),dp(10),dp(3),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(6),dp(2),0);buttons.addView(button,lp);}
+  Button updates=new Button(this);updates.setText("업데이트 확인 · "+BuildConfig.VERSION_NAME);flatButton(updates);updates.setOnClickListener(v->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://github.com/hihana-hue/neis-byte/releases?q=widget-"))));root.addView(updates);
   root.addView(text("자동 갱신은 약 30분 간격이며 휴대폰 절전 상태에 따라 늦어질 수 있어요. ↻를 누르면 새로 불러와요. 항목을 누르면 기존 사이트가 열려요.",12));
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("학생 연결코드를 입력해 주세요.");return;}
