@@ -24,7 +24,7 @@ export function createAcademy(api,notify){
   const rounds=lessonRounds(rows);
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'연결하면 학원 일정이 보여요.','academy-empty'));
-  for(const x of pending){const b=el('button','','academy-line');b.type='button';b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
+  for(const x of pending){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',pendingLabel(x.start),'academy-pending'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
@@ -58,6 +58,7 @@ export function createAcademy(api,notify){
   const body=mode==='add'?{kind:$('academy-kind').value,start,subtype,note:''}:mode==='change'?{action:'reschedule',start,subtype,updated:current.updated}:mode==='absent'?{action:'attendance',status:'결석',charge:!['클리닉','연습'].includes(current.subtype)&&$('academy-charge').checked,updated:current.updated}:{action:'attendanceNext',nextStart:start,nextSubtype:subtype,updated:current.updated};
   await persist(mode==='add'?'/academy':'/academy/'+encodeURIComponent(current.id),body,d=>{$('academy-dialog').close();notify(mode==='next'?'다음 수업을 등록했어요.':'노션에 저장했어요.');});
  };
+ setInterval(()=>{if(connected&&!busy)render();},60000);
  render();
  return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
 }
