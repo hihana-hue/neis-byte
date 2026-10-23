@@ -1,4 +1,4 @@
-import {paintSubject} from './subject-palette.mjs?v=1';
+import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=4';
 import {createAcademy} from './main-academy.mjs?v=18';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
