@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'river-widget/**'
+      - 'river/server/widget-rounds.test.mjs'
       - '.github/workflows/river-widget-android.yml'
   workflow_dispatch:
 permissions:
