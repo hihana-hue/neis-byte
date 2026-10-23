@@ -1,0 +1,14 @@
+#academy-dialog{max-height:90dvh;overflow-y:auto}
+#academy-date-field .date-weekday-field{display:none}
+#academy-dialog .academy-calendar{border:1px solid #ccdce2;border-radius:10px;padding:10px;margin:5px 0 8px;background:#f9fcfd;color:#23485e}
+#academy-dialog .calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#academy-dialog .calendar-nav button{width:36px;height:34px;border:1px solid #ccdce2;border-radius:6px;background:transparent;color:inherit;font-size:22px;box-shadow:none;padding:0}
+.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+.calendar-weekdays{font-size:12px;font-weight:600;margin-bottom:4px}.calendar-weekdays span:first-child{color:#b55366}.calendar-weekdays span:last-child{color:#2375a1}
+#academy-dialog .calendar-days button{min-width:0;width:100%;min-height:36px;border:1px solid transparent;border-radius:6px;background:transparent;color:#23485e;font:400 14px system-ui;padding:4px 0;box-shadow:none}
+#academy-dialog .calendar-days button[aria-current=date]{border-color:#93bdca}
+#academy-dialog .calendar-days button[aria-pressed=true]{background:#19799f;color:white;font-weight:600}
+#academy-dialog .calendar-days button:focus-visible{outline:2px solid #19799f;outline-offset:1px}
+#academy-dialog .calendar-selection{font-size:13px;font-weight:600;color:#17688c;margin:9px 0}
+#academy-dialog .calendar-time{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+#academy-dialog .calendar-time input{width:150px;max-width:65%;min-height:38px;margin:0;padding:6px 9px;border:1px solid #99b8c5;border-radius:6px;background:white;color:#23485e;font:inherit}

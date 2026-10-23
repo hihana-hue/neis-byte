@@ -1,6 +1,6 @@
 import {paintSubject} from './subject-palette.mjs?v=1';
 import {createSettings} from './settings-popup.mjs?v=4';
-import {createAcademy} from './main-academy.mjs?v=17';
+import {createAcademy} from './main-academy.mjs?v=18';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
@@ -71,5 +71,6 @@ setInterval(()=>{if(loaded)render();},60000);message('연결하기를 눌러 학
 if(!base)showSamples();
 
 if(base&&(token=remembered()))load().catch(e=>toast(e.message));
+
 
 

@@ -1,9 +1,11 @@
+import {mountAcademyCalendar} from './academy-calendar.mjs?v=1';
 import {weekday} from './date-weekday.mjs?v=1';
 import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=4';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false;
- const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);};
+ const calendar=mountAcademyCalendar($('academy-date'));
+ const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);calendar.refresh();};
  $('academy-date').addEventListener('input',updateWeekday);$('academy-date').addEventListener('change',updateWeekday);
  const kindLabel=k=>k==='과학'?'과학':'바디PT';
  function icon(kind){
@@ -62,4 +64,5 @@ export function createAcademy(api,notify){
  render();
  return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
 }
+
 
