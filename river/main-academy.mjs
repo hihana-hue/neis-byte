@@ -29,6 +29,7 @@ export function createAcademy(api,notify){
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)==='클리닉'?'(클)':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'),el('span',pendingLabel(x.start),'academy-pending'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
+ function updateKinds(kinds=[]){const select=$('academy-kind'),previous=select.value,values=[...new Set([...kinds,...rows.map(x=>x.kind)].filter(Boolean))];if(!values.length)return;select.replaceChildren(...values.map(k=>{const o=el('option',kindLabel(k));o.value=k;return o;}));select.value=values.includes(previous)?previous:values[0];}
  function types(kind,selected='수업'){const values=['수업','클리닉'];$('academy-type').replaceChildren(...values.map(v=>{const o=el('option',v);o.value=v;return o;}));$('academy-type').value=values.includes(selected)?selected:'수업';}
  function open(action,x=null){
   if(busy)return;if(!connected){notify('먼저 일정을 불러와 주세요.');return;}
@@ -37,18 +38,18 @@ export function createAcademy(api,notify){
   $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start)+(x.originalStart?' · '+label(x.originalStart)+' 수업 보강':''):'';
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';
   $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent'||['클리닉','연습'].includes(x?.subtype);
-  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';if(x?.kind&&!Array.from($('academy-kind').options).some(o=>o.value===x.kind)){const option=el('option',kindLabel(x.kind));option.value=x.kind;$('academy-kind').append(option);}$('academy-kind').value=x?.kind||'바디PT';types($('academy-kind').value,x?.subtype);
+  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';if(x?.kind&&!Array.from($('academy-kind').options).some(o=>o.value===x.kind)){const option=el('option',kindLabel(x.kind));option.value=x.kind;$('academy-kind').append(option);}if(x?.kind)$('academy-kind').value=x.kind;types($('academy-kind').value,x?.subtype);
   const next=x?.start?new Date(Date.parse(x.start)+7*86400000).toISOString():null;
   $('academy-date').value=action==='next'?localInput(next):x?localInput(x.start):'';$('academy-date').required=!['status','absent'].includes(action);$('academy-date').disabled=['status','absent'].includes(action);updateWeekday();
   $('academy-save').textContent=action==='next'||action==='add'?'수업 등록하기':'확인';$('academy-cancel').title=action==='next'?'다음 수업을 등록하지 않고 닫기':'닫기';
   if(!$('academy-dialog').open)$('academy-dialog').showModal();
  }
  async function persist(path,body,success){
-  if(busy)return;busy=true;for(const id of ['academy-save','academy-cancel','academy-attend','academy-change','academy-absent'])$(id).disabled=true;render();
+  if(busy)return;busy=true;$('academy-error').textContent='';$('academy-save').textContent='저장 중…';for(const id of ['academy-save','academy-cancel','academy-attend','academy-change','academy-absent'])$(id).disabled=true;render();
   try{const d=await api(path,{method:mode==='add'?'POST':'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!d.ok||!d.item)throw Error('저장 결과를 확인하지 못했어요.');rows=rows.filter(x=>x.id!==d.item.id&&x.id!==d.next?.id);rows.push(d.item);if(d.next)rows.push(d.next);
    busy=false;success(d);
-  }catch(err){$('academy-error').textContent=err.message;}
-  finally{busy=false;for(const id of ['academy-save','academy-cancel','academy-attend','academy-change','academy-absent'])$(id).disabled=false;render();}
+  }catch(err){$('academy-error').textContent=err.message;notify('저장하지 못했어요. '+err.message);}
+  finally{busy=false;$('academy-save').textContent=mode==='next'||mode==='add'?'수업 등록하기':'확인';for(const id of ['academy-save','academy-cancel','academy-attend','academy-change','academy-absent'])$(id).disabled=false;render();}
  }
  $('academy-kind').onchange=()=>types($('academy-kind').value);
  $('academy-add').onclick=()=>open('add');$('academy-cancel').onclick=()=>$('academy-dialog').close();$('academy-dialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});
@@ -62,7 +63,7 @@ export function createAcademy(api,notify){
  };
  setInterval(()=>{if(connected&&!busy)render();},60000);
  render();
- return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
+ return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;updateKinds(d.kinds||[]);connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
 }
 
 

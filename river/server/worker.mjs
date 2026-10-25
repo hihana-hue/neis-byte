@@ -207,17 +207,21 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
    const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['보강 원래 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
-   const validSubtype=(kind,value)=>['과학','바디PT','운동'].includes(kind)&&['수업','클리닉'].includes(value);
+   const validSubtype=(kind,value)=>typeof kind==='string'&&!!kind.trim()&&['수업','클리닉'].includes(value);
    const validStart=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+09:00$/.test(s))return false;const n=Date.parse(s);return Number.isFinite(n)&&new Date(n+9*3600000).toISOString().slice(0,19)===s.slice(0,19);};
    if(path==='/academy'&&request.method==='GET'){
     const pages=[];let cursor;do{const d=await notion('data_sources/'+ds+'/query','POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...d.results);cursor=d.has_more?d.next_cursor:null;}while(cursor);
-    return reply({items:pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(lesson)});
+    const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(lesson);
+    let kinds=[...new Set(items.map(x=>x.kind).filter(Boolean))];try{const source=await notion('data_sources/'+ds);kinds=(source.properties?.['학원']?.select?.options||[]).map(x=>x.name);}catch{}
+    return reply({items,kinds});
    }
    if(request.method!=='POST'&&request.method!=='PATCH')return reply({error:'지원하지 않는 요청입니다.'},405);
    const raw=await request.text();if(raw.length>12000)return reply({error:'입력 내용이 너무 깁니다.'},413);
    let input;try{input=JSON.parse(raw);}catch{return reply({error:'입력 형식을 확인해 주세요.'},400);}
    if(path==='/academy'&&request.method==='POST'){
-    if(!['바디PT','운동','과학'].includes(input.kind)||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
+    if(typeof input.kind!=='string'||!input.kind.trim()||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
+    const source=await notion('data_sources/'+ds);
+    if(!(source.properties?.['학원']?.select?.options||[]).some(x=>x.name===input.kind))return reply({error:'현재 노션에 등록된 학원·일정을 선택해 주세요. 새로고침 후 다시 시도해 주세요.'},400);
     const subtype=input.subtype||'수업';if(!validSubtype(input.kind,subtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);
     const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:input.kind+' 수업'}}]},'학원':{select:{name:input.kind}},'수업 구분':{select:{name:subtype}},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)}}});
     return reply({ok:true,item:lesson(p)},201);
