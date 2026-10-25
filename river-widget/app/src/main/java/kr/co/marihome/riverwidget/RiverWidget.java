@@ -39,8 +39,8 @@ public class RiverWidget extends AppWidgetProvider {
   v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,12);v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
-  v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"예정된 학원·이번 주 학교 할 일이 없어요.");
-  v.setTextViewText(R.id.heading,"CHOI RIVER 포레버");v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));icon(c,v,R.id.refresh,R.drawable.widget_refresh);icon(c,v,R.id.settings,R.drawable.widget_settings);
+  v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"예정된 학원·앞으로 2주 학교 일정이 없어요.");
+  v.setTextViewText(R.id.heading,Data.widgetTitle(c));v.setTextColor(R.id.heading,WidgetStyle.text(c));v.setTextColor(R.id.empty,WidgetStyle.secondary(c));icon(c,v,R.id.refresh,R.drawable.widget_refresh);icon(c,v,R.id.settings,R.drawable.widget_settings);
   v.setOnClickPendingIntent(R.id.refresh,PendingIntent.getBroadcast(c,id,new Intent(c,RiverWidget.class).setAction(REFRESH),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.settings,PendingIntent.getActivity(c,id,new Intent(c,SetupActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP).setAction("kr.co.marihome.riverwidget.OPEN_SETTINGS").setData(Uri.parse("river-widget://settings/"+id)).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));
   v.setOnClickPendingIntent(R.id.heading,PendingIntent.getActivity(c,id+10000,new Intent(c,OpenTaskActivity.class),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE));

@@ -46,6 +46,9 @@ jobs:
           node river/server/push-delivery.test.mjs
           node river/server/widget-rounds.test.mjs
           node river/server/student-access.test.mjs
+          node river/server/widget-devices.test.mjs
+          node river/server/makeup.test.mjs
+          node river/server/academy-create.test.mjs
       - name: Test and build unsigned release
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleRelease :app:lintRelease --no-daemon --stacktrace

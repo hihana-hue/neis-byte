@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {createHash,webcrypto} from 'node:crypto';
+import {namespace} from './widget-gate-test-utils.mjs';
+if(!globalThis.crypto)Object.defineProperty(globalThis,'crypto',{value:webcrypto});
+const studentId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',registry='400215b9-b774-80a0-ae62-000b166c0655',code='fixture-only';
+const codeHash=createHash('sha256').update(code).digest('base64url');
+const p={'연결 활성화':{checkbox:true},'연결코드':{rich_text:[{plain_text:code}]},'허용 기기 수':{number:3}};
+const records=new Map();const env={NOTION_TOKEN:'fixture',RIVER_KV:{get:async k=>records.get(k),put:async(k,v)=>records.set(k,v),delete:async k=>records.delete(k),list:async({prefix})=>({keys:[...records.keys()].filter(k=>k.startsWith(prefix)).map(name=>({name})),list_complete:true})}};
+let telemetryFail=false;
+globalThis.fetch=async(url,opts={})=>{assert.equal(String(url),'https://api.notion.com/v1/pages/'+studentId);if(opts.method==='PATCH'){if(telemetryFail)return Response.json({},{status:503});Object.assign(p,JSON.parse(opts.body).properties);}return Response.json({id:studentId,parent:{data_source_id:registry},properties:p});};
+const ns=namespace(env),stub=ns.get(ns.idFromName(studentId));
+async function call(action,id,extra={}){const r=await stub.fetch('https://test/',{method:'POST',body:JSON.stringify({action,id,studentId,codeHash,...extra})});return {status:r.status,...await r.json()};}
+const batch=await Promise.all(Array.from({length:8},(_,i)=>call('pair','id'+i,{label:'Galaxy '+i})));
+assert.equal(batch.filter(x=>x.ok).length,3);assert.equal(batch.filter(x=>x.status===409).length,5);assert.equal(p['연결 기기 수'].number,3);assert.equal(p['연결 상태'].select.name,'허용치 초과');assert.equal(p['초과 시도 수'].number,5);
+assert.equal((await call('pair','id0')).count,3);
+p['허용 기기 수'].number=4;
+assert.equal((await call('pair','id8')).count,4);assert.equal(p['연결 상태'].select.name,'정상');
+assert.equal((await call('disconnect','id8')).count,3);
+telemetryFail=true;const blocked=await call('pair','id9');assert.equal(blocked.ok,true);assert.equal(blocked.count,4);
+assert.equal((await call('pair','id10')).status,409);
+telemetryFail=false;p['위젯 연결 모두 해제']={checkbox:true};
+assert.equal((await call('feed','id0')).status,401);assert.equal(p['연결 기기 수'].number,0);
+assert.equal((await call('feed','id0',{legacy:{id:'id0',studentId,codeHash,scope:'widget:read',createdAt:1}})).status,401);
+assert.equal((await call('pair','id11')).ok,true);
+p['연결코드'].rich_text=[{plain_text:'changed'}];assert.equal((await call('feed','id11')).status,401);
+console.log('PASS concurrent cap, repeat pairing, raise limit, disconnect, telemetry failure, revocation and code change');

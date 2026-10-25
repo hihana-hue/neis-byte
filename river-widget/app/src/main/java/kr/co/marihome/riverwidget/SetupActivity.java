@@ -65,7 +65,7 @@ public class SetupActivity extends Activity {
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("학생 연결코드를 입력해 주세요.");return;}
    busy=true;connect.setEnabled(false);pinState(pin,false);clear.setEnabled(false);status.setText("학원·학교 일정을 연결하고 있어요…");
-   new Thread(()->{String failure=null;try{String value=typed.isEmpty()?saved:Data.pair(typed);Vault.put(getApplicationContext(),"access",value);Data.sync(getApplicationContext(),value);}catch(Exception e){failure=e.getMessage();}
+   new Thread(()->{String failure=null;try{String value=typed.isEmpty()?saved:Data.pair(typed,saved);Vault.put(getApplicationContext(),"access",value);Data.sync(getApplicationContext(),value);}catch(Exception e){failure=e.getMessage();}
     final String error=failure;runOnUiThread(()->{if(isDestroyed())return;busy=false;connect.setEnabled(true);pinState(pin,!Vault.get(this,"access").isEmpty());clear.setEnabled(true);
      if(error!=null){status.setText(error);return;}password.setText("");RiverWidget.renderAll(this);status.setText("연결됨 · 학원·학교 일정을 불러왔어요.");Toast.makeText(this,"위젯 연결 완료",Toast.LENGTH_SHORT).show();
      if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID){RiverWidget.render(this,AppWidgetManager.getInstance(this),widgetId);setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));}

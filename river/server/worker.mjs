@@ -19,8 +19,16 @@ async function rpWidgetRoute(request,env,reply){
   if(body.mode==='student'){
    let student;try{student=await rpStudentLogin(env,body.code,request);}catch(e){return reply(rpStudentReply(e),503);}
    if(!student)return reply({error:'연결코드를 확인해 주세요. 활성화된 학생만 연결할 수 있어요.'},401);
-   const token=rpB64(crypto.getRandomValues(new Uint8Array(32))),id=await rpHash(token);
-   await kv.put('widget-device:'+id,JSON.stringify({id,scope:'widget:read',studentId:student.STUDENT.id,codeHash:student.STUDENT_CODE_HASH,createdAt:Date.now()}),{expirationTtl:90*86400});
+   let token='',existing=null;
+   if(typeof body.deviceToken==='string'&&/^[A-Za-z0-9_-]{43}$/.test(body.deviceToken)){
+    const candidate=await rpJson(kv,'widget-device:'+await rpHash(body.deviceToken));
+    if(candidate?.studentId===student.STUDENT.id&&candidate.codeHash===student.STUDENT_CODE_HASH){token=body.deviceToken;existing=candidate;}
+   }
+   if(!token)token=rpB64(crypto.getRandomValues(new Uint8Array(32)));
+   const id=await rpHash(token);
+   if(existing){const adopted=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'feed',id,{legacy:existing});if(!adopted.ok)return reply({error:adopted.error,code:adopted.code},adopted.status);}
+   const gate=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'pair',id,{label:body.deviceName});
+   if(!gate.ok)return reply({error:gate.error,code:gate.code},gate.status);
    return reply({ok:true,deviceToken:token,student:student.STUDENT});
   }
   const code=String(body.code||'').replaceAll('-','').replaceAll(' ','').toUpperCase();
@@ -34,8 +42,8 @@ async function rpWidgetRoute(request,env,reply){
  if(!/^[A-Za-z0-9_-]{43}$/.test(bearer))return reply({error:'위젯 연결 코드를 다시 등록해 주세요.'},401);
  const id=await rpHash(bearer),device=await rpJson(kv,'widget-device:'+id);
  if(!device||device.scope!=='widget:read')return reply({error:'해제된 위젯 연결입니다. 새 코드로 연결해 주세요.'},401);
- if(path==='/widget/disconnect'&&request.method==='POST'){await kv.delete('widget-device:'+id);return reply({ok:true});}
- if(device.studentId){const student=await rpStudentDevice(env,device);if(!student)return reply({error:'학생 연결이 중지되었거나 코드가 변경됐어요.'},401);env=student;}
+ if(path==='/widget/disconnect'&&request.method==='POST'){if(device.studentId){const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'disconnect',id);if(!gate.ok)return reply({error:gate.error},gate.status);}else await kv.delete('widget-device:'+id);return reply({ok:true});}
+ if(device.studentId){const student=await rpStudentDevice(env,device);if(!student)return reply({error:'학생 연결이 중지되었거나 코드가 변경됐어요.'},401);env=student;const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'feed',id,{legacy:device});if(!gate.ok)return reply({error:gate.error},gate.status);}
  if(path!=='/widget/feed'||request.method!=='GET')return reply({error:'위젯에서는 일정 조회만 할 수 있어요.'},405);
  if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
  const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID?Promise.resolve([]):rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'))]);
@@ -43,7 +51,7 @@ async function rpWidgetRoute(request,env,reply){
  const subjectColors=await rpSubjectColors(env);
  const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
  const usedByKind=new Map(),rounds=new Map();
- for(const p of [...ap].sort((a,b)=>(a.properties['수업일시']?.date?.start||'').localeCompare(b.properties['수업일시']?.date?.start||'')||a.id.localeCompare(b.id))){
+ for(const p of [...ap].sort((a,b)=>(a.properties['최초 수업일']?.date?.start||a.properties['수업일시']?.date?.start||'').localeCompare(b.properties['최초 수업일']?.date?.start||b.properties['수업일시']?.date?.start||'')||a.id.localeCompare(b.id))){
   const a=p.properties,kind=a['학원']?.select?.name||'',key=kind==='운동'?'바디PT':kind,type=a['수업 구분']?.select?.name||'수업',status=a['출결']?.select?.name||'예정',size=key==='과학'?4:key==='바디PT'?5:0;
   if(['클리닉','연습'].includes(type)){rounds.set(p.id,'클리닉');continue;}if(!size)continue;
   let used=usedByKind.get(key)||0;
@@ -51,7 +59,7 @@ async function rpWidgetRoute(request,env,reply){
   usedByKind.set(key,used);if(status==='예정')rounds.set(p.id,((used-1)%size+1)+'/'+size);
  }
  const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
- return reply({school,academy,student:env.STUDENT||null});
+ return reply({school,academy,student:env.STUDENT||null,academyConnected:!env.STUDENT||!!env.ACADEMY_DATA_SOURCE_ID});
 }
 
 function rpPushError(code,message){const e=new Error(message);e.pushCode=code;return e;}
@@ -93,7 +101,7 @@ async function rpStudentEnv(env,page){
  if(!page||page.archived||page.in_trash||normalized(page.parent?.data_source_id)!==normalized(env.STUDENT_REGISTRY_ID||RP_STUDENTS)||!page.properties?.['연결 활성화']?.checkbox)return null;
  const p=page.properties,school=p['학교 DB 링크']?.url,academy=p['학원 DB 링크']?.url;
  async function source(link,stage){return rpStudentStage(stage,async()=>{const db=await rpNotion(env,'databases/'+rpDbId(link));if(db.data_sources?.length!==1)throw rpStudentError('연결할 DB의 데이터 원본을 하나로 지정해 주세요. ['+stage+'_SOURCE]',stage+'_SOURCE');return db.data_sources[0].id;});}
- return {...env,SCHOOL_DATA_SOURCE_ID:await source(school,'STUDENT_SCHOOL'),ACADEMY_DATA_SOURCE_ID:academy?await source(academy,'STUDENT_ACADEMY'):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
+ return {...env,SCHOOL_DATA_SOURCE_ID:await source(school,'STUDENT_SCHOOL'),ACADEMY_DATA_SOURCE_ID:academy?await source(academy,'STUDENT_ACADEMY'):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school,widgetTitle:rpText(p['위젯 제목']?.rich_text).trim()||rpText(p['이름']?.title)+'의 일정'},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
 }
 async function rpStudentLogin(env,code,request){
  if(typeof code!=='string'||code.length<4||code.length>100||code!==code.trim())return null;
@@ -339,3 +347,77 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
 
 
 
+
+/** One serialized device registry per student; no global KV list/count race. */
+export class StudentWidgetDevices {
+ constructor(ctx,env){this.ctx=ctx;this.env=env;}
+ async fetch(request){
+  return this.ctx.blockConcurrencyWhile(async()=>{
+   const input=await request.json(),page=await rpNotion(this.env,'pages/'+input.studentId),p=page.properties||{};
+   if(page.archived||page.in_trash||normalized(page.parent?.data_source_id)!==normalized(this.env.STUDENT_REGISTRY_ID||RP_STUDENTS)||!p['연결 활성화']?.checkbox)return Response.json({ok:false,error:'학생 연결이 중지됐어요.'},{status:401});
+   const codeHash=await rpHash(rpText(p['연결코드']?.rich_text));
+   if(!await same(codeHash,input.codeHash||''))return Response.json({ok:false,error:'학생 연결코드가 변경됐어요.'},{status:401});
+   let s=await this.ctx.storage.get('registry')||{devices:[],blocked:0,revokedAt:0};
+   const now=Date.now(),raw=p['허용 기기 수']?.number,limit=raw==null?3:raw;
+   if(!Number.isInteger(limit)||limit<0||limit>100)return Response.json({ok:false,error:'허용 기기 수를 0~100의 정수로 설정해 주세요.'},{status:503});
+   if(!s.imported){
+    for(const key of await rpList(this.env.RIVER_KV,'widget-device:')){
+     const d=await rpJson(this.env.RIVER_KV,key.name);
+     if(d?.studentId===page.id&&d.codeHash===codeHash&&d.createdAt+90*86400000>now)s.devices.push({...d,label:d.label||'기존 Android 위젯',expiresAt:d.expiresAt||d.createdAt+90*86400000});
+    }
+    s.devices=[...new Map(s.devices.map(d=>[d.id,d])).values()];s.imported=true;
+   }
+   if(s.codeHash&&s.codeHash!==codeHash){s.devices=[];s.revokedAt=now;}
+   s.codeHash=codeHash;s.devices=s.devices.filter(d=>d.expiresAt>now);
+   let reset=false;
+   if(p['위젯 연결 모두 해제']?.checkbox){s.devices=[];s.revokedAt=now;reset=true;}
+   // Raising the limit resolves the alert; the blocked installation must retry.
+   if(s.blockedAt&&limit>s.blockedLimit&&s.devices.length<limit)s.blockedAt=0;
+   const found=s.devices.find(d=>d.id===input.id);
+   let result={ok:true},status=200;
+   if(reset){result={ok:false,error:'관리자가 위젯 연결을 해제했어요. 다시 연결해 주세요.'};status=401;}
+   else if(input.action==='pair'){
+    if(!found){
+     if(s.devices.length>=limit){s.blocked++;s.blockedAt=now;s.blockedLimit=limit;result={ok:false,error:'허용된 위젯 기기 수('+limit+'대)를 초과했어요. 관리자에게 문의해 주세요.',code:'WIDGET_DEVICE_LIMIT'};status=409;}
+     else{
+      const device={id:input.id,scope:'widget:read',studentId:page.id,codeHash,createdAt:now,expiresAt:now+90*86400000,managed:true,label:String(input.label||'Android 위젯').slice(0,80)};
+      await this.env.RIVER_KV.put('widget-device:'+device.id,JSON.stringify(device),{expirationTtl:90*86400});
+      s.devices.push(device);
+     }
+    }
+   }else if(input.action==='disconnect'){s.devices=s.devices.filter(d=>d.id!==input.id);await this.env.RIVER_KV.delete('widget-device:'+input.id);}
+   else if(input.action==='feed'){
+    if(!found){
+     // Only pre-management tokens may be adopted. Revoked tokens never re-admit.
+     const legacy=input.legacy;
+     if(legacy&&!legacy.managed&&legacy.createdAt>s.revokedAt&&legacy.codeHash===codeHash&&legacy.studentId===page.id){
+      s.devices.push({...legacy,label:legacy.label||'기존 Android 위젯',expiresAt:legacy.expiresAt||legacy.createdAt+90*86400000});
+     }else{result={ok:false,error:'해제된 위젯 연결이에요. 다시 연결해 주세요.'};status=401;}
+    }
+   }else return Response.json({error:'지원하지 않는 관리 요청입니다.'},{status:400});
+   const warning=!!s.blockedAt||s.devices.length>limit;
+   const properties={
+    '연결 기기 수':{number:s.devices.length},
+    '연결 상태':{select:{name:warning?'허용치 초과':'정상'}},
+    '초과 시도 수':{number:s.blocked},
+    '최근 초과 일시':{date:s.lastBlockedAt||s.blockedAt?{start:new Date(s.blockedAt||s.lastBlockedAt).toISOString()}:null},
+    '연결 기기 목록':{rich_text:s.devices.map(d=>({text:{content:(d.label||'Android 위젯')+' · '+d.id.slice(-8)+' · '+new Date(d.createdAt).toISOString().slice(0,10)+'\n'}}))}
+   };
+   if(s.blockedAt)s.lastBlockedAt=s.blockedAt;
+   if(reset)properties['위젯 연결 모두 해제']={checkbox:false};
+   const signature=JSON.stringify(properties);
+   // Persist the admission decision even when Notion telemetry temporarily fails.
+   await this.ctx.storage.put('registry',s);
+   if(s.signature!==signature){
+    try{await rpNotion(this.env,'pages/'+page.id,'PATCH',{properties});s.signature=signature;await this.ctx.storage.put('registry',s);}catch{result.managementPending=true;}
+   }
+   return Response.json({...result,count:s.devices.length,limit},{status});
+  });
+ }
+}
+async function rpWidgetGate(env,studentId,codeHash,action,id,extra={}){
+ if(!env.STUDENT_WIDGETS)return {ok:false,status:503,error:'서버의 STUDENT_WIDGETS 연결 설정이 필요해요.'};
+ const stub=env.STUDENT_WIDGETS.get(env.STUDENT_WIDGETS.idFromName(normalized(studentId)));
+ const response=await stub.fetch('https://student-widget.internal/',{method:'POST',body:JSON.stringify({studentId,codeHash,action,id,...extra})});
+ return {...await response.json(),status:response.status};
+}

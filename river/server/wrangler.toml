@@ -15,3 +15,12 @@ ACADEMY_DATA_SOURCE_ID = "3fd215b9-b774-806e-9ed3-000b1b1df0f9"
 crons = ["*/5 * * * *"]
 
 # Add a KV binding named RIVER_KV to choi-river-notifications in Cloudflare Dashboard.
+
+# Keep the existing RIVER_KV binding; copy its real namespace ID from your dashboard.
+[[durable_objects.bindings]]
+name = "STUDENT_WIDGETS"
+class_name = "StudentWidgetDevices"
+
+[[migrations]]
+tag = "student-widgets-v1"
+new_sqlite_classes = ["StudentWidgetDevices"]

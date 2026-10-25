@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {namespace} from './widget-gate-test-utils.mjs';
 import {webcrypto} from 'node:crypto';
 if(!globalThis.crypto)Object.defineProperty(globalThis,'crypto',{value:webcrypto});
 const {default:worker}=await import('./worker.mjs');
@@ -9,13 +10,13 @@ const students=[reg(a,'student-a','33333333-3333-3333-3333-333333333333'),reg(b,
 const task=(id,ds)=>({id,object:'page',parent:{type:'data_source_id',data_source_id:ds},properties:{'주제':{title:[{plain_text:id}]},'상태':{status:{name:'시작전'}}}});
 const ta=task('55555555-5555-5555-5555-555555555555',sa),tb=task('66666666-6666-6666-6666-666666666666',sb);
 const saved=new Map(),mutations=[];
-const kv={get:async k=>saved.get(k)||null,put:async(k,v)=>saved.set(k,v),delete:async k=>saved.delete(k)};
+const kv={get:async k=>saved.get(k)||null,put:async(k,v)=>saved.set(k,v),delete:async k=>saved.delete(k),list:async({prefix})=>({keys:[...saved.keys()].filter(k=>k.startsWith(prefix)).map(name=>({name})),list_complete:true})};
 globalThis.fetch=async(url,opts={})=>{
  const path=String(url).split('/v1/')[1],body=opts.body?JSON.parse(opts.body):{};
  const response=data=>new Response(JSON.stringify(data));
  if(path==='data_sources/'+registry+'/query')return response({results:students.filter(x=>x.properties['연결코드'].rich_text[0].plain_text===body.filter.rich_text.equals)});
  if(path.startsWith('databases/'))return response({data_sources:[{id:path.includes('33333333')?sa:sb}]});
- if(path==='pages/'+a||path==='pages/'+b)return response(students.find(x=>x.id===path.slice(6)));
+ if(path==='pages/'+a||path==='pages/'+b){const student=students.find(x=>x.id===path.slice(6));if(opts.method==='PATCH')Object.assign(student.properties,body.properties);return response(student);}
  if(path==='data_sources/'+sa+'/query')return response({results:[ta],has_more:false});
  if(path==='data_sources/'+sb+'/query')return response({results:[tb],has_more:false});
  if(path==='pages/'+tb.id)return response(tb);
@@ -23,6 +24,7 @@ globalThis.fetch=async(url,opts={})=>{
  throw Error('Unexpected Notion request '+path);
 };
 const env={NOTION_TOKEN:'test',RIVER_KV:kv,RIVER_ACCESS_KEY:'admin-secret',SCHOOL_DATA_SOURCE_ID:'legacy'};
+env.STUDENT_WIDGETS=namespace(env);
 const req=(path,code,method='GET',body)=>new Request('https://api.test'+path,{method,headers:{Authorization:'Bearer '+code,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
 let r=await worker.fetch(req('/tasks','student-a'),env);assert.equal(r.status,200);let data=await r.json();assert.equal(data.student.id,a);assert.deepEqual(data.items.map(x=>x.id),[ta.id]);
 r=await worker.fetch(req('/tasks','student-b'),env);assert.deepEqual((await r.json()).items.map(x=>x.id),[tb.id]);
