@@ -46,7 +46,7 @@ final class Data {
    JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONArray aa=cache.optJSONArray("academy"),ss=cache.optJSONArray("school");
    if(aa!=null)for(int i=0;i<aa.length();i++){JSONObject x=aa.getJSONObject(i);String start=x.optString("start"),id=x.optString("id");
     if(!validId(id)||!Schedule.academyVisible(x.optString("status"),start,now))continue;
-    String kind=x.optString("kind"),name="과학".equals(kind)?"과학":"바디PT",type=x.optString("subtype","수업");
+    String kind=x.optString("kind"),name=academyName(kind),type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
     String round="클리닉".equals(type)?"(클)":x.optString("round","");if(!"(클)".equals(round)&&!round.matches("[1-9][0-9]*/[1-9][0-9]*"))round="";
     String status=Schedule.academyStatus(start,now);if("예정".equals(status))status="";
@@ -57,11 +57,12 @@ final class Data {
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||(!Schedule.schoolVisible(x.optString("status"),due,now)||!WidgetStyle.schoolStatus(c,x.optString("status"))))continue;
     JSONArray subjects=x.optJSONArray("subjects");String subject=subjects!=null&&subjects.length()>0?subjects.optString(0):"학교";
-    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.today=Schedule.isToday(due,now,false);r.due=Schedule.dueTime(due)+(r.today?" 오늘":"");school.add(r);
+    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.today=Schedule.isToday(due,now,false);r.due=Schedule.dueTime(due);school.add(r);
    }
   }catch(Exception ignored){}
   academy.sort(Comparator.comparing((Row x)->OffsetDateTime.parse(x.sort).toInstant()).thenComparing(x->x.id));int limit=WidgetStyle.academyLimit(c);if(academy.size()>limit)academy=new ArrayList<>(academy.subList(0,limit));school.sort(Comparator.comparing(x->x.sort));academy.addAll(school);return academy;
  }
+ static String academyName(String kind){return "운동".equals(kind)?"바디PT":kind==null||kind.trim().isEmpty()?"일정":kind;}
  static boolean validId(String id){return id!=null&&id.matches("[a-fA-F0-9-]{32,36}");}
  static void error(Context c,String message){c.getSharedPreferences("river-state",0).edit().putString("error",message).apply();}
  static String error(Context c){return c.getSharedPreferences("river-state",0).getString("error","");}
