@@ -7,11 +7,11 @@ export function createAcademy(api,notify){
  const calendar=mountAcademyCalendar($('academy-date'));
  const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);calendar.refresh();};
  $('academy-date').addEventListener('input',updateWeekday);$('academy-date').addEventListener('change',updateWeekday);
- const kindLabel=k=>k==='과학'?'과학':'바디PT';
+ const kindLabel=k=>k==='운동'?'바디PT':String(k||'일정');
  function icon(kind){
   const span=el('span','','academy-icon'),ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');
   svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','16');svg.setAttribute('height','16');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
-  path.setAttribute('d',kind==='과학'?'M9 3h6M10 3v7L5 19a1.4 1.4 0 0 0 1.2 2h11.6A1.4 1.4 0 0 0 19 19l-5-9V3M8 15h8':'M3 8v8M6 6v12M18 6v12M21 8v8M6 12h12');
+  path.setAttribute('d',kind==='과학'?'M9 3h6M10 3v7L5 19a1.4 1.4 0 0 0 1.2 2h11.6A1.4 1.4 0 0 0 19 19l-5-9V3M8 15h8':['운동','바디PT'].includes(kind)?'M3 8v8M6 6v12M18 6v12M21 8v8M6 12h12':kind==='교회'?'M12 2v7M9 5h6M4 13l8-5 8 5v9H4zM10 22v-6h4v6':'M5 4h14v17H5zM8 2v4M16 2v4M5 9h14');
   svg.append(path);span.append(svg);return span;
  }
  const label=s=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(s)):'시간 미정';
@@ -37,7 +37,7 @@ export function createAcademy(api,notify){
   $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start)+(x.originalStart?' · '+label(x.originalStart)+' 수업 보강':''):'';
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';
   $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent'||['클리닉','연습'].includes(x?.subtype);
-  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';$('academy-kind').value=x?.kind==='과학'?'과학':'바디PT';types($('academy-kind').value,x?.subtype);
+  $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';if(x?.kind&&!Array.from($('academy-kind').options).some(o=>o.value===x.kind)){const option=el('option',kindLabel(x.kind));option.value=x.kind;$('academy-kind').append(option);}$('academy-kind').value=x?.kind||'바디PT';types($('academy-kind').value,x?.subtype);
   const next=x?.start?new Date(Date.parse(x.start)+7*86400000).toISOString():null;
   $('academy-date').value=action==='next'?localInput(next):x?localInput(x.start):'';$('academy-date').required=!['status','absent'].includes(action);$('academy-date').disabled=['status','absent'].includes(action);updateWeekday();
   $('academy-save').textContent=action==='next'||action==='add'?'수업 등록하기':'확인';$('academy-cancel').title=action==='next'?'다음 수업을 등록하지 않고 닫기':'닫기';
