@@ -101,7 +101,7 @@ async function rpStudentEnv(env,page){
  if(!page||page.archived||page.in_trash||normalized(page.parent?.data_source_id)!==normalized(env.STUDENT_REGISTRY_ID||RP_STUDENTS)||!page.properties?.['연결 활성화']?.checkbox)return null;
  const p=page.properties,school=p['학교 DB 링크']?.url,academy=p['학원 DB 링크']?.url;
  async function source(link,stage){return rpStudentStage(stage,async()=>{const db=await rpNotion(env,'databases/'+rpDbId(link));if(db.data_sources?.length!==1)throw rpStudentError('연결할 DB의 데이터 원본을 하나로 지정해 주세요. ['+stage+'_SOURCE]',stage+'_SOURCE');return db.data_sources[0].id;});}
- return {...env,SCHOOL_DATA_SOURCE_ID:await source(school,'STUDENT_SCHOOL'),ACADEMY_DATA_SOURCE_ID:academy?await source(academy,'STUDENT_ACADEMY'):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school,widgetTitle:rpText(p['위젯 제목']?.rich_text).trim()||rpText(p['이름']?.title)+'의 일정'},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
+ return {...env,SCHOOL_DATA_SOURCE_ID:await source(school,'STUDENT_SCHOOL'),ACADEMY_DATA_SOURCE_ID:academy?await source(academy,'STUDENT_ACADEMY'):'',STUDENT:{id:page.id,name:rpText(p['이름']?.title),schoolUrl:school,widgetTitle:rpText(p['위젯 제목']?.rich_text).trim()||rpText(p['이름']?.title).trim()+' Fighting'},STUDENT_CODE_HASH:await rpHash(rpText(p['연결코드']?.rich_text))};
 }
 async function rpStudentLogin(env,code,request){
  if(typeof code!=='string'||code.length<4||code.length>100||code!==code.trim())return null;

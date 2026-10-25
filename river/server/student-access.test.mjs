@@ -26,7 +26,7 @@ globalThis.fetch=async(url,opts={})=>{
 const env={NOTION_TOKEN:'test',RIVER_KV:kv,RIVER_ACCESS_KEY:'admin-secret',SCHOOL_DATA_SOURCE_ID:'legacy'};
 env.STUDENT_WIDGETS=namespace(env);
 const req=(path,code,method='GET',body)=>new Request('https://api.test'+path,{method,headers:{Authorization:'Bearer '+code,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
-let r=await worker.fetch(req('/tasks','student-a'),env);assert.equal(r.status,200);let data=await r.json();assert.equal(data.student.id,a);assert.deepEqual(data.items.map(x=>x.id),[ta.id]);
+let r=await worker.fetch(req('/tasks','student-a'),env);assert.equal(r.status,200);let data=await r.json();assert.equal(data.student.id,a);assert.equal(data.student.widgetTitle,a+" Fighting");assert.deepEqual(data.items.map(x=>x.id),[ta.id]);
 r=await worker.fetch(req('/tasks','student-b'),env);assert.deepEqual((await r.json()).items.map(x=>x.id),[tb.id]);
 r=await worker.fetch(req('/tasks/'+tb.id+'/status','student-a','PATCH',{status:'완료',from:'시작전'}),env);assert.equal(r.status,403);assert.equal(mutations.length,0);
 r=await worker.fetch(req('/academy','student-a'),env);assert.deepEqual((await r.json()).items,[]);

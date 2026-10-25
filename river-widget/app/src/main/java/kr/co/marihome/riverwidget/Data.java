@@ -71,7 +71,7 @@ final class Data {
  static boolean validId(String id){return id!=null&&id.matches("[a-fA-F0-9-]{32,36}");}
  static void error(Context c,String message){c.getSharedPreferences("river-state",0).edit().putString("error",message).apply();}
  static String error(Context c){return c.getSharedPreferences("river-state",0).getString("error","");}
- static String widgetTitle(Context c){try{JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONObject student=cache.optJSONObject("student");if(student!=null){String title=student.optString("widgetTitle","").trim();if(!title.isEmpty())return title;String name=student.optString("name","").trim();if(!name.isEmpty())return name+"의 일정";}}catch(Exception ignored){}return "CHOI RIVER 포레버";}
+ static String widgetTitle(Context c){try{JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONObject student=cache.optJSONObject("student");if(student!=null){String title=student.optString("widgetTitle","").trim(),name=student.optString("name","").trim();if(!title.isEmpty()&&!"CHOI RIVER 포레버".equals(title)&&!title.equals(name+"의 일정"))return title;if(!name.isEmpty())return name+" Fighting";}}catch(Exception ignored){}return "나의 일정";}
  static String updated(Context c){try{return new JSONObject(Vault.get(c,"cache")).optString("at");}catch(Exception e){return "";}}
  private Data(){}
 }
