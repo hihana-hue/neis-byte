@@ -1,0 +1,7 @@
+/* Academy lessons stay in chronological order, two per row. */
+.academy-strip{display:block;margin:3px 0 10px;padding:0 2px}
+.academy-strip #academy-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px;row-gap:0;min-width:0}
+#academy-rows .academy-line{display:flex;flex-wrap:wrap;align-content:center;justify-content:flex-start;gap:3px 5px;min-width:0;padding:7px 0}
+#academy-rows .academy-line strong{min-width:0;max-width:calc(100% - 50px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#academy-rows .academy-time{flex:0 0 100%;width:100%;min-width:0;padding-left:21px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+#academy-rows .academy-empty{grid-column:1/-1}
