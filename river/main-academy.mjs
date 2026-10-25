@@ -11,7 +11,7 @@ export function createAcademy(api,notify){
  function icon(kind){
   const span=el('span','','academy-icon'),ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),path=document.createElementNS(ns,'path');
   svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','16');svg.setAttribute('height','16');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');
-  path.setAttribute('d',kind==='과학'?'M9 3h6M10 3v7L5 19a1.4 1.4 0 0 0 1.2 2h11.6A1.4 1.4 0 0 0 19 19l-5-9V3M8 15h8':['운동','바디PT'].includes(kind)?'M3 8v8M6 6v12M18 6v12M21 8v8M6 12h12':kind==='교회'?'M12 2v7M9 5h6M4 13l8-5 8 5v9H4zM10 22v-6h4v6':'M5 4h14v17H5zM8 2v4M16 2v4M5 9h14');
+  path.setAttribute('d',kind==='과학'?'M9 3h6M10 3v7L5 19a1.4 1.4 0 0 0 1.2 2h11.6A1.4 1.4 0 0 0 19 19l-5-9V3M8 15h8':['운동','바디PT'].includes(kind)?'M3 8v8M6 6v12M18 6v12M21 8v8M6 12h12':String(kind).trim().toUpperCase()==='TEEN'?'M12 3v18M6 9h12':kind==='교회'?'M12 2v7M9 5h6M4 13l8-5 8 5v9H4zM10 22v-6h4v6':'M5 4h14v17H5zM8 2v4M16 2v4M5 9h14');
   svg.append(path);span.append(svg);return span;
  }
  const label=s=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',weekday:'short',hour:'numeric',minute:'2-digit'}).format(new Date(s)):'시간 미정';
