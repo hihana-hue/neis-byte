@@ -271,6 +271,14 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
      else if(source.properties['최초 수업일'].type!=='date')return reply({error:'최초 수업일 속성을 날짜 형식으로 설정해 주세요.'},409);
      props['최초 수업일']={date:old.start?{start:old.start}:null};
     }
+    const original=old.originalStart||old.start;
+    if(original&&Number.isFinite(Date.parse(original))){
+     const day=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',day:'numeric'}).format(new Date(original));
+     const previous=(old.history||'').split('\n').filter(line=>line.includes(' 보강 날짜 변경: ')).length;
+     const named=Number((old.title||'').match(/ 보강 (\d+)th$/)?.[1]||(/ 보강$/.test(old.title||'')?1:0));
+     const number=Math.max(previous,named)+(input.start===old.start?0:1)||1;
+     props['수업명']={title:[{text:{content:(old.kind==='운동'?'바디PT':old.kind)+' '+day+' 보강'+(number>1?' '+number+'th':'')}}]};
+    }
     entry='보강 날짜 변경: '+(old.start||'미정')+' → '+input.start+' / 최초 수업 '+(old.originalStart||old.start||'미정')+' / 출결 유지 '+old.status;
    }else if(input.action==='attendance'){
     if(!['예정','출석','결석'].includes(input.status)||typeof input.charge!=='boolean')return reply({error:'출결을 확인해 주세요.'},400);
