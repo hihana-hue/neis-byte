@@ -11,7 +11,7 @@ export function createWidgetDownload(notify){
  function previous(){try{return localStorage.getItem(key())||'';}catch{return '';}}
  function render(){
   const state=downloadState(manifest,previous());button.hidden=!student||state==='hidden';section.hidden=!student;footer.hidden=!student||state!=='hidden';
-  button.classList.toggle('widget-update',state==='update');button.innerHTML=(state==='update'?'업데이트':'위젯')+icon;button.title=state==='pending'?'서명키 설정 후 설치 파일을 제공합니다.':'위젯 '+manifest.version+' 다운로드';button.setAttribute('aria-label',state==='update'?'위젯 업데이트 다운로드':'위젯 다운로드');button.setAttribute('aria-disabled',String(state==='pending'));
+  button.classList.toggle('widget-update',state==='update');button.innerHTML=(state==='update'?'Update':'위젯')+icon;button.title=state==='pending'?'서명키 설정 후 설치 파일을 제공합니다.':'위젯 '+manifest.version+' 다운로드';button.setAttribute('aria-label',state==='update'?'위젯 업데이트 다운로드':'위젯 다운로드');button.setAttribute('aria-disabled',String(state==='pending'));
  }
  function download(){
   if(!student)return;if(!validDownload(manifest)){notify('고정 서명키 설정 후 설치 파일을 제공할 예정입니다.');return;}
@@ -19,5 +19,13 @@ export function createWidgetDownload(notify){
   try{localStorage.setItem(key(),String(manifest.versionCode));}catch{}render();notify('다운로드를 시작했어요. 완료 후 APK를 열어 설치해 주세요.');
  }
  button.onclick=download;section.querySelector('button').onclick=download;footer.onclick=()=>document.getElementById('notify-dialog').showModal();
- return {async connect(id){student=id||'connected';render();try{const r=await fetch('./widget-release.json',{cache:'no-store'});if(r.ok){const m=await r.json();manifest=validDownload(m)?m:{...m,ready:false};}}catch{manifest=null;}render();},reset(){student='';render();}};
+ let lastCheck=0,inFlight=false;
+ async function checkRelease(force=false){
+  if(!student||inFlight||(!force&&Date.now()-lastCheck<5*60000))return;
+  inFlight=true;lastCheck=Date.now();
+  try{const r=await fetch('./widget-release.json',{cache:'no-store'});if(r.ok){const m=await r.json();manifest=validDownload(m)?m:{...m,ready:false};}}catch{}finally{inFlight=false;render();}
+ }
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkRelease();});
+ setInterval(()=>{if(document.visibilityState==='visible')void checkRelease();},5*60000);
+ return {async connect(id){student=id||'connected';render();await checkRelease(true);},reset(){student='';render();}};
 }
