@@ -1,7 +1,7 @@
 import {createWidgetDownload} from './widget-download.mjs?v=1';
 import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=4';
-import {createAcademy} from './main-academy.mjs?v=24';
+import {createAcademy} from './main-academy.mjs?v=25';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
@@ -50,7 +50,7 @@ function card(x){const el=text('article','','card'),b=text('button','✓','done'
  const title=text('button',x.title,'title');title.type='button';title.onclick=()=>openDetail(x);body.append(title);
  const meta=text('div','','meta');meta.append(text('span',dueLabel(x),x.due&&dayNumber(x.due)<=dayNumber(todayKey())?'deadline':''),text('span',displayStatus(x.status),'status'));heading.append(meta);el.append(b,body);return el;
 }
-function panel(target,title,rows,range='',overdue=false){const el=text('section','','panel'+(overdue?' overdue':'')),head=text('h2',title);head.append(text('span',String(rows.length),'badge'));el.append(head);if(range)el.append(text('p',range,'range'));if(!loaded)el.append(text('div','학생코드를 연결하세요','empty'));else if(!rows.length)el.append(text('div','해당하는 일정이 없어요.','empty'));else {const grid=text('div','','task-grid');for(const x of rows)grid.append(card(x));el.append(grid);}$(target).append(el);}
+function panel(target,title,rows,range='',overdue=false){const el=text('section','','panel'+(overdue?' overdue':'')),head=text('h2',title);head.append(text('span',String(rows.length),'badge'));el.append(head);if(range)el.append(text('p',range,'range'));if(!loaded){}else if(!rows.length)el.append(text('div','해당하는 일정이 없어요.','empty'));else {const grid=text('div','','task-grid');for(const x of rows)grid.append(card(x));el.append(grid);}$(target).append(el);}
 function completedList(rows){const el=text('section','','panel'),head=text('h2','최근 7일 완료');head.append(text('span',String(rows.length),'badge'));el.append(head);if(!rows.length)el.append(text('p','최근 완료한 일정이 없어요.','range'));for(const x of rows){const row=text('div','','completed-row'),body=text('div','','completed-body');body.append(text('span',x.subjects.join(' · ')||'일정','completed-subject'),text('span',x.title,'completed-title'));const b=text('button','완료 ✓','btn');b.setAttribute('aria-label',x.title+' 완료 상태 변경');b.onclick=()=>openDetail(x);row.append(body,b);el.append(row);}$('right').append(el);}
 function render(){const shown=items.filter(x=>visibleStatus(x.status)&&(!selected||x.subjects.includes(selected))), g=groups(shown), w=weekBounds(todayKey());
  
