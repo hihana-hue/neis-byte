@@ -1,4 +1,4 @@
-import {createWidgetDownload} from './widget-download.mjs?v=2';
+import {createWidgetDownload} from './widget-download.mjs?v=3';
 import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=4';
 import {createAcademy} from './main-academy.mjs?v=25';

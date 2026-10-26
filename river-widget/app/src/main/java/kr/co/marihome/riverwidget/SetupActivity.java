@@ -23,7 +23,7 @@ public class SetupActivity extends Activity {
  }
 
  private void addUpdateSection(LinearLayout root){
-  final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME,12);root.addView(version);
+  final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 중…",12);root.addView(version);
   final LinearLayout section=new LinearLayout(this);section.setOrientation(LinearLayout.VERTICAL);section.setVisibility(View.GONE);root.addView(section);
   final TextView available=text("",13);section.addView(available);
   final Button update=new Button(this);update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
@@ -33,11 +33,20 @@ public class SetupActivity extends Activity {
     final UpdateRelease release=UpdateRelease.load();
     runOnUiThread(()->{
      if(isFinishing()||isDestroyed())return;
+     version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
      if(!release.newerThan(BuildConfig.VERSION_CODE))return;
      available.setText("새 버전 · "+release.version);section.setVisibility(View.VISIBLE);
      update.setOnClickListener(v->{
-      try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(release.url)));}
-      catch(ActivityNotFoundException e){Toast.makeText(this,"다운로드할 브라우저를 확인해 주세요.",Toast.LENGTH_LONG).show();}
+      try{
+       android.net.Uri uri=android.net.Uri.parse(release.url);
+       DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+       DownloadManager.Request request=new DownloadManager.Request(uri);
+       request.setTitle("CHOI RIVER Widget "+release.version);
+       request.setMimeType("application/vnd.android.package-archive");
+       request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+       request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,System.currentTimeMillis()+"-"+uri.getLastPathSegment());
+       manager.enqueue(request);Toast.makeText(this,"다운로드를 시작했어요. 완료 알림에서 APK를 열어 업데이트해 주세요.",Toast.LENGTH_LONG).show();
+      }catch(Exception e){Toast.makeText(this,"다운로드를 시작하지 못했어요. 인터넷 연결과 다운로드 관리자를 확인해 주세요.",Toast.LENGTH_LONG).show();}
      });
     });
    }catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
@@ -53,6 +62,7 @@ public class SetupActivity extends Activity {
   ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(20),dp(24),dp(20),dp(20));scroll.setBackgroundColor(Color.rgb(245,249,252));scroll.addView(root);setContentView(scroll);
   scroll.setOnApplyWindowInsetsListener((v,insets)->{root.setPadding(dp(20),dp(24)+insets.getSystemWindowInsetTop(),dp(20),dp(20)+insets.getSystemWindowInsetBottom());return insets;});
   root.addView(text("CHOI RIVER 위젯",24));root.addView(text("학원 일정 · 오늘부터 2주 학교 할 일",16));
+  addUpdateSection(root);
   root.addView(text("노션 위젯관리에 등록한 학생 연결코드를 입력해 주세요. 웹에서도 같은 코드로 연결합니다.",14));
   password=new EditText(this);password.setSingleLine(true);password.setHint("학생 연결코드");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);root.addView(password);
   Button connect=new Button(this);connect.setText("연결하기");
@@ -83,7 +93,6 @@ public class SetupActivity extends Activity {
   Button close=new Button(this);close.setText("닫기");close.setOnClickListener(v->finish());
   LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);root.addView(buttons);
   for(Button button:new Button[]{applyStyle,clear,close}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);button.setPadding(dp(3),dp(10),dp(3),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(6),dp(2),0);buttons.addView(button,lp);}
-  addUpdateSection(root);
   root.addView(text("자동 갱신은 약 30분 간격이며 휴대폰 절전 상태에 따라 늦어질 수 있어요. ↻를 누르면 새로 불러와요. 항목을 누르면 기존 사이트가 열려요.",12));
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("학생 연결코드를 입력해 주세요.");return;}

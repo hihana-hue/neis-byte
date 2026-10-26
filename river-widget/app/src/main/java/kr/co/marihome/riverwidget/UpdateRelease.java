@@ -14,7 +14,7 @@ final class UpdateRelease {
  UpdateRelease(boolean ready,int code,String version,String url){this.ready=ready;this.code=code;this.version=version;this.url=url;}
  boolean newerThan(int installed){return ready&&code>installed&&allowedUrl(url);}
  static boolean allowedUrl(String value){
-  try{URI u=new URI(value);return "https".equals(u.getScheme())&&"github.com".equals(u.getHost())&&u.getUserInfo()==null&&u.getPort()==-1&&u.getQuery()==null&&u.getFragment()==null&&u.getRawPath().matches("/hihana-hue/neis-byte/releases/download/widget-[0-9.]+/CHOI-RIVER-Widget-[0-9.]+\\.apk");}
+  try{URI u=new URI(value);return "https".equals(u.getScheme())&&"www.marihome.co.kr".equals(u.getHost())&&u.getUserInfo()==null&&u.getPort()==-1&&u.getQuery()==null&&u.getFragment()==null&&u.getRawPath().matches("/river/downloads/CHOI-RIVER-Widget-[0-9.]+\\.apk");}
   catch(Exception e){return false;}
  }
  static UpdateRelease load() throws Exception {
