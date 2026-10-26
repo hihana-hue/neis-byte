@@ -8,6 +8,7 @@ let items=[], loaded=false, demo=false, selected='', token='', loading=false;
 const text=(tag,value,cls)=>{const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;};
 const compact=n=>new Intl.DateTimeFormat('ko-KR',{timeZone:'UTC',month:'numeric',day:'numeric'}).format(new Date(n*86400000));
 function toast(s){$('toast').textContent=s;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').textContent='',4000);}
+function setBrandTitle(value){const brand=document.querySelector('.brand');brand.replaceChildren();const match=value.match(/(Fighting|파이팅|화이팅)([!！\\s]*)$/iu);if(!match){brand.textContent=value;return;}brand.append(document.createTextNode(value.slice(0,match.index)),text('span',match[0],'brand-cheer'));}
 const widgetDownload=createWidgetDownload(toast);
 function refreshControl(connected){const b=$('connect');b.classList.toggle('icon-btn',connected);if(connected)b.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1"/></svg>';else b.textContent='연결하기';}
 function subjectColor(s){return [...s].reduce((a,c)=>a+c.charCodeAt(0),0)%4;}
@@ -21,7 +22,7 @@ function remember(){try{if($('remember').checked)localStorage.setItem(authKey,to
 const displayStatus=s=>s==='시작전'?'시작 전':s||'상태 미정';
 const academy=createAcademy(api,toast);
 const notifications=createSettings(api,()=>Boolean(token));
-function connectionSettings(connected){for(const id of ['school-add','academy-add']){const action=$(id);action.hidden=!connected;action.style.display=connected?'':'none';}if(!connected){widgetDownload.reset();document.querySelector('.brand').textContent='나의 일정';}const button=$('notifications-open');button.hidden=connected;button.style.display=connected?'none':'';if(connected&&$('notify-dialog').open)$('notify-dialog').close();}
+function connectionSettings(connected){for(const id of ['school-add','academy-add']){const action=$(id);action.hidden=!connected;action.style.display=connected?'':'none';}if(!connected){widgetDownload.reset();setBrandTitle('나의 일정');}const button=$('notifications-open');button.hidden=connected;button.style.display=connected?'none':'';if(connected&&$('notify-dialog').open)$('notify-dialog').close();}
 $('notifications-open').onclick=()=>{if(!loaded)notifications.open();};
 if(new URL(location.href).searchParams.get('settings')==='notifications')notifications.open();
 const saving=new Set();let detailItem=null;
@@ -59,7 +60,7 @@ async function api(path,opts={}){const r=await fetch(base+path,{...opts,cache:'n
 async function load(){if(loading)return;loading=true;$('connect').disabled=true;try{const data=await api('/tasks');if(!Array.isArray(data.items))throw Error('일정 데이터 형식을 확인해 주세요.');items=data.items.filter(x=>visibleStatus(x.status));loaded=true;demo=false;selected='';
  const expected=new URL(location.href).searchParams.get('student');
  if(expected&&expected.replaceAll('-','')!==(data.student?.id||'').replaceAll('-','')){items=[];loaded=false;forget();token='';academy.reset();chips();render();throw Error('이 위젯에 연결된 학생의 코드를 입력해 주세요.');}
- const studentName=data.student?.name?.trim(),commonTitle=data.student?.widgetTitle?.trim();document.querySelector('.brand').textContent=commonTitle&&commonTitle!=='CHOI RIVER 포레버'&&commonTitle!==studentName+'의 일정'?commonTitle:studentName?studentName+' Fighting':'나의 일정';
+ const studentName=data.student?.name?.trim(),commonTitle=data.student?.widgetTitle?.trim();setBrandTitle(commonTitle&&commonTitle!=='CHOI RIVER 포레버'&&commonTitle!==studentName+'의 일정'?commonTitle:studentName?studentName+' Fighting':'나의 일정');
  message('노션 연결됨');connectionSettings(true);
  const notionLink=$('student-notion');notionLink.hidden=!data.student?.schoolUrl;notionLink.style.display=data.student?.schoolUrl?'inline-flex':'none';if(data.student?.schoolUrl)notionLink.href=data.student.schoolUrl;$('logout').hidden=false;refreshControl(true);void widgetDownload.connect(data.student?.id||'legacy');$('connect').title='새로고침';$('connect').setAttribute('aria-label','새로고침');$('sync').textContent='최근 불러옴 '+new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}).format(new Date())+' · 월~일 기준';chips();render();await academy.load();try{if(sessionStorage.getItem('river-write-saved')){sessionStorage.removeItem('river-write-saved');toast('노션에 저장했어요.');}}catch{}if($('notify-dialog').open)$('notify-dialog').close();const target=new URL(location.href).searchParams.get('task');if(target){const x=items.find(x=>x.id===target);if(x)openDetail(x);const u=new URL(location.href);u.searchParams.delete('task');history.replaceState(null,'',u);}}catch(e){message(e.message);throw e;}finally{loading=false;$('connect').disabled=false;}}
 $('connect').onclick=()=>{if(!base){message('실제 일정 연결은 준비 중입니다. 노션 DB 바로가기는 지금 사용할 수 있어요.');return;}if(token){load().catch(e=>toast(e.message));return;}$('login').showModal();};
