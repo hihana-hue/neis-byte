@@ -25,7 +25,7 @@ export function createAcademy(api,notify){
   $('academy-rows').replaceChildren();
   const rounds=lessonRounds(rows);
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
-  if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'연결하면 학원 일정이 보여요.','academy-empty'));
+  if(!pending.length)$('academy-rows').append(el('span',connected?'예정된 학원 수업 없음':'학생코드를 연결하세요','academy-empty'));
   for(const x of pending){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)==='클리닉'?'(클)':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
