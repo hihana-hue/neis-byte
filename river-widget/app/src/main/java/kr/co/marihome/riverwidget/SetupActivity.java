@@ -21,6 +21,29 @@ public class SetupActivity extends Activity {
   b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(Color.argb(60,25,121,159)),normal,null));
   b.setPadding(dp(12),dp(10),dp(12),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(6);b.setLayoutParams(lp);
  }
+
+ private void addUpdateSection(LinearLayout root){
+  final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME,12);root.addView(version);
+  final LinearLayout section=new LinearLayout(this);section.setOrientation(LinearLayout.VERTICAL);section.setVisibility(View.GONE);root.addView(section);
+  final TextView available=text("",13);section.addView(available);
+  final Button update=new Button(this);update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
+  section.addView(text("기존 앱을 삭제하지 말고 업데이트하세요. 설치가 차단되면 다운로드에 사용한 브라우저 또는 내 파일의 ‘이 출처 허용’을 켜주세요. 설치 후 다시 꺼도 됩니다. 다른 보안 경고가 뜨면 해당 안내를 확인하세요.",12));
+  new Thread(()->{
+   try{
+    final UpdateRelease release=UpdateRelease.load();
+    runOnUiThread(()->{
+     if(isFinishing()||isDestroyed())return;
+     if(!release.newerThan(BuildConfig.VERSION_CODE))return;
+     available.setText("새 버전 · "+release.version);section.setVisibility(View.VISIBLE);
+     update.setOnClickListener(v->{
+      try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(release.url)));}
+      catch(ActivityNotFoundException e){Toast.makeText(this,"다운로드할 브라우저를 확인해 주세요.",Toast.LENGTH_LONG).show();}
+     });
+    });
+   }catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
+  },"river-update-check").start();
+ }
+
  @Override protected void onNewIntent(Intent intent){
   super.onNewIntent(intent);setIntent(intent);recreate();
  }
@@ -60,6 +83,7 @@ public class SetupActivity extends Activity {
   Button close=new Button(this);close.setText("닫기");close.setOnClickListener(v->finish());
   LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);root.addView(buttons);
   for(Button button:new Button[]{applyStyle,clear,close}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);button.setPadding(dp(3),dp(10),dp(3),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(6),dp(2),0);buttons.addView(button,lp);}
+  addUpdateSection(root);
   root.addView(text("자동 갱신은 약 30분 간격이며 휴대폰 절전 상태에 따라 늦어질 수 있어요. ↻를 누르면 새로 불러와요. 항목을 누르면 기존 사이트가 열려요.",12));
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("학생 연결코드를 입력해 주세요.");return;}
