@@ -27,7 +27,11 @@ public class SetupActivity extends Activity {
   final LinearLayout section=new LinearLayout(this);section.setOrientation(LinearLayout.VERTICAL);section.setVisibility(View.GONE);root.addView(section);
   final TextView available=text("",13);section.addView(available);
   final Button update=new Button(this);update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
-  section.addView(text("기존 앱을 삭제하지 말고 업데이트하세요. 설치가 차단되면 다운로드에 사용한 브라우저 또는 내 파일의 ‘이 출처 허용’을 켜주세요. 설치 후 다시 꺼도 됩니다. 다른 보안 경고가 뜨면 해당 안내를 확인하세요.",12));
+  section.addView(text("1. 업데이트할 때: 기존 앱은 삭제하지 마세요.",12));
+  section.addView(text("2. 보안 위험 자동 차단으로 막힐 때: 설정 → 보안 및 개인정보 보호 → 보안 위험 자동 차단 끄기",12));
+  section.addView(text("3. 출처 허용을 요청할 때: 설치에 사용한 앱의 ‘이 출처 허용’ 켜기",12));
+  section.addView(text("4. APK를 열었을 때: ‘업데이트’ 누르기",12));
+  section.addView(text("5. 설치가 끝났을 때: 보안 위험 자동 차단 다시 켜기 · 출처 허용 끄기",12));
   new Thread(()->{
    try{
     final UpdateRelease release=UpdateRelease.load();
@@ -72,9 +76,9 @@ public class SetupActivity extends Activity {
   status=text(Vault.get(this,"access").isEmpty()?"연결 안 됨 · 연결 코드를 입력해 주세요.":"연결됨 · 이 기기에 위젯 연결이 저장되어 있어요.",13);root.addView(status);
   root.addView(text("코드를 입력한 뒤 연결하기를 눌러 주세요. 이미 연결되어 있으면 코드를 다시 입력하지 않아도 됩니다.",12));
   root.addView(text("위젯 모양",18));
-  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this),14);root.addView(titleFontLabel);
+  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this)+" (기본 16)",14);root.addView(titleFontLabel);
   final SeekBar titleFontSize=new SeekBar(this);titleFontSize.setMax(12);titleFontSize.setProgress(WidgetStyle.titleFont(this)-12);root.addView(titleFontSize);
-  titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
+  titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12)+" (기본 16)");}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
   final TextView fontLabel=text("글자 크기 · "+WidgetStyle.font(this),14);root.addView(fontLabel);
   final SeekBar fontSize=new SeekBar(this);fontSize.setMax(6);fontSize.setProgress(WidgetStyle.font(this)-12);root.addView(fontSize);
   fontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){fontLabel.setText("글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});

@@ -73,8 +73,8 @@ jobs:
           printf '%s' "$KEY_B64" | base64 --decode > "$keyfile"
           mkdir -p signed
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 river-widget/app/build/outputs/apk/release/app-release-unsigned.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/CHOI-RIVER-Widget-1.30.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/CHOI-RIVER-Widget-1.30.apk > signed/certificate.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/CHOI-RIVER-Widget-1.31.apk signed/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/CHOI-RIVER-Widget-1.31.apk > signed/certificate.txt
           actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signed/certificate.txt | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
           expected=$(printf '%s' "$EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
           test -n "$actual" && test "$actual" = "$expected"
@@ -103,9 +103,9 @@ jobs:
         run: |
           set -euo pipefail
           # Never overwrite an installed version with a different artifact.
-          if gh release view widget-1.30 >/dev/null 2>&1; then
-            echo '::error::Version 1.30 already exists. Increase versionCode, versionName and release tag before publishing.'
+          if gh release view widget-1.31 >/dev/null 2>&1; then
+            echo '::error::Version 1.31 already exists. Increase versionCode, versionName and release tag before publishing.'
             exit 1
           fi
-          gh release create widget-1.30 signed/CHOI-RIVER-Widget-1.30.apk signed/certificate.txt --title "CHOI RIVER Widget 1.30" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
+          gh release create widget-1.31 signed/CHOI-RIVER-Widget-1.31.apk signed/certificate.txt --title "CHOI RIVER Widget 1.31" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
 
