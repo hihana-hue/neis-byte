@@ -18,6 +18,6 @@ final class WidgetStyle {
  static boolean schoolStatus(Context c,String status){boolean start="시작전".equals(status)||"시작 전".equals(status);return c.getSharedPreferences("widget-style",0).getBoolean(start?"showStart":"showProgress",true);}
  static void saveFilters(Context c,int limit,boolean start,boolean progress){c.getSharedPreferences("widget-style",0).edit().putInt("academyLimit",limit).putBoolean("showStart",start).putBoolean("showProgress",progress).apply();}
  static int todayColor(Context c,boolean academy){return Color.parseColor(theme(c)==0?"#B44077":theme(c)==1?"#F2A065":academy?"#D7A176":"#AD704B");}
- static int divider(Context c){return Color.parseColor(theme(c)==0?"#8AA58A":theme(c)==1?"#536065":"#8CA2A6");}
+ static int divider(Context c){return Color.parseColor("#407F5D");}
  private WidgetStyle(){}
 }
