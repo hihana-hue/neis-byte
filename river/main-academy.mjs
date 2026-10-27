@@ -3,7 +3,8 @@ import {weekday} from './date-weekday.mjs?v=1';
 import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=4';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
- let rows=[],current=null,mode='',busy=false,connected=false;
+ let rows=[],current=null,mode='',busy=false,connected=false,expanded=false;
+ const moreButton=el('button','더보기','btn academy-more');moreButton.type='button';moreButton.hidden=true;moreButton.setAttribute('aria-controls','academy-rows');$('academy-rows').after(moreButton);moreButton.onclick=()=>{expanded=!expanded;render();};
  const calendar=mountAcademyCalendar($('academy-date'));
  const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);calendar.refresh();};
  $('academy-date').addEventListener('input',updateWeekday);$('academy-date').addEventListener('change',updateWeekday);
@@ -26,7 +27,8 @@ export function createAcademy(api,notify){
   const rounds=lessonRounds(rows);
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(connected&&!pending.length)$('academy-rows').append(el('span','예정된 학원 수업 없음','academy-empty'));
-  for(const x of pending){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
+  moreButton.hidden=!connected||pending.length<=2;moreButton.textContent=expanded?'접기':'더보기';moreButton.setAttribute('aria-expanded',String(expanded));moreButton.disabled=busy;
+  for(const x of (expanded?pending:pending.slice(0,2))){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)==='클리닉'?'(클)':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function updateKinds(kinds=[]){const select=$('academy-kind'),previous=select.value,values=[...new Set([...kinds,...rows.map(x=>x.kind)].filter(Boolean))];if(!values.length)return;select.replaceChildren(...values.map(k=>{const o=el('option',kindLabel(k));o.value=k;return o;}));select.value=values.includes(previous)?previous:values[0];}
@@ -63,7 +65,7 @@ export function createAcademy(api,notify){
  };
  setInterval(()=>{if(connected&&!busy)render();},60000);
  render();
- return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;updateKinds(d.kinds||[]);connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;render();$('academy-dialog').close();}};
+ return {async load(){try{const d=await api('/academy');if(!Array.isArray(d.items))throw Error('학원 데이터를 확인해 주세요.');rows=d.items;updateKinds(d.kinds||[]);connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 출결을 처리했거나 변경된 수업이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){moreButton.hidden=true;$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;expanded=false;render();$('academy-dialog').close();}};
 }
 
 

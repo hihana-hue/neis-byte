@@ -5,3 +5,5 @@
 #academy-rows .academy-line strong{min-width:0;max-width:calc(100% - 50px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #academy-rows .academy-time{flex:0 0 100%;width:100%;min-width:0;padding-left:21px;font-size:11px;line-height:1.4;overflow-wrap:anywhere}
 #academy-rows .academy-empty{grid-column:1/-1}
+
+.academy-strip .academy-more{display:block;margin:8px auto 0;padding:5px 16px;font-size:12px;box-shadow:none}.academy-strip .academy-more[hidden]{display:none}
