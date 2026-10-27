@@ -27,8 +27,8 @@ export function createAcademy(api,notify){
   const rounds=lessonRounds(rows);
   const pending=rows.filter(x=>x.status==='예정').sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(connected&&!pending.length)$('academy-rows').append(el('span','예정된 학원 수업 없음','academy-empty'));
-  moreButton.hidden=!connected||pending.length<=2;moreButton.textContent=expanded?'접기':'more...';moreButton.setAttribute('aria-expanded',String(expanded));moreButton.disabled=busy;
-  for(const x of (expanded?pending:pending.slice(0,2))){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
+  moreButton.hidden=!connected||pending.length<=4;moreButton.textContent=expanded?'접기':'more...';moreButton.setAttribute('aria-expanded',String(expanded));moreButton.disabled=busy;
+  for(const x of (expanded?pending:pending.slice(0,4))){const b=el('button','','academy-line');b.type='button';b.classList.toggle('academy-today',!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)===seoulDay(Date.now()));b.disabled=busy;b.setAttribute('aria-label',kindLabel(x.kind)+' '+label(x.start)+' 출결 변경');
    b.append(icon(x.kind),el('strong',kindLabel(x.kind)),el('span',rounds.get(x.id)==='클리닉'?'(클)':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'));if(x.originalStart){const note=el('small',label(x.originalStart)+' 수업 보강');note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
  function updateKinds(kinds=[]){const select=$('academy-kind'),previous=select.value,values=[...new Set([...kinds,...rows.map(x=>x.kind)].filter(Boolean))];if(!values.length)return;select.replaceChildren(...values.map(k=>{const o=el('option',kindLabel(k));o.value=k;return o;}));select.value=values.includes(previous)?previous:values[0];}
