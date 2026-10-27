@@ -5,7 +5,7 @@ export function createWidgetDownload(notify){
  const header=document.querySelector('.header-actions'),button=document.createElement('button');button.type='button';button.className='btn widget-download';button.hidden=true;header.prepend(button);
  const section=document.createElement('section');section.className='notify-section';section.hidden=true;section.innerHTML='<h2>위젯 다운로드</h2><p>같은 APK를 설치한 뒤 학생 연결코드로 연결합니다. 다운로드 기록은 이 브라우저에만 저장되며 설치 완료 여부는 확인하지 않습니다.</p><button type="button" class="btn">위젯 다시 받기</button>';
  document.getElementById('notify-result').before(section);
- const footer=document.createElement('button');footer.type='button';footer.className='btn widget-download-again';footer.textContent='위젯 다시 받기';footer.hidden=true;document.querySelector('main').append(footer);
+ const footer=document.createElement('button');footer.type='button';footer.className='btn widget-download-again';footer.textContent='위젯 다시 받기';footer.hidden=true;document.getElementById('footer-actions').append(footer);
  let student='',manifest=null;
  const key=()=> 'river-widget-download-v1:'+student;
  function previous(){try{return localStorage.getItem(key())||'';}catch{return '';}}
