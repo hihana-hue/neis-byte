@@ -45,7 +45,7 @@ public class SetupActivity extends Activity {
        android.net.Uri uri=android.net.Uri.parse(release.url);
        DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
        DownloadManager.Request request=new DownloadManager.Request(uri);
-       request.setTitle("CHOI RIVER Widget "+release.version);
+       request.setTitle( "마리 에듀 "+release.version);
        request.setMimeType("application/vnd.android.package-archive");
        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
        request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,System.currentTimeMillis()+"-"+uri.getLastPathSegment());
@@ -65,7 +65,7 @@ public class SetupActivity extends Activity {
   setResult(RESULT_CANCELED);
   ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(20),dp(24),dp(20),dp(20));scroll.setBackgroundColor(Color.rgb(245,249,252));scroll.addView(root);setContentView(scroll);
   scroll.setOnApplyWindowInsetsListener((v,insets)->{root.setPadding(dp(20),dp(24)+insets.getSystemWindowInsetTop(),dp(20),dp(20)+insets.getSystemWindowInsetBottom());return insets;});
-  root.addView(text("CHOI RIVER 위젯",24));root.addView(text("학원 일정 · 오늘부터 2주 학교 할 일",16));
+  root.addView(text("마리 에듀",24));root.addView(text("학원 일정 · 오늘부터 2주 학교 할 일",16));
   addUpdateSection(root);
   root.addView(text("노션 위젯관리에 등록한 학생 연결코드를 입력해 주세요. 웹에서도 같은 코드로 연결합니다.",14));
   password=new EditText(this);password.setSingleLine(true);password.setHint("학생 연결코드");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);root.addView(password);
