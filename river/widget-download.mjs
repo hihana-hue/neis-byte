@@ -18,7 +18,17 @@ export function createWidgetDownload(notify){
   const a=document.createElement('a');a.href=manifest.url;a.download='MARI-EDU-Widget-'+manifest.version+'.apk';a.rel='noopener noreferrer';document.body.append(a);a.click();a.remove();
   try{localStorage.setItem(key(),String(manifest.versionCode));}catch{}render();notify('다운로드를 시작했어요. 완료 후 APK를 열어 설치해 주세요.');
  }
- button.onclick=download;section.querySelector('button').onclick=download;footer.onclick=()=>document.getElementById('notify-dialog').showModal();
+ const confirmDialog=document.createElement('dialog');confirmDialog.className='widget-download-dialog';confirmDialog.setAttribute('aria-labelledby','widget-download-title');
+ confirmDialog.innerHTML='<h2 id="widget-download-title">최신 위젯을 다운로드할까요?</h2><p class="widget-release-label" role="status">최신 버전 확인 중…</p><ol><li>설치가 차단되면: 설정 → 보안 및 개인정보 보호 → 보안 위험 자동 차단 해제</li><li>다운로드 후: 완료 알림 또는 다운로드 목록의 APK 열기 → 업데이트</li><li>업데이트 후: 보안 위험 자동 차단 다시 켜기</li></ol><p>기존 앱은 삭제하지 마세요.</p><div class="widget-download-actions"><button type="button" class="btn" data-cancel>취소</button><button type="button" class="btn primary" data-download disabled>다운로드</button></div>';
+ document.body.append(confirmDialog);const confirmButton=confirmDialog.querySelector('[data-download]'),label=confirmDialog.querySelector('.widget-release-label');
+ confirmDialog.querySelector('[data-cancel]').onclick=()=>confirmDialog.close();
+ confirmButton.onclick=()=>{if(!student||!validDownload(manifest))return;confirmDialog.close();download();};
+ async function askDownload(){
+  if(!student)return;confirmButton.disabled=true;label.textContent='최신 버전 확인 중…';if(!confirmDialog.open)confirmDialog.showModal();
+  try{const response=await fetch('./widget-release.json',{cache:'no-store'});if(!response.ok)throw Error();const current=await response.json();if(!validDownload(current))throw Error();manifest=current;label.textContent='마리 에듀 · '+manifest.version;confirmButton.disabled=!student;render();}
+  catch{label.textContent='최신 버전을 확인하지 못했어요. 잠시 후 다시 눌러 주세요.';}
+ }
+ button.onclick=askDownload;section.querySelector('button').onclick=askDownload;footer.onclick=askDownload;
  let lastCheck=0,inFlight=false;
  async function checkRelease(force=false){
   if(!student||inFlight||(!force&&Date.now()-lastCheck<5*60000))return;
@@ -27,5 +37,5 @@ export function createWidgetDownload(notify){
  }
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkRelease();});
  setInterval(()=>{if(document.visibilityState==='visible')void checkRelease();},5*60000);
- return {async connect(id){student=id||'connected';render();await checkRelease(true);},reset(){student='';render();}};
+ return {async connect(id){student=id||'connected';render();await checkRelease(true);},reset(){student='';if(confirmDialog.open)confirmDialog.close();render();}};
 }
