@@ -32,7 +32,16 @@ export function deploymentConfig(settings,schedules,subdomain,main){
  // keep_vars preserves dashboard plaintext/JSON variables; Wrangler retains secrets.
  const config={name:WORKER,main,compatibility_date:settings.compatibility_date,compatibility_flags:settings.compatibility_flags||[],keep_vars:true,workers_dev:subdomain.enabled,kv_namespaces:kv,durable_objects:{bindings:[{name:BINDING,class_name:DEVICE_CLASS}]},migrations:[{tag:'student-widgets-v1',new_sqlite_classes:[DEVICE_CLASS]}],triggers:{crons:schedules.map(x=>x.cron)}};
  if(typeof subdomain.previews_enabled==='boolean')config.preview_urls=subdomain.previews_enabled;
- for(const key of ['observability','logpush','limits','placement','tail_consumers'])if(settings[key]!=null)config[key]=settings[key];
+ for(const key of ['observability','logpush','limits','tail_consumers'])if(settings[key]!=null)config[key]=settings[key];
+ // The settings API returns {} for default placement; Wrangler requires mode if present.
+ const placement=settings.placement;
+ if(placement!=null){
+  need(typeof placement==='object'&&!Array.isArray(placement),'placement 설정 형식을 확인해 주세요.');
+  if(Object.keys(placement).length){
+   need(['smart','off'].includes(placement.mode),'placement 모드를 확인하지 못해 배포를 중단합니다.');
+   config.placement=placement;
+  }
+ }
  return config;
 }
 

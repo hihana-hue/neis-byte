@@ -11,3 +11,8 @@ for(const extra of [{type:'r2_bucket',name:'OTHER'},{type:'plain_text',name:'STU
 assert.doesNotThrow(()=>deploymentConfig(after,[],{enabled:true},'/test/worker.mjs'));
 assert.throws(()=>deploymentConfig({...before,bindings:before.bindings.filter(x=>x.name!=='NOTION_TOKEN')},[],{enabled:true},'/test/worker.mjs'));
 console.log('PASS deployment preserves KV/variables/secrets, adds SQLite migration, rejects conflicting or unsupported bindings.');
+
+for(const placement of [undefined,null,{}])assert.equal(deploymentConfig({...before,placement},[],{enabled:true},'/test/worker.mjs').placement,undefined);
+for(const mode of ['smart','off'])assert.deepEqual(deploymentConfig({...before,placement:{mode}},[],{enabled:true},'/test/worker.mjs').placement,{mode});
+assert.throws(()=>deploymentConfig({...before,placement:{unexpected:true}},[],{enabled:true},'/test/worker.mjs'));
+console.log('PASS default empty placement omitted; explicit placement preserved; unknown placement rejected.');
