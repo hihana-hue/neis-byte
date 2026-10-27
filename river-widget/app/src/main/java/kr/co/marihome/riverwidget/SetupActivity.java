@@ -72,6 +72,9 @@ public class SetupActivity extends Activity {
   status=text(Vault.get(this,"access").isEmpty()?"연결 안 됨 · 연결 코드를 입력해 주세요.":"연결됨 · 이 기기에 위젯 연결이 저장되어 있어요.",13);root.addView(status);
   root.addView(text("코드를 입력한 뒤 연결하기를 눌러 주세요. 이미 연결되어 있으면 코드를 다시 입력하지 않아도 됩니다.",12));
   root.addView(text("위젯 모양",18));
+  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this),14);root.addView(titleFontLabel);
+  final SeekBar titleFontSize=new SeekBar(this);titleFontSize.setMax(12);titleFontSize.setProgress(WidgetStyle.titleFont(this)-12);root.addView(titleFontSize);
+  titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
   final TextView fontLabel=text("글자 크기 · "+WidgetStyle.font(this),14);root.addView(fontLabel);
   final SeekBar fontSize=new SeekBar(this);fontSize.setMax(6);fontSize.setProgress(WidgetStyle.font(this)-12);root.addView(fontSize);
   fontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){fontLabel.setText("글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
@@ -87,7 +90,7 @@ public class SetupActivity extends Activity {
   root.addView(text("학교 일정 표시 상태",14));final CheckBox showStart=new CheckBox(this);showStart.setText("시작 전");showStart.setChecked(WidgetStyle.schoolStatus(this,"시작전"));outline(showStart);final CheckBox showProgress=new CheckBox(this);showProgress.setText("진행 중");showProgress.setChecked(WidgetStyle.schoolStatus(this,"진행 중"));outline(showProgress);LinearLayout stateButtons=new LinearLayout(this);stateButtons.setOrientation(LinearLayout.HORIZONTAL);root.addView(stateButtons);for(CheckBox box:new CheckBox[]{showStart,showProgress}){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(4),dp(2),0);stateButtons.addView(box,lp);}
   Button applyStyle=new Button(this);applyStyle.setText("설정 저장");
   final TextView styleResult=text("",12);root.addView(styleResult);
-  applyStyle.setOnClickListener(v->{WidgetStyle.saveFilters(this,(count.getSelectedItemPosition()+1)*3,showStart.isChecked(),showProgress.isChecked());WidgetStyle.save(this,fontSize.getProgress()+12,background.getSelectedItemPosition(),transparency.getProgress());if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID)setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));styleResult.setText("홈 화면 위젯에 적용했어요.");});
+  applyStyle.setOnClickListener(v->{WidgetStyle.saveTitleFont(this,titleFontSize.getProgress()+12);WidgetStyle.saveFilters(this,(count.getSelectedItemPosition()+1)*3,showStart.isChecked(),showProgress.isChecked());WidgetStyle.save(this,fontSize.getProgress()+12,background.getSelectedItemPosition(),transparency.getProgress());if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID)setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));styleResult.setText("홈 화면 위젯에 적용했어요.");});
   Button clear=new Button(this);clear.setText("연결 해제");
   clear.setOnClickListener(v->{if(busy)return;try{final String disconnectToken=Vault.get(this,"access");new Thread(()->Data.disconnect(getApplicationContext(),disconnectToken),"river-widget-disconnect").start();Vault.put(this,"access",null);Vault.put(this,"cache",null);Data.error(this,"");RiverWidget.renderAll(this);pinState(pin,false);status.setText("위젯 연결을 해제했어요.");}catch(Exception e){status.setText("연결 해제에 실패했어요.");}});
   Button close=new Button(this);close.setText("닫기");close.setOnClickListener(v->finish());

@@ -25,8 +25,9 @@ async function rpWidgetRoute(request,env,reply){
     if(candidate?.studentId===student.STUDENT.id&&candidate.codeHash===student.STUDENT_CODE_HASH){token=body.deviceToken;existing=candidate;}
    }
    if(!token)token=rpB64(crypto.getRandomValues(new Uint8Array(32)));
-   const id=await rpHash(token);
-   if(existing){const adopted=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'feed',id,{legacy:existing});if(!adopted.ok)return reply({error:adopted.error,code:adopted.code},adopted.status);}
+   let id=await rpHash(token);
+   if(existing){const adopted=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'feed',id,{legacy:existing});if(!adopted.ok){if(adopted.status!==401)return reply({error:adopted.error,code:adopted.code},adopted.status);token=rpB64(crypto.getRandomValues(new Uint8Array(32)));existing=null;}}
+   id=await rpHash(token);
    const gate=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'pair',id,{label:body.deviceName});
    if(!gate.ok)return reply({error:gate.error,code:gate.code},gate.status);
    return reply({ok:true,deviceToken:token,student:student.STUDENT});
@@ -191,8 +192,8 @@ const normalized=id=>(id||'').replaceAll('-','');
 async function same(a,b){const enc=new TextEncoder();const digest=async x=>new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(x)));const [x,y]=await Promise.all([digest(a),digest(b)]);let diff=0;for(let i=0;i<x.length;i++)diff|=x[i]^y[i];return diff===0;}
 export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));},async fetch(request,env){
  const origin=request.headers.get('Origin'), allowed=env.ALLOWED_ORIGIN||'https://www.marihome.co.kr';
- const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Access-Control-Allow-Origin':allowed,'Vary':'Origin','Access-Control-Allow-Methods':'GET, POST, PATCH, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','X-Content-Type-Options':'nosniff'};
- const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers});
+ const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Access-Control-Allow-Origin':allowed,'Vary':'Origin','Access-Control-Allow-Methods':'GET, POST, PATCH, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type, X-River-Revision, X-River-Reconnect','X-Content-Type-Options':'nosniff'};
+ const reply=(body,status=200)=>new Response(JSON.stringify({...body,...(env.WEB_REVISION!=null?{webRevision:env.WEB_REVISION}:{})}),{status,headers});
  if(origin&&origin!==allowed)return reply({error:'허용되지 않은 주소입니다.'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(new URL(request.url).pathname.startsWith('/widget/')){try{return await rpWidgetRoute(request,env,reply);}catch{return reply({error:'위젯 연결에 실패했어요. 잠시 후 다시 시도해 주세요.'},502);}}
@@ -201,7 +202,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
  const auth=request.headers.get('Authorization')||'';
  if(!auth.startsWith('Bearer '))return reply({error:'학생 연결코드를 입력해 주세요.'},401);
  if(!env.RIVER_ACCESS_KEY||!await same(auth.slice(7),env.RIVER_ACCESS_KEY)){
-  try{const student=await rpStudentLogin(env,auth.slice(7),request);if(!student)return reply({error:'연결코드가 틀렸거나 연결이 중지된 학생입니다.'},401);env=student;}
+  try{const student=await rpStudentLogin(env,auth.slice(7),request);if(!student)return reply({error:'연결코드가 틀렸거나 연결이 중지된 학생입니다.'},401);const gate=await rpWidgetGate(env,student.STUDENT.id,student.STUDENT_CODE_HASH,'web',request.headers.get('X-River-Revision'),{reconnect:request.headers.get('X-River-Reconnect')==='true'});if(!gate.ok)return reply({error:gate.error},gate.status);env={...student,WEB_REVISION:gate.webRevision};}
   catch(e){return reply(rpStudentReply(e),503);}
  }
  if(!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'학교 DB 링크를 설정해 주세요.'},503);
@@ -376,6 +377,9 @@ export class StudentWidgetDevices {
    const found=s.devices.find(d=>d.id===input.id);
    let result={ok:true},status=200;
    if(reset){result={ok:false,error:'관리자가 위젯 연결을 해제했어요. 다시 연결해 주세요.'};status=401;}
+   else if(input.action==='web'){
+    if(!input.reconnect&&s.revokedAt&&String(input.id)!==String(s.revokedAt)){result={ok:false,error:'관리자가 연결을 해제했어요. 학생코드를 다시 입력해 주세요.'};status=401;}
+   }
    else if(input.action==='pair'){
     if(!found){
      if(s.devices.length>=limit){s.blocked++;s.blockedAt=now;s.blockedLimit=limit;result={ok:false,error:'허용된 위젯 기기 수('+limit+'대)를 초과했어요. 관리자에게 문의해 주세요.',code:'WIDGET_DEVICE_LIMIT'};status=409;}
@@ -411,7 +415,7 @@ export class StudentWidgetDevices {
    if(s.signature!==signature){
     try{await rpNotion(this.env,'pages/'+page.id,'PATCH',{properties});s.signature=signature;await this.ctx.storage.put('registry',s);}catch{result.managementPending=true;}
    }
-   return Response.json({...result,count:s.devices.length,limit},{status});
+   return Response.json({...result,count:s.devices.length,limit,webRevision:String(s.revokedAt||0)},{status});
   });
  }
 }

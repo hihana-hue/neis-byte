@@ -36,7 +36,7 @@ public class RiverWidget extends AppWidgetProvider {
   v.setOnClickPendingIntent(android.R.id.background,null);
   v.setOnClickPendingIntent(R.id.empty,null);
   v.setImageViewResource(android.R.id.background,WidgetStyle.drawable(c));v.setInt(android.R.id.background,"setImageAlpha",Math.round((100-WidgetStyle.transparency(c))*2.55f));
-  v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,12);v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
+  v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.titleFont(c));v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);
   v.setTextViewText(R.id.empty,!configured?"⚙ 위젯 연결 코드를 등록해 주세요.":!error.isEmpty()?error:"예정된 학원·앞으로 2주 학교 일정이 없어요.");
