@@ -1,6 +1,6 @@
 import {mountAcademyCalendar} from './academy-calendar.mjs?v=1';
 import {weekday} from './date-weekday.mjs?v=1';
-import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=4';
+import {toStart,localInput,lessonRounds} from './academy-model.mjs?v=5';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false,expanded=false;

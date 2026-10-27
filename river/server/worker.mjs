@@ -1,3 +1,25 @@
+function rpLessonRounds(items){
+ const labels=new Map(),groups=new Map();
+ const key=x=>x.kind==='운동'?'바디PT':x.kind;
+ const regular=x=>!['클리닉','연습'].includes(x.subtype);
+ const advances=x=>regular(x)&&((x.status==='출석'||(x.status==='결석'&&x.charge))||x.status==='예정');
+ const ordered=[...items].sort((a,b)=>(a.originalStart||a.start||'').localeCompare(b.originalStart||b.start||'')||String(a.id).localeCompare(String(b.id)));
+ for(const x of ordered){const k=key(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);}
+ for(const [kind,rows] of groups){
+  const size=({과학:4,바디PT:5})[kind],anchors=rows.filter(x=>x.roundAnchor);
+  const invalid=anchors.length>1||(anchors.length===1&&(!advances(anchors[0])||!(anchors[0].originalStart||anchors[0].start)));
+  const before=anchors.length===1?rows.slice(0,rows.indexOf(anchors[0])).filter(advances).length:0;
+  let used=0;
+  for(const x of rows){
+   if(!regular(x)){labels.set(x.id,'클리닉');continue;}
+   if(!size)continue;
+   if(advances(x))used++;
+   if(x.status==='예정')labels.set(x.id,invalid?'기준 확인':(((used-before-1)%size+size)%size+1)+'/'+size);
+  }
+ }
+ return labels;
+}
+
 // Read-only widget credentials are distinct from the dashboard access password.
 async function rpWidgetRoute(request,env,reply){
  const kv=env.RIVER_KV,path=new URL(request.url).pathname;
@@ -51,14 +73,7 @@ async function rpWidgetRoute(request,env,reply){
  const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const subjectColors=await rpSubjectColors(env);
  const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
- const usedByKind=new Map(),rounds=new Map();
- for(const p of [...ap].sort((a,b)=>(a.properties['최초 수업일']?.date?.start||a.properties['수업일시']?.date?.start||'').localeCompare(b.properties['최초 수업일']?.date?.start||b.properties['수업일시']?.date?.start||'')||a.id.localeCompare(b.id))){
-  const a=p.properties,kind=a['학원']?.select?.name||'',key=kind==='운동'?'바디PT':kind,type=a['수업 구분']?.select?.name||'수업',status=a['출결']?.select?.name||'예정',size=key==='과학'?4:key==='바디PT'?5:0;
-  if(['클리닉','연습'].includes(type)){rounds.set(p.id,'클리닉');continue;}if(!size)continue;
-  let used=usedByKind.get(key)||0;
-  if(status==='출석'||status==='예정'||(status==='결석'&&a['회차 차감']?.checkbox))used++;
-  usedByKind.set(key,used);if(status==='예정')rounds.set(p.id,((used-1)%size+1)+'/'+size);
- }
+ const rounds=rpLessonRounds(ap.map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox};}));
  const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
  return reply({school,academy,student:env.STUDENT||null,academyConnected:!env.STUDENT||!!env.ACADEMY_DATA_SOURCE_ID});
 }
@@ -215,7 +230,7 @@ export default {async scheduled(event,env,ctx){ctx.waitUntil(rpScheduled(env));}
    const ds=env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9';
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
-   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
+   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
    const validSubtype=(kind,value)=>typeof kind==='string'&&!!kind.trim()&&['수업','클리닉'].includes(value);
    const validStart=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+09:00$/.test(s))return false;const n=Date.parse(s);return Number.isFinite(n)&&new Date(n+9*3600000).toISOString().slice(0,19)===s.slice(0,19);};
    if(path==='/academy'&&request.method==='GET'){

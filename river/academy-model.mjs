@@ -7,17 +7,23 @@ export function localInput(start){if(!start)return '';const n=Date.parse(start);
 // Upcoming lessons show the expected position in their prepaid pack.
 // Completed/charged lessons advance the count; clinics never advance it.
 export function lessonRounds(items){
- const counts=new Map(),labels=new Map();
+ const labels=new Map(),groups=new Map();
+ const key=x=>x.kind==='운동'?'바디PT':x.kind;
+ const regular=x=>!['클리닉','연습'].includes(x.subtype);
+ const advances=x=>regular(x)&&(counted(x)||x.status==='예정');
  const ordered=[...items].sort((a,b)=>(a.originalStart||a.start||'').localeCompare(b.originalStart||b.start||'')||String(a.id).localeCompare(String(b.id)));
- for(const x of ordered){
-  if(['클리닉','연습'].includes(x.subtype)){labels.set(x.id,'클리닉');continue;}
-  const kind=x.kind==='운동'?'바디PT':x.kind,size=packSize[kind];
-  if(!size)continue;
-  let used=counts.get(kind)||0;
-  if(counted(x)||x.status==='예정')used++;
-  counts.set(kind,used);
-  if(x.status==='예정')labels.set(x.id,((used-1)%size+1)+'/'+size);
+ for(const x of ordered){const k=key(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);}
+ for(const [kind,rows] of groups){
+  const size=packSize[kind],anchors=rows.filter(x=>x.roundAnchor);
+  const invalid=anchors.length>1||(anchors.length===1&&(!advances(anchors[0])||!(anchors[0].originalStart||anchors[0].start)));
+  const before=anchors.length===1?rows.slice(0,rows.indexOf(anchors[0])).filter(advances).length:0;
+  let used=0;
+  for(const x of rows){
+   if(!regular(x)){labels.set(x.id,'클리닉');continue;}
+   if(!size)continue;
+   if(advances(x))used++;
+   if(x.status==='예정')labels.set(x.id,invalid?'기준 확인':(((used-before-1)%size+size)%size+1)+'/'+size);
+  }
  }
  return labels;
 }
-

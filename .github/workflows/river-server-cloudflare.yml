@@ -33,6 +33,7 @@ jobs:
           node river/server/deploy-cloudflare.test.mjs
           node river/server/push-delivery.test.mjs
           node river/server/widget-rounds.test.mjs
+          node river/academy-anchor.test.mjs
           node river/server/student-access.test.mjs
           node river/server/widget-devices.test.mjs
           node river/server/makeup.test.mjs
