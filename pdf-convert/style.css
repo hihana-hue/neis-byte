@@ -8,3 +8,6 @@ header{height:62px}.logo{font-size:18px;padding:7px 10px}main{padding-top:24px}.
 button{text-align:center;justify-content:center}.primary{justify-content:center}.resultbar button{text-align:center}
 
 .badges{flex-wrap:wrap;row-gap:6px}.intro p{max-width:850px;margin-left:auto;margin-right:auto}
+
+/* Compact conversion output without changing the rest of the page. */
+#output{line-height:1.4;padding:10px 0;font-size:12px;}
