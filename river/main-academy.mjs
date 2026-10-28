@@ -37,7 +37,11 @@ export function createAcademy(api,notify){
   if(busy)return;if(!connected){notify('먼저 일정을 불러와 주세요.');return;}
   current=x;mode=action;$('academy-error').textContent='';
   $('academy-dialog-title').textContent=action==='status'?'출석했나요?':action==='next'?'다음 수업을 등록할까요?':action==='change'?'보강 날짜 선택':action==='absent'?'결석으로 기록할까요?':'수업 등록';
-  $('academy-current').textContent=x?kindLabel(x.kind)+' · '+(x.subtype||'수업')+' · '+label(x.start)+(x.originalStart?' · '+label(x.originalStart)+' 수업 보강':''):'';
+  const currentInfo=$('academy-current');currentInfo.replaceChildren();
+  if(x){
+   currentInfo.append(el('span',kindLabel(x.kind)+' · '+(x.subtype||'수업'),'academy-current-kind'),el('span',label(x.start),'academy-current-date'));
+   if(x.originalStart)currentInfo.append(el('span','원 수업 : '+label(x.originalStart),'academy-original-date'));
+  }
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';
   $('academy-kind-field').hidden=action!=='add';$('academy-date-field').hidden=['status','absent'].includes(action);$('academy-type-field').hidden=['status','absent'].includes(action);$('academy-charge-field').hidden=action!=='absent'||['클리닉','연습'].includes(x?.subtype);
   $('academy-charge').checked=false;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':action==='change'?'보강 날짜 · 시간':'수업 날짜 · 시간';if(x?.kind&&!Array.from($('academy-kind').options).some(o=>o.value===x.kind)){const option=el('option',kindLabel(x.kind));option.value=x.kind;$('academy-kind').append(option);}if(x?.kind)$('academy-kind').value=x.kind;types($('academy-kind').value,x?.subtype);

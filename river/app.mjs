@@ -1,7 +1,7 @@
 import {createWidgetDownload} from './widget-download.mjs?v=6';
 import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=6';
-import {createAcademy} from './main-academy.mjs?v=29';
+import {createAcademy} from './main-academy.mjs?v=30';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
