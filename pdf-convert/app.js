@@ -69,8 +69,63 @@ async function readImage(source=file,crop=true){
 function readHwpx(bytes){const zip=fflate.unzipSync(bytes,{filter:e=>/^Contents\/section\d+\.xml$/i.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/section(\d+)/i)[1]-+b.match(/section(\d+)/i)[1]);if(!names.length)throw Error('HWPX 본문을 찾지 못했습니다. 암호 설정과 파일 형식을 확인해 주세요.');const pages=[];function text(n){if(n.nodeType!==1)return '';if(n.localName==='tbl')return '\n\n'+table(n)+'\n\n';if(n.localName==='t')return n.textContent;if(n.localName==='lineBreak')return '\n';if(n.localName==='tab')return '\t';return Array.from(n.children).map(text).join('')+(n.localName==='p'?'\n':'')}
 function table(n){const rows=Array.from(n.children).filter(x=>x.localName==='tr').map(r=>Array.from(r.children).filter(x=>x.localName==='tc').map(c=>text(c).trim().replace(/\|/g,'\\|').replace(/\n+/g,'<br>')));if(!rows.length)return '';const width=Math.max(...rows.map(r=>r.length));const out=rows.map(r=>'| '+Array.from({length:width},(_,i)=>r[i]||'').join(' | ')+' |');out.splice(1,0,'| '+Array(width).fill('---').join(' | ')+' |');return out.join('\n')}
 for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(fflate.strFromU8(zip[name]),'application/xml');if(xml.getElementsByTagName('parsererror').length)throw Error('HWPX 본문 XML을 읽지 못했습니다.');pages.push(text(xml.documentElement).replace(/\n{3,}/g,'\n\n').trim())}return pages}
-async function extract(){if(/\.(jpe?g|png|webp)$/i.test(file.name))return [await readImage()];if(/\.hwpx$/i.test(file.name))return readHwpx(new Uint8Array(await file.arrayBuffer()));const bytes=new Uint8Array(await file.arrayBuffer()),pages=[];if(/\.pdf$/i.test(file.name)){const doc=await pdfjsLib.getDocument({data:bytes,isEvalSupported:false}).promise;try{if(doc.numPages>150)throw Error('150페이지 이하 PDF로 나누어 업로드해 주세요.');for(let i=1;i<=doc.numPages;i++){checkAbort();status(`PDF 읽는 중 · ${i} / ${doc.numPages}페이지`);const page=await doc.getPage(i),content=await page.getTextContent();let lines=[],line='',y=null;for(const item of content.items){if(!('str'in item))continue;const ny=item.transform[5];if(y!==null&&Math.abs(y-ny)>4){lines.push(line);line=''}line+=(line&&!line.endsWith(' ')?' ':'')+item.str;y=ny;if(item.hasEOL){lines.push(line);line='';y=null}}if(line)lines.push(line);let text=markdownText(lines.join('\n'));if(!text){status(`스캔 PDF 인식 중 · ${i} / ${doc.numPages}페이지`);const viewport=page.getViewport({scale:Math.min(2,2400/page.getViewport({scale:1}).width)}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;checkAbort();text=await readImage(canvas,false);canvas.width=canvas.height=0}pages.push(text);page.cleanup()}}finally{await doc.destroy()}}else{const zip=fflate.unzipSync(bytes,{filter:e=>/^ppt\/slides\/slide\d+\.xml$/.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/slide(\d+)/)[1]-+b.match(/slide(\d+)/)[1]);if(names.length>150)throw Error('150슬라이드 이하로 나누어 업로드해 주세요.');for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(fflate.strFromU8(zip[name]),'application/xml');pages.push(Array.from(xml.getElementsByTagNameNS('*','p')).map(p=>Array.from(p.getElementsByTagNameNS('*','t')).map(x=>x.textContent).join('')).filter(Boolean).join('\n'))}if(!pages.length)throw Error('PPTX에서 슬라이드를 찾지 못했습니다. 파일을 확인해 주세요.')}return pages}
 
-$('convert').onclick=async()=>{if(!file||busy)return;busy=true;controller=new AbortController();$('convert').disabled=true;$('cancel').hidden=false;$('file').disabled=$('headers').disabled=true;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=true);try{const pages=await extract();checkAbort();if(!pages.some(p=>p.trim()))throw Error('읽을 수 있는 글자가 없습니다. 이미지는 선명한 원본으로 시도하고 제외 영역을 확인해 주세요.');const image=/\.(jpe?g|png|webp)$/i.test(file.name),label=/\.pdf$/i.test(file.name)?'Page ':/\.hwpx$/i.test(file.name)?'Section ':'Slide ';$('output').value=pages.map((p,i)=>($('headers').checked?(image?'## '+file.name:'## '+label+(i+1))+'\n\n':'')+(p||'[추출 가능한 텍스트 없음]')).join('\n\n---\n\n');update();status('변환 완료 · 원문과 비교해 표·수식·누락 여부를 확인해 주세요.')}catch(e){status(controller.signal.aborted?'변환을 중지했습니다.':e.name==='PasswordException'?'암호가 설정된 PDF입니다. 암호를 해제한 파일을 사용해 주세요.':e.message||'파일을 읽지 못했습니다.')}finally{busy=false;$('convert').disabled=false;$('cancel').hidden=true;$('file').disabled=$('headers').disabled=false;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=false)}};
+function pdfMarkdown(items){
+ const rows=[];
+ // PDF content streams may place continuation text after notes. Read by position.
+ const sorted=items.filter(i=>i.str?.trim()).map(i=>({...i,x:i.transform[4],y:i.transform[5],size:Math.abs(i.height||i.transform[3]||10)})).sort((a,b)=>b.y-a.y||a.x-b.x);
+ for(const item of sorted){
+  let row=rows.find(r=>Math.abs(r.y-item.y)<Math.max(2,Math.min(r.size,item.size)*.24));
+  if(!row){row={y:item.y,size:item.size,items:[]};rows.push(row)}
+  row.items.push(item);
+ }
+ rows.sort((a,b)=>b.y-a.y);
+ // Keep narrow left-hand row labels out of the middle of answer sentences.
+ const labels=[];
+ for(let ri=0;ri<rows.length;ri++){
+  const r=rows[ri],left=r.items.filter(i=>i.x<110),right=r.items.filter(i=>i.x>=110);
+  const label=left.map(i=>i.str).join('').trim();
+  if(right.length&&left.length&&/^(?:쟁점[·ㆍ]?결론|근거|실행|한계|입장|관점|원칙|문제|정리[·ㆍ]?한계|학생의 책임|학교의 책임|소통|즉시 행동|효과[·ㆍ]?한계|선택과 이유|한계와 조정|순서의 기준)$/.test(label)){
+   r.items=right;labels.push({ri,text:label});
+  }
+ }
+ let floor=0;
+ for(const label of labels){
+  let target=label.ri;
+  while(target>floor){
+   const prev=rows[target-1],cur=rows[target];
+   if(cur.y===prev.y||prev.y-cur.y>cur.size*1.8||prev.items.some(i=>i.x<110))break;
+   target--;
+  }
+  rows[target].label=label.text;floor=label.ri+1;
+ }
+ const sizes=sorted.map(i=>i.size).sort((a,b)=>a-b),body=sizes[Math.floor(sizes.length/2)]||10;
+ const out=[];let last=null;
+ const isHeading=t=>/^(?:[➊➋➌➍❶❷❸❹]\s*번?\s*질문.*(?:답변|답안)|※\s*(?:풀이과정|학생\s*구술))/.test(t);
+ for(const row of rows){
+  row.items.sort((a,b)=>a.x-b.x);let text='',end=null;
+  for(const item of row.items){
+   const gap=end===null?0:item.x-end;
+   // Preserve original spaces; only add a space for a visible geometric word gap.
+   if(text&&gap>row.size*.16&&!/\s$/.test(text)&&!/^\s/.test(item.str))text+=' ';
+   text+=item.str;end=item.x+(item.width||0);
+  }
+  text=text.replace(/[ \t]+/g,' ').trim();
+  const heading=isHeading(text)||(row.size>body*1.25&&text.length<90);
+  const structural=/^(?:※|[➊➋➌➍㉮㉯㉰㉱㉲①②③④⑤]|\d+\.\s|\[[^\]]{1,20}\])/.test(text);
+  const gap=last?last.y-row.y:0;
+  if(row.label)out.push('\n**'+row.label+'**\n');
+  if(heading)out.push('\n### '+text+'\n');
+  else if(!out.length||structural||gap>row.size*1.8)out.push(text);
+  else if(last&&gap<row.size*1.7&&!out[out.length-1].endsWith('\n'))out[out.length-1]+=' '+text;
+  else out.push(text);
+  last=row;
+ }
+ return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+async function extract(){if(/\.(jpe?g|png|webp)$/i.test(file.name))return [await readImage()];if(/\.hwpx$/i.test(file.name))return readHwpx(new Uint8Array(await file.arrayBuffer()));const bytes=new Uint8Array(await file.arrayBuffer()),pages=[];if(/\.pdf$/i.test(file.name)){const doc=await pdfjsLib.getDocument({data:bytes,isEvalSupported:false}).promise;try{if(doc.numPages>150)throw Error('150페이지 이하 PDF로 나누어 업로드해 주세요.');for(let i=1;i<=doc.numPages;i++){checkAbort();status(`PDF 읽는 중 · ${i} / ${doc.numPages}페이지`);const page=await doc.getPage(i),content=await page.getTextContent();let text=pdfMarkdown(content.items);if(!text){status(`스캔 PDF 인식 중 · ${i} / ${doc.numPages}페이지`);const viewport=page.getViewport({scale:Math.min(2,2400/page.getViewport({scale:1}).width)}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;checkAbort();text=await readImage(canvas,false);canvas.width=canvas.height=0}pages.push(text);page.cleanup()}}finally{await doc.destroy()}}else{const zip=fflate.unzipSync(bytes,{filter:e=>/^ppt\/slides\/slide\d+\.xml$/.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/slide(\d+)/)[1]-+b.match(/slide(\d+)/)[1]);if(names.length>150)throw Error('150슬라이드 이하로 나누어 업로드해 주세요.');for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(fflate.strFromU8(zip[name]),'application/xml');pages.push(Array.from(xml.getElementsByTagNameNS('*','p')).map(p=>Array.from(p.getElementsByTagNameNS('*','t')).map(x=>x.textContent).join('')).filter(Boolean).join('\n'))}if(!pages.length)throw Error('PPTX에서 슬라이드를 찾지 못했습니다. 파일을 확인해 주세요.')}return pages}
+
+$('convert').onclick=async()=>{if(!file||busy)return;busy=true;controller=new AbortController();$('convert').disabled=true;$('cancel').hidden=false;$('file').disabled=$('headers').disabled=true;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=true);try{const pages=await extract();checkAbort();if(!pages.some(p=>p.trim()))throw Error('읽을 수 있는 글자가 없습니다. 이미지는 선명한 원본으로 시도하고 제외 영역을 확인해 주세요.');const image=/\.(jpe?g|png|webp)$/i.test(file.name),label=/\.pdf$/i.test(file.name)?'Page ':/\.hwpx$/i.test(file.name)?'Section ':'Slide ';$('output').value=pages.map((p,i)=>($('headers').checked?(image?'## '+file.name:'## '+label+(i+1))+'\n':'')+(p||'[추출 가능한 텍스트 없음]')).join('\n\n---\n\n').replace(/\n{3,}/g,'\n\n');update();status('변환 완료 · 원문과 비교해 표·수식·누락 여부를 확인해 주세요.')}catch(e){status(controller.signal.aborted?'변환을 중지했습니다.':e.name==='PasswordException'?'암호가 설정된 PDF입니다. 암호를 해제한 파일을 사용해 주세요.':e.message||'파일을 읽지 못했습니다.')}finally{busy=false;$('convert').disabled=false;$('cancel').hidden=true;$('file').disabled=$('headers').disabled=false;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=false)}};
 $('cancel').onclick=()=>{controller?.abort();if(ocrWorker)ocrWorker.terminate().catch(()=>{})};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText($('output').value);status('결과를 복사했습니다.')}catch{$('output').focus();$('output').select();status('결과를 선택했습니다. Ctrl+C 또는 복사를 눌러 주세요.')}};
 $('download').onclick=()=>{const blob=new Blob([$('output').value],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(file?.name.replace(/\.[^.]+$/,'')||'document')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
