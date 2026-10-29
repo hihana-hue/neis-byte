@@ -12,7 +12,7 @@ SCHOOL_DATA_SOURCE_ID = "2a9215b9-b774-8167-be3a-000bcc48a1f5"
 ACADEMY_DATA_SOURCE_ID = "3fd215b9-b774-806e-9ed3-000b1b1df0f9"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = []
 
 # Add a KV binding named RIVER_KV to choi-river-notifications in Cloudflare Dashboard.
 
@@ -24,3 +24,4 @@ class_name = "StudentWidgetDevices"
 [[migrations]]
 tag = "student-widgets-v1"
 new_sqlite_classes = ["StudentWidgetDevices"]
+

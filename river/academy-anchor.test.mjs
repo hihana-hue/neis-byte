@@ -20,3 +20,4 @@ check([{...anchor,status:'결석'},next],{next:'기준 확인'});
 check([{...anchor,subtype:'클리닉'},next],{next:'기준 확인'});
 check([old,next],{next:'2/4'});
 console.log('Web and widget anchor parity checks passed');
+

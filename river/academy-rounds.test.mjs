@@ -10,3 +10,4 @@ assert.equal(labels.get(7),'1/4');
 assert.equal(labels.get(9),'2/5');
 assert.equal(labels.has(2),false);
 console.log('Academy round tests passed');
+

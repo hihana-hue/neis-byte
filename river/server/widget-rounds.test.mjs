@@ -10,3 +10,4 @@ const rounds=new Map(feed.academy.map(x=>[x.id,x.round]));
 assert.equal(rounds.get('4'),'클리닉');assert.equal(rounds.get('5'),'3/4');assert.equal(rounds.get('6'),'4/4');assert.equal(rounds.get('7'),'1/4');assert.equal(rounds.get('9'),'2/5');
 assert.equal(feed.academy.length,5);
 console.log('Widget round feed checks passed');
+

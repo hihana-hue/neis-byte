@@ -75,3 +75,4 @@ async function rpScheduled(env){
  await kv.put('cron:last',JSON.stringify({at:started,state:'ran',accepted}));
  }catch{await kv.put('cron:last',JSON.stringify({at:started,state:'error',error:'노션 또는 알림 서버 연결을 확인해 주세요.'}));}
 }
+

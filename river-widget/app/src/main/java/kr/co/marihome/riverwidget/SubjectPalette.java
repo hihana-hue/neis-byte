@@ -30,3 +30,4 @@ final class SubjectPalette {
  }}
  private SubjectPalette(){}
 }
+

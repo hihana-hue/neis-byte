@@ -16,3 +16,4 @@ The CI builds and tests without signing secrets, signs in a separate step, verif
 ## Acceptance check before migration
 
 Install the first signed APK on a test device, set appearance and connect. Build a higher-version APK with the same key. Confirm Android shows Update, local connection/settings remain, today uses Seoul dates for school and academy, and no notification/alarm permissions are added. APK signing and unit tests cannot replace this device test.
+

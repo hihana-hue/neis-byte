@@ -33,6 +33,7 @@ jobs:
           node river/server/deploy-cloudflare.test.mjs
           node river/server/push-delivery.test.mjs
           node river/server/widget-rounds.test.mjs
+          node river/server/usage-design.test.mjs
           node river/academy-anchor.test.mjs
           node river/server/student-access.test.mjs
           node river/server/widget-devices.test.mjs
@@ -58,3 +59,4 @@ jobs:
         run: |
           export WRANGLER_BIN="$RUNNER_TEMP/river-wrangler/node_modules/.bin/wrangler"
           node river/server/deploy-cloudflare.mjs "$DEPLOY_MODE"
+

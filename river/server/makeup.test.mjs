@@ -16,3 +16,4 @@ const rows=[2,14,18].map(d=>({id:String(d),kind:'과학',status:'출석',start:`
 rows.push({...x,status:'예정'}, {id:'next',kind:'과학',status:'예정',start:'2026-10-28T18:00:00+09:00'}, {id:'clinic',kind:'과학',subtype:'클리닉',status:'출석',start:'2026-10-22T19:00:00+09:00'});
 assert.equal(lessonRounds(rows).get(id),'4/4');assert.equal(lessonRounds(rows).get('next'),'1/4');
 console.log('PASS repeated makeup preserves original date, attendance, charge, history and round order');
+

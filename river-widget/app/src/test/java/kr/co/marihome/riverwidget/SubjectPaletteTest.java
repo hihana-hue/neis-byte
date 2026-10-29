@@ -8,3 +8,4 @@ public class SubjectPaletteTest {
  @Test public void missingOrUnknownColorUsesNeutralPair(){assertEquals(SubjectPalette.background("default"),SubjectPalette.background(null));assertEquals(SubjectPalette.foreground("default"),SubjectPalette.foreground("future-color"));}
  @Test public void greenAndDefaultAreDifferent(){assertNotEquals(SubjectPalette.background("green"),SubjectPalette.background("default"));}
 }
+

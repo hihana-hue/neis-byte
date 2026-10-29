@@ -24,3 +24,4 @@ assert.equal((await call('feed','id0',{legacy:{id:'id0',studentId,codeHash,scope
 assert.equal((await call('pair','id11')).ok,true);
 p['연결코드'].rich_text=[{plain_text:'changed'}];assert.equal((await call('feed','id11')).status,401);
 console.log('PASS concurrent cap, repeat pairing, raise limit, disconnect, telemetry failure, revocation and code change');
+

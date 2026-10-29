@@ -9,8 +9,8 @@ const reg=(id,code,db,active=true)=>({id,parent:{type:'data_source_id',data_sour
 const students=[reg(a,'student-a','33333333-3333-3333-3333-333333333333'),reg(b,'student-b','44444444-4444-4444-4444-444444444444')];
 const task=(id,ds)=>({id,object:'page',parent:{type:'data_source_id',data_source_id:ds},properties:{'주제':{title:[{plain_text:id}]},'상태':{status:{name:'시작전'}}}});
 const ta=task('55555555-5555-5555-5555-555555555555',sa),tb=task('66666666-6666-6666-6666-666666666666',sb);
-const saved=new Map(),mutations=[];
-const kv={get:async k=>saved.get(k)||null,put:async(k,v)=>saved.set(k,v),delete:async k=>saved.delete(k),list:async({prefix})=>({keys:[...saved.keys()].filter(k=>k.startsWith(prefix)).map(name=>({name})),list_complete:true})};
+let kvWrites=0;const saved=new Map(),mutations=[];
+const kv={get:async k=>saved.get(k)||null,put:async(k,v)=>{kvWrites++;saved.set(k,v);},delete:async k=>saved.delete(k),list:async({prefix})=>({keys:[...saved.keys()].filter(k=>k.startsWith(prefix)).map(name=>({name})),list_complete:true})};
 globalThis.fetch=async(url,opts={})=>{
  const path=String(url).split('/v1/')[1],body=opts.body?JSON.parse(opts.body):{};
  const response=data=>new Response(JSON.stringify(data));
@@ -33,6 +33,9 @@ r=await worker.fetch(req('/academy','student-a'),env);assert.deepEqual((await r.
 r=await worker.fetch(req('/widget/pair','','POST',{mode:'student',code:'student-a'}),env);assert.equal(r.status,200);const token=(await r.json()).deviceToken;assert.match(token,/^[A-Za-z0-9_-]{43}$/);
 r=await worker.fetch(req('/widget/feed',token),env);data=await r.json();assert.equal(data.student.id,a);assert.equal(data.school[0].id,ta.id);assert.equal(data.academy.length,0);
 r=await worker.fetch(req('/tasks',token),env);assert.equal(r.status,401);
+const baselineWrites=kvWrites;
+for(let i=0;i<5;i++){const response=await worker.fetch(req('/dashboard','student-a'),env);assert.equal(response.status,200);const data=await response.json();assert.equal(data.student.id,a);assert.deepEqual(data.academy.items,[]);}
+assert.equal(kvWrites,baselineWrites,'normal dashboard refresh adds no KV writes');
 students[0].properties['연결 활성화'].checkbox=false;
 r=await worker.fetch(req('/tasks','student-a'),env);assert.equal(r.status,401);
 r=await worker.fetch(req('/widget/feed',token),env);assert.equal(r.status,401);
@@ -57,3 +60,4 @@ for(const [stage,failedPath,status] of [
 globalThis.fetch=goodFetch;
 r=await worker.fetch(req('/tasks','student-a'),{...env,RIVER_KV:null});assert.equal((await r.json()).code,'STUDENT_KV');
 console.log('PASS distinct registry/school/academy permissions and KV errors without exposing connection codes');
+

@@ -30,7 +30,7 @@ export function deploymentConfig(settings,schedules,subdomain,main){
  need(Array.isArray(schedules)&&schedules.every(x=>typeof x.cron==='string'),'현재 예약 실행 설정을 확인하지 못했습니다.');
  need(typeof subdomain.enabled==='boolean','현재 workers.dev 설정을 확인하지 못했습니다.');
  // keep_vars preserves dashboard plaintext/JSON variables; Wrangler retains secrets.
- const config={name:WORKER,main,compatibility_date:settings.compatibility_date,compatibility_flags:settings.compatibility_flags||[],keep_vars:true,workers_dev:subdomain.enabled,kv_namespaces:kv,durable_objects:{bindings:[{name:BINDING,class_name:DEVICE_CLASS}]},migrations:[{tag:'student-widgets-v1',new_sqlite_classes:[DEVICE_CLASS]}],triggers:{crons:schedules.map(x=>x.cron)}};
+ const config={name:WORKER,main,compatibility_date:settings.compatibility_date,compatibility_flags:settings.compatibility_flags||[],keep_vars:true,workers_dev:subdomain.enabled,kv_namespaces:kv,durable_objects:{bindings:[{name:BINDING,class_name:DEVICE_CLASS}]},migrations:[{tag:'student-widgets-v1',new_sqlite_classes:[DEVICE_CLASS]}],triggers:{crons:[]}};
  if(typeof subdomain.previews_enabled==='boolean')config.preview_urls=subdomain.previews_enabled;
  for(const key of ['observability','logpush','limits','tail_consumers'])if(settings[key]!=null)config[key]=settings[key];
  // The settings API returns {} for default placement; Wrangler requires mode if present.
@@ -80,11 +80,12 @@ async function run(){
   need(!output.error&&output.status===0,'배포 도구 실행에 실패했습니다. 위 로그를 확인해 주세요.');
   if(mode==='deploy'){
    const after=await get('/settings');verifyPreserved(before,after);
-   const nextSchedules=(await get('/schedules')).schedules;need(same(schedules.map(x=>x.cron).sort(),nextSchedules.map(x=>x.cron).sort()),'기존 예약 실행 설정이 달라졌습니다.');
+   const nextSchedules=(await get('/schedules')).schedules;need(nextSchedules.length===0,'사용하지 않는 알림 예약이 남아 있습니다.');
    const nextSubdomain=await get('/subdomain');need(nextSubdomain.enabled===subdomain.enabled,'기존 workers.dev 설정이 달라졌습니다.');
   }
-  const summary=mode==='deploy'?'서버 배포 및 STUDENT_WIDGETS 생성·연결 확인 완료. 기존 KV·변수·Secret 이름·예약 실행 보존 확인. 다음 단계: 휴대폰 위젯 새로고침 후 노션 기기 수 확인.':'설정 보존 점검 및 빌드 점검 완료. 실제 서버는 변경하지 않았습니다. 다음 단계: Run workflow에서 deploy 선택.';
+  const summary=mode==='deploy'?'서버 배포 및 STUDENT_WIDGETS 생성·연결 확인 완료. 기존 KV·변수·Secret 이름 보존·알림 예약 중지 확인. 다음 단계: 휴대폰 위젯 새로고침 후 노션 기기 수 확인.':'설정 보존 점검 및 빌드 점검 완료. 실제 서버는 변경하지 않았습니다. 다음 단계: Run workflow에서 deploy 선택.';
   console.log(summary);if(process.env.GITHUB_STEP_SUMMARY)await appendFile(process.env.GITHUB_STEP_SUMMARY,'## CHOI RIVER 서버\n\n'+summary+'\n');
  }finally{await rm(directory,{recursive:true,force:true});}
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))run().catch(e=>{console.error(e.message);process.exitCode=1;});
+

@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
+import worker,{StudentWidgetDevices} from './worker.mjs';
+import {namespace} from './widget-gate-test-utils.mjs';
+let writes=0,lists=0,reads=0;
+const env={NOTION_TOKEN:'test',RIVER_ACCESS_KEY:'admin',SCHOOL_DATA_SOURCE_ID:'school',RIVER_KV:{get:async()=>{reads++;return null;},put:async()=>{writes++;},list:async()=>{lists++;return {keys:[],list_complete:true};}}};
+let waiting;worker.scheduled({},env,{waitUntil(p){waiting=p;}});await waiting;
+assert.equal(reads+writes+lists,0,'disabled scheduled performs no storage work');
+assert.equal((await worker.fetch(new Request('https://test/push/config'),env)).status,410);assert.equal(reads+writes+lists,0);
+let storageWrites=0;const map=new Map();const ctx={blockConcurrencyWhile:fn=>fn(),storage:{get:async k=>structuredClone(map.get(k)),put:async(k,v)=>{storageWrites++;map.set(k,structuredClone(v));}}};
+const limiter=new StudentWidgetDevices(ctx,env);
+const rate=action=>limiter.fetch(new Request('https://test',{method:'POST',body:JSON.stringify({action})}));
+for(let i=0;i<100;i++)assert.equal((await rate('rate')).status,200);assert.equal(storageWrites,0,'successful checks never persist counters');
+for(let i=0;i<20;i++)await rate('rate-failure');assert.equal((await rate('rate')).status,429);assert.equal(storageWrites,20);
+// Record validation is independent of theme, strips malformed values and makes one paginated read.
+const source=fs.readFileSync(new URL('./worker.mjs',import.meta.url),'utf8');
+const block=source.slice(source.indexOf("const RP_DESIGN_SOURCE="),source.indexOf('function rpJobs('));
+let calls=0;const context=vm.createContext({Map,rpText:x=>(x||[]).map(x=>x.plain_text).join(''),rpPages:async()=>{calls++;return [{id:'a'.repeat(32),properties:{이름:{title:[{plain_text:'새 이름'}]},'전체 배경색':{rich_text:[{plain_text:'#123abc'}]},'학교 일정 배경색':{rich_text:[{plain_text:'없음'}]},'학원 글자색':{rich_text:[{plain_text:'javascript:bad'}]},'타이틀 굵게':{checkbox:true}}}];}});
+vm.runInContext(block+';this.designs=rpReadWidgetDesigns;',context);
+const [one,two]=await Promise.all([context.designs(env),context.designs(env)]);assert.equal(calls,1);assert.equal(one.designs[0].name,'새 이름');assert.equal(one.designs[0].background,'#123ABC');assert.equal(one.designs[0].schoolBackground,'none');assert.equal(one.designs[0].academyText,undefined);assert.deepEqual(one,two);
+console.log('PASS disabled cron/push = zero KV; no rate writes for reads; failed-code limit; coalesced, validated explicit design reads');

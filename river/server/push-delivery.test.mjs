@@ -48,3 +48,4 @@ schoolPage.properties['과목'].multi_select[0].color='purple';
 const nextFeed=await context.rpWidgetRoute({url:'https://test.invalid/widget/feed',method:'GET',headers:new Headers({Authorization:'Bearer '+token})},{RIVER_KV:kv,NOTION_TOKEN:'test',SCHOOL_DATA_SOURCE_ID:'school',ACADEMY_DATA_SOURCE_ID:'academy'},body=>body);
 assert.equal(nextFeed.school[0].subjectColors['공통과학2'],'purple');
 console.log('PASS: Notion subject-color changes propagate on the next feed fetch; academy and task title stay unchanged.');
+

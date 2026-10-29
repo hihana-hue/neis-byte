@@ -10,3 +10,4 @@ let r=await call('교회');assert.equal(r.status,201);assert.equal((await r.json
 r=await call('미등록');assert.equal(r.status,400);assert.equal(writes,1);
 r=await worker.fetch(new Request('https://api.test/academy',{headers:{Authorization:'Bearer admin'}}),env);assert.deepEqual((await r.json()).kinds,['교회','과학']);
 console.log('PASS Notion-defined church POST, unknown option rejected, option list returned');
+
