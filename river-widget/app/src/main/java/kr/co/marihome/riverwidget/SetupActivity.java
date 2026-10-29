@@ -93,7 +93,10 @@ public class SetupActivity extends Activity {
    Intent install=new Intent(Intent.ACTION_VIEW);install.setDataAndType(uri,"application/vnd.android.package-archive");install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);install.setClipData(ClipData.newRawUri("업데이트 APK",uri));startActivity(install);openedDownload=id;
   }catch(Exception e){updateDownloadStatus.setText("설치 화면을 열지 못했어요. 내 파일 → 다운로드에서 MARI-EDU APK를 여세요. 차단되면 보안 위험 자동 차단을 잠시 끄고 설치 후 다시 켜 주세요.");}
  }
- @Override protected void onResume(){super.onResume();resumed=true;if(!receiverRegistered){IntentFilter filter=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(android.os.Build.VERSION.SDK_INT>=33)registerReceiver(updateReceiver,filter,Context.RECEIVER_EXPORTED);else registerReceiver(updateReceiver,filter);receiverRegistered=true;}checkDownloadedUpdate(false);}
+ // Android 12 and older have no exported/not-exported receiver flags. Only our saved, successful download ID is accepted.
+ @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
+ private void registerLegacyDownloadReceiver(IntentFilter filter){registerReceiver(updateReceiver,filter);}
+ @Override protected void onResume(){super.onResume();resumed=true;if(!receiverRegistered){IntentFilter filter=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(android.os.Build.VERSION.SDK_INT>=33)registerReceiver(updateReceiver,filter,Context.RECEIVER_EXPORTED);else registerLegacyDownloadReceiver(filter);receiverRegistered=true;}checkDownloadedUpdate(false);}
  @Override protected void onPause(){resumed=false;super.onPause();}
  @Override protected void onDestroy(){if(receiverRegistered){unregisterReceiver(updateReceiver);receiverRegistered=false;}super.onDestroy();}
 
