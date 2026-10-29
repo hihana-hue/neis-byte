@@ -165,23 +165,6 @@ async function rpReadWidgetDesigns(env){
  rpDesignPending.set(key,job);try{return await job;}finally{rpDesignPending.delete(key);}
 }
 
-const RP_ICON_SOURCE='ad0ae712-2960-47d3-afb2-3293687a4af1';
-const RP_ACADEMY_ICONS=new Set(['책','연필','실험병','원자','계산기','지구','컴퓨터','음표','건반','기타','마이크','팔레트','카메라','덤벨','축구공','농구공','수영','달리기','태권도','십자가','교회','별','하트','버스']);
-const rpIconKey=name=>{const key=String(name||'').normalize('NFKC').trim().toLowerCase();return key==='운동'?'바디pt':key;};
-async function rpWidgetIcons(env){
- const studentId=env.STUDENT?.id;if(!studentId)return {iconStudentId:'',academyIcons:{}};
- try{
-  const rows=[];let cursor;do{const response=await rpNotion(env,'data_sources/'+(env.WIDGET_ICON_SOURCE_ID||RP_ICON_SOURCE)+'/query','POST',{page_size:100,filter:{property:'학생',relation:{contains:studentId}},...(cursor?{start_cursor:cursor}:{})});rows.push(...response.results);cursor=response.has_more?response.next_cursor:null;}while(cursor);
-  const academyIcons={},seen=new Set();let duplicate=false;
-  for(const row of rows){if(row.archived||row.in_trash||!(row.properties?.['학생']?.relation||[]).some(s=>normalized(s.id)===normalized(studentId)))continue;
-   const name=rpIconKey(rpText(row.properties['학원명']?.title));if(!name||name.length>100)continue;
-   if(seen.has(name)){academyIcons[name]='';duplicate=true;continue;}seen.add(name);
-   const icon=row.properties['아이콘']?.select?.name||'';academyIcons[name]=RP_ACADEMY_ICONS.has(icon)?icon:'';
-  }
-  return {iconStudentId:studentId,academyIcons,iconsWarning:duplicate?'같은 학생·학원 아이콘 설정이 중복되어 해당 아이콘을 숨겼어요.':''};
- }catch{return {iconStudentId:studentId,iconsWarning:'학원 아이콘 설정표에 서버용 노션 연결을 추가해 주세요. 기존 아이콘을 유지합니다.'};}
-}
-
 function rpJobs(school,academy,now){
  const jobs=[],day=86400000,text=a=>(a||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const add=(p,type,start,at,title,body,slot,until)=>{if(!Number.isFinite(at)||at>now||now-at>10*60000||at<Date.parse(p.created_time||0)||now>=until)return;jobs.push({id:p.id+':'+start+':'+slot,page:p.id,type,start,at,until,title,body,url:'/river/?'+(type==='academy'?'lesson=':'task=')+encodeURIComponent(p.id)});};

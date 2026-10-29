@@ -21,15 +21,6 @@ let calls=0;const context=vm.createContext({Map,rpText:x=>(x||[]).map(x=>x.plain
 vm.runInContext(block+';this.designs=rpReadWidgetDesigns;',context);
 const [one,two]=await Promise.all([context.designs(env),context.designs(env)]);assert.equal(calls,1);assert.equal(one.designs[0].name,'새 이름');assert.equal(one.designs[0].background,'#123ABC');assert.equal(one.designs[0].schoolBackground,'none');assert.equal(one.designs[0].academyText,undefined);assert.equal(one.designs[0].isDefault,true);assert.equal(one.designs[0].separatorTransparency,50);assert.deepEqual(one,two);
 console.log('PASS disabled cron/push = zero KV; no rate writes for reads; failed-code limit; coalesced, validated explicit design reads');
-// Explicit per-student icon configuration never returns another student's rows.
-const iconStart=source.indexOf('const RP_ICON_SOURCE=');
-const iconEnd=source.indexOf('function rpJobs(');
-let selectedStudent;const iconContext=vm.createContext({Set,normalized:x=>x.replaceAll('-',''),rpText:x=>(x||[]).map(x=>x.plain_text).join(''),rpNotion:async(env,path,method,body)=>{selectedStudent=body.filter.relation.contains;return {results:[
- {properties:{'학생':{relation:[{id:'student-a'}]},'학원명':{title:[{plain_text:'TEEN'}]},'아이콘':{select:{name:'십자가'}}}},
- {properties:{'학생':{relation:[{id:'student-b'}]},'학원명':{title:[{plain_text:'과학'}]},'아이콘':{select:{name:'실험병'}}}},
- {properties:{'학생':{relation:[{id:'student-a'}]},'학원명':{title:[{plain_text:'바디PT'}]},'아이콘':{select:null}}}
- ],has_more:false};}});
-vm.runInContext(source.slice(iconStart,iconEnd)+';this.icons=rpWidgetIcons;',iconContext);
-const icons=await iconContext.icons({STUDENT:{id:'student-a'}});assert.equal(selectedStudent,'student-a');assert.equal(icons.academyIcons.teen,'십자가');assert.equal(icons.academyIcons['바디pt'],'');assert.equal(icons.academyIcons['과학'],undefined);
-const noStudent=await iconContext.icons({});assert.equal(Object.keys(noStudent.academyIcons).length,0);
-console.log('PASS student-scoped icons, explicit empty hides icon, other-student configuration excluded');
+assert.equal(source.includes('rpWidgetIcons'),false);
+assert.equal(source.includes('ad0ae712-2960-47d3-afb2-3293687a4af1'),false);
+console.log('PASS widget settings have no icon datasource lookup');
