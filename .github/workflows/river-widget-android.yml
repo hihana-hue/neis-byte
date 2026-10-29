@@ -33,7 +33,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           root = Path("river-widget/app/src/main")
-          forbidden = ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM", "NotificationManager", "NotificationChannel", "AlarmManager"]
+          forbidden = ["POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM", "USE_EXACT_ALARM", "NotificationManager", "NotificationChannel", "AlarmManager", "REQUEST_INSTALL_PACKAGES", "ACTION_MANAGE_UNKNOWN_APP_SOURCES", "canRequestPackageInstalls"]
           for path in root.rglob("*"):
               if path.suffix in {".java", ".xml"}:
                   text = path.read_text()
@@ -53,6 +53,15 @@ jobs:
       - name: Test and build unsigned release
         working-directory: river-widget
         run: gradle :app:testDebugUnitTest :app:assembleRelease :app:lintRelease --no-daemon --stacktrace
+      - name: Verify built APK permissions
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions river-widget/app/build/outputs/apk/release/app-release-unsigned.apk > /tmp/widget-permissions.txt
+          cat /tmp/widget-permissions.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          permissions = set(Path("/tmp/widget-permissions.txt").read_text().split())
+          assert permissions == {"android.permission.INTERNET"}, permissions
+          PY
       - name: Sign release with persistent key
         id: signing
         env:
@@ -74,8 +83,8 @@ jobs:
           printf '%s' "$KEY_B64" | base64 --decode > "$keyfile"
           mkdir -p signed
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 river-widget/app/build/outputs/apk/release/app-release-unsigned.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/MARI-EDU-Widget-1.30.37.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/MARI-EDU-Widget-1.30.37.apk > signed/certificate.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/MARI-EDU-Widget-1.30.38.apk signed/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/MARI-EDU-Widget-1.30.38.apk > signed/certificate.txt
           actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signed/certificate.txt | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
           expected=$(printf '%s' "$EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
           test -n "$actual" && test "$actual" = "$expected"
@@ -98,16 +107,16 @@ jobs:
             river-widget/app/build/reports/lint-results-release.html
           if-no-files-found: ignore
       - name: Publish signed APK
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true' && vars.RIVER_WIDGET_RELEASE_APPROVED == '37'
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true' && vars.RIVER_WIDGET_RELEASE_APPROVED == '38'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Never overwrite an installed version with a different artifact.
-          if gh release view widget-1.30.37-update-settings >/dev/null 2>&1; then
+          if gh release view widget-1.30.38-no-install-permission >/dev/null 2>&1; then
             echo '::error::Version 1.30 mariedu already exists. Increase versionCode, versionName and release tag before publishing.'
             exit 1
           fi
-          gh release create widget-1.30.37-update-settings signed/MARI-EDU-Widget-1.30.37.apk signed/certificate.txt --title "마리 에듀 1.30 · 디자인 설정" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
+          gh release create widget-1.30.38-no-install-permission signed/MARI-EDU-Widget-1.30.38.apk signed/certificate.txt --title "마리 에듀 1.30 · 디자인 설정" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
 
 
