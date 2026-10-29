@@ -67,7 +67,7 @@ async function rpWidgetRoute(request,env,reply){
  if(!device||device.scope!=='widget:read')return reply({error:'해제된 위젯 연결입니다. 새 코드로 연결해 주세요.'},401);
  if(path==='/widget/disconnect'&&request.method==='POST'){if(device.studentId){const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'disconnect',id);if(!gate.ok)return reply({error:gate.error},gate.status);}else await kv.delete('widget-device:'+id);return reply({ok:true});}
  if(device.studentId){const student=await rpStudentDevice(env,device);if(!student)return reply({error:'학생 연결이 중지되었거나 코드가 변경됐어요.'},401);env=student;const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'feed',id,{legacy:device});if(!gate.ok)return reply({error:gate.error},gate.status);}
- if(path==='/widget/designs'&&request.method==='GET'){const design=await rpWidgetDesigns(env),icons=await rpWidgetIcons(env);return reply({...design,...icons});}
+ if(path==='/widget/designs'&&request.method==='GET'){const design=await rpWidgetDesigns(env);return reply(design);}
  if(path!=='/widget/feed'||request.method!=='GET')return reply({error:'위젯에서는 일정 조회만 할 수 있어요.'},405);
  if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
  const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID?Promise.resolve([]):rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'))]);

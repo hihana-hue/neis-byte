@@ -5,7 +5,10 @@ final class WidgetStyle {
  static int titleFont(Context c){return Math.max(12,Math.min(24,c.getSharedPreferences("widget-style",0).getInt("titleFont",18)));}
  static void saveTitleFont(Context c,int size){c.getSharedPreferences("widget-style",0).edit().putInt("titleFont",Math.max(12,Math.min(24,size))).apply();}
  static int font(Context c){return Math.max(12,Math.min(18,c.getSharedPreferences("widget-style",0).getInt("font",14)));}
- static int transparency(Context c){return Math.max(0,Math.min(80,c.getSharedPreferences("widget-style",0).getInt("transparency",20)));}
+ static int backgroundOpacity(Context c){return Math.max(0,Math.min(100,c.getSharedPreferences("widget-style",0).getInt("backgroundOpacity",100)));}
+ static void saveBackgroundOpacity(Context c,int value){c.getSharedPreferences("widget-style",0).edit().putInt("backgroundOpacity",Math.max(0,Math.min(100,value))).apply();}
+ static int backgroundAlpha(Context c){return opacityAlpha(backgroundOpacity(c));}
+ static int opacityAlpha(int value){return Math.round(Math.max(0,Math.min(100,value))*2.55f);}
  static int theme(Context c){android.content.SharedPreferences p=c.getSharedPreferences("widget-style",0);return Math.max(0,Math.min(2,p.getInt("theme",p.getBoolean("dark",false)?1:0)));}
  static boolean dark(Context c){return theme(c)==1;}
  static int text(Context c){return WidgetDesign.color(c,"schoolText",Color.parseColor(theme(c)==0?"#F1ECD7":theme(c)==1?"#F5F5F5":"#145C97"));}

@@ -32,8 +32,7 @@ final class WidgetDesign {
    String initial=initialDefault(clean);if(!initial.isEmpty()&&choose(c,initial))prefs.edit().putBoolean("designInitialized",true).apply();
   }
   JSONObject current=find(clean,selectedId(c));if(current!=null)Vault.put(c,"designSnapshot",current.toString());
-  JSONObject iconMap=response.optJSONObject("academyIcons");String student=response.optString("iconStudentId","");
-  if(iconMap!=null&&student.replace("-", "").equals(Data.studentId(c).replace("-", "")))Vault.put(c,"academyIcons",new JSONObject().put("studentId",student).put("icons",iconMap).toString());
+  Vault.put(c,"academyIcons",null);
  }
  static String initialDefault(JSONArray designs){String id="";int count=0;for(int i=0;i<designs.length();i++){JSONObject d=designs.optJSONObject(i);if(d!=null&&d.optBoolean("isDefault")){id=d.optString("id");count++;}}return count>1?"":count==1?id:find(designs,IDS[0])!=null?IDS[0]:"";}
  static int separatorAlpha(Context c){return alpha(selected(c).optInt("separatorTransparency",0));}

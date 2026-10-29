@@ -35,7 +35,7 @@ final class Data {
  static void disconnect(Context c,String token){if(token.isEmpty())return;try{
   HttpURLConnection conn=(HttpURLConnection)new URL(API+"/widget/disconnect").openConnection();try{conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(5000);conn.setReadTimeout(5000);conn.setRequestMethod("POST");conn.setRequestProperty("Authorization","Bearer "+token);conn.getResponseCode();}finally{conn.disconnect();}
  }catch(Exception ignored){}}
- static void syncDesigns(Context c,String token)throws Exception {JSONObject settings=get("/widget/designs",token);WidgetDesign.store(c,settings);String warning=settings.optString("defaultWarning","")+settings.optString("iconsWarning","");if(settings.optBoolean("stale"))warning="노션 조회에 실패해 마지막 설정을 유지했어요. "+warning;if(!warning.isEmpty())throw new Exception(warning);}
+ static void syncDesigns(Context c,String token)throws Exception {JSONObject settings=get("/widget/designs",token);WidgetDesign.store(c,settings);String warning=settings.optString("defaultWarning","");if(settings.optBoolean("stale"))warning="노션 조회에 실패해 마지막 설정을 유지했어요. "+warning;if(!warning.isEmpty())throw new Exception(warning);}
  static void sync(Context c,String token) throws Exception {
   JSONObject all=get("/widget/feed",token);
   if(!(all.opt("school") instanceof JSONArray)||!(all.opt("academy") instanceof JSONArray))throw new Exception("조회 전용 위젯 서버를 확인해 주세요.");
