@@ -9,6 +9,9 @@ import android.view.*;
 import android.widget.*;
 public class SetupActivity extends Activity {
  private int widgetId=AppWidgetManager.INVALID_APPWIDGET_ID;private boolean busy=false;private TextView status;private TextView screenTitle;private Spinner designSpinner;private EditText password;
+ private TextView updateDownloadStatus;private Button openDownloadedUpdate;private Button updateButton;private boolean resumed=false,receiverRegistered=false;private long openedDownload=-1;
+ private final BroadcastReceiver updateReceiver=new BroadcastReceiver(){@Override public void onReceive(Context c,Intent intent){long id=getPreferences(0).getLong("updateDownload",-1);if(DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())&&id>=0&&intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,-2)==id)checkDownloadedUpdate(true);}};
+
  private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
  private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(35,72,94));t.setPadding(0,dp(5),0,dp(5));return t;}
  private void outline(View view){
@@ -26,12 +29,15 @@ public class SetupActivity extends Activity {
   final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 중…",12);root.addView(version);
   final LinearLayout section=new LinearLayout(this);section.setOrientation(LinearLayout.VERTICAL);section.setVisibility(View.GONE);root.addView(section);
   final TextView available=text("",13);section.addView(available);
-  final Button update=new Button(this);update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
+  final Button update=new Button(this);updateButton=update;update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
   section.addView(text("1. 업데이트할 때: 기존 앱은 삭제하지 마세요.",12));
   section.addView(text("2. 보안 위험 자동 차단으로 막힐 때: 설정 → 보안 및 개인정보 보호 → 보안 위험 자동 차단 끄기",12));
   section.addView(text("3. 출처 허용을 요청할 때: 설치에 사용한 앱의 ‘이 출처 허용’ 켜기",12));
   section.addView(text("4. APK를 열었을 때: ‘업데이트’ 누르기",12));
   section.addView(text("5. 설치가 끝났을 때: 보안 위험 자동 차단 다시 켜기 · 출처 허용 끄기",12));
+  updateDownloadStatus=text("",12);root.addView(updateDownloadStatus);
+  openDownloadedUpdate=new Button(this);openDownloadedUpdate.setText("설치 파일 열기");flatButton(openDownloadedUpdate);openDownloadedUpdate.setVisibility(View.GONE);openDownloadedUpdate.setOnClickListener(v->openDownloadedUpdate());root.addView(openDownloadedUpdate);
+  checkDownloadedUpdate(false);
   new Thread(()->{
    try{
     final UpdateRelease release=UpdateRelease.load();
@@ -42,20 +48,54 @@ public class SetupActivity extends Activity {
      available.setText("새 버전 · "+release.version);section.setVisibility(View.VISIBLE);
      update.setOnClickListener(v->{
       try{
+       if(getPreferences(0).getLong("updateDownload",-1)>=0&&downloadState(getPreferences(0).getLong("updateDownload",-1))==DownloadManager.STATUS_SUCCESSFUL){openDownloadedUpdate();return;}
        android.net.Uri uri=android.net.Uri.parse(release.url);
        DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
        DownloadManager.Request request=new DownloadManager.Request(uri);
-       request.setTitle( "마리 에듀 "+release.version);
+       request.setTitle("마리 에듀 "+release.version+" 업데이트");
        request.setMimeType("application/vnd.android.package-archive");
        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-       request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,System.currentTimeMillis()+"-"+uri.getLastPathSegment());
-       manager.enqueue(request);Toast.makeText(this,"다운로드를 시작했어요. 완료 알림에서 APK를 열어 업데이트해 주세요.",Toast.LENGTH_LONG).show();
+       String name="MARI-EDU-Widget-"+release.version+"-"+release.code+"-"+System.currentTimeMillis()+".apk";
+       if(android.os.Build.VERSION.SDK_INT>=29)request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS,name);
+       else request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,name);
+       long id=manager.enqueue(request);getPreferences(0).edit().putLong("updateDownload",id).putInt("updateTarget",release.code).apply();openedDownload=-1;
+       updateDownloadStatus.setText("다운로드 중 · 완료되면 설치 화면을 엽니다.");update.setEnabled(false);
+       Toast.makeText(this,"다운로드를 시작했어요.",Toast.LENGTH_SHORT).show();
       }catch(Exception e){Toast.makeText(this,"다운로드를 시작하지 못했어요. 인터넷 연결과 다운로드 관리자를 확인해 주세요.",Toast.LENGTH_LONG).show();}
      });
     });
    }catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
   },"river-update-check").start();
  }
+
+ private int downloadState(long id){
+  DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+  try(android.database.Cursor cursor=manager.query(new DownloadManager.Query().setFilterById(id))){if(cursor!=null&&cursor.moveToFirst())return cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));}catch(Exception ignored){}return -1;
+ }
+ private void checkDownloadedUpdate(boolean autoOpen){
+  if(updateDownloadStatus==null||openDownloadedUpdate==null)return;
+  long id=getPreferences(0).getLong("updateDownload",-1);int target=getPreferences(0).getInt("updateTarget",0);
+  if(id<0)return;
+  if(target<=BuildConfig.VERSION_CODE){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").apply();openDownloadedUpdate.setVisibility(View.GONE);updateDownloadStatus.setText("");return;}
+  int state=downloadState(id);
+  if(state==DownloadManager.STATUS_SUCCESSFUL){updateDownloadStatus.setText("다운로드 완료 · 설치 파일 열기를 눌러 업데이트하세요.");openDownloadedUpdate.setVisibility(View.VISIBLE);if(autoOpen&&resumed&&openedDownload!=id)openDownloadedUpdate();}
+  else if(state==DownloadManager.STATUS_FAILED||state==-1){updateDownloadStatus.setText("다운로드 파일을 확인하지 못했어요. Update를 다시 눌러 주세요.");getPreferences(0).edit().remove("updateDownload").apply();openDownloadedUpdate.setVisibility(View.GONE);if(updateButton!=null)updateButton.setEnabled(true);}
+  else updateDownloadStatus.setText("다운로드 중 · 완료 후 설치 파일 열기를 눌러 주세요.");
+ }
+ private void openDownloadedUpdate(){
+  long id=getPreferences(0).getLong("updateDownload",-1);if(id<0||downloadState(id)!=DownloadManager.STATUS_SUCCESSFUL){checkDownloadedUpdate(false);return;}
+  try{
+   if(!getPackageManager().canRequestPackageInstalls()){
+    updateDownloadStatus.setText("이 앱의 ‘이 출처 허용’을 켠 뒤 돌아와 설치 파일 열기를 눌러 주세요. 설치 후 다시 꺼 주세요.");
+    startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,android.net.Uri.parse("package:"+getPackageName())));return;
+   }
+   DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);android.net.Uri uri=manager.getUriForDownloadedFile(id);if(uri==null)throw new java.io.IOException("파일 없음");
+   Intent install=new Intent(Intent.ACTION_VIEW);install.setDataAndType(uri,"application/vnd.android.package-archive");install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);install.setClipData(ClipData.newRawUri("업데이트 APK",uri));startActivity(install);openedDownload=id;
+  }catch(Exception e){updateDownloadStatus.setText("설치 화면을 열지 못했어요. 내 파일 → 다운로드에서 MARI-EDU APK를 여세요. 차단되면 보안 위험 자동 차단을 잠시 끄고 설치 후 다시 켜 주세요.");}
+ }
+ @Override protected void onResume(){super.onResume();resumed=true;if(!receiverRegistered){IntentFilter filter=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(android.os.Build.VERSION.SDK_INT>=33)registerReceiver(updateReceiver,filter,Context.RECEIVER_EXPORTED);else registerReceiver(updateReceiver,filter);receiverRegistered=true;}checkDownloadedUpdate(false);}
+ @Override protected void onPause(){resumed=false;super.onPause();}
+ @Override protected void onDestroy(){if(receiverRegistered){unregisterReceiver(updateReceiver);receiverRegistered=false;}super.onDestroy();}
 
  private void fillDesigns(){
   org.json.JSONArray designs=WidgetDesign.list(this);java.util.List<String> names=new java.util.ArrayList<>();for(int i=0;i<designs.length();i++)names.add(designs.optJSONObject(i).optString("name"));
