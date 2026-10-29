@@ -31,10 +31,11 @@ public class SetupActivity extends Activity {
   final TextView available=text("",13);section.addView(available);
   final Button update=new Button(this);updateButton=update;update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
   section.addView(text("1. 업데이트할 때: 기존 앱은 삭제하지 마세요.",12));
-  section.addView(text("2. 보안 위험 자동 차단으로 막힐 때: 설정 → 보안 및 개인정보 보호 → 보안 위험 자동 차단 끄기",12));
+  section.addView(text("2. Play 프로텍트가 유해 앱으로 경고하면: 설치 중단 · 개발자에게 문의",12));
   section.addView(text("3. 출처 허용을 요청할 때: 설치에 사용한 앱의 ‘이 출처 허용’ 켜기",12));
   section.addView(text("4. APK를 열었을 때: ‘업데이트’ 누르기",12));
-  section.addView(text("5. 설치가 끝났을 때: 보안 위험 자동 차단 다시 켜기 · 출처 허용 끄기",12));
+  section.addView(text("5. 설치가 끝났을 때: 이 출처 허용 끄기 · 보안 보호 유지",12));
+  Button security=new Button(this);security.setText("보안 설정 열기");flatButton(security);security.setOnClickListener(v->openSecuritySettings());section.addView(security);
   updateDownloadStatus=text("",12);root.addView(updateDownloadStatus);
   openDownloadedUpdate=new Button(this);openDownloadedUpdate.setText("설치 파일 열기");flatButton(openDownloadedUpdate);openDownloadedUpdate.setVisibility(View.GONE);openDownloadedUpdate.setOnClickListener(v->openDownloadedUpdate());root.addView(openDownloadedUpdate);
   checkDownloadedUpdate(false);
@@ -46,9 +47,9 @@ public class SetupActivity extends Activity {
      version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
      if(!release.newerThan(BuildConfig.VERSION_CODE))return;
      available.setText("새 버전 · "+release.version);section.setVisibility(View.VISIBLE);
-     update.setOnClickListener(v->{
+     update.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("위젯 업데이트").setMessage("1. 유해 앱 경고가 있다면 설치를 중단하세요.\n2. 다운로드 후 앱·버전·서명을 확인합니다.\n3. 출처 허용이 필요하면 설정 화면을 열어요.\n4. 허용 후 앱으로 돌아오면 설치를 이어 엽니다.\n5. 설치 후 출처 허용을 다시 꺼 주세요.").setNeutralButton("보안 설정",(dialog,which)->openSecuritySettings()).setNegativeButton("취소",null).setPositiveButton("다운로드",(dialog,which)->{
       try{
-       if(getPreferences(0).getLong("updateDownload",-1)>=0&&downloadState(getPreferences(0).getLong("updateDownload",-1))==DownloadManager.STATUS_SUCCESSFUL){openDownloadedUpdate();return;}
+       if(getPreferences(0).getInt("updateTarget",0)==release.code&&getPreferences(0).getLong("updateDownload",-1)>=0&&downloadState(getPreferences(0).getLong("updateDownload",-1))==DownloadManager.STATUS_SUCCESSFUL){openDownloadedUpdate();return;}
        android.net.Uri uri=android.net.Uri.parse(release.url);
        DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
        DownloadManager.Request request=new DownloadManager.Request(uri);
@@ -62,7 +63,7 @@ public class SetupActivity extends Activity {
        updateDownloadStatus.setText("다운로드 중 · 완료되면 설치 화면을 엽니다.");update.setEnabled(false);
        Toast.makeText(this,"다운로드를 시작했어요.",Toast.LENGTH_SHORT).show();
       }catch(Exception e){Toast.makeText(this,"다운로드를 시작하지 못했어요. 인터넷 연결과 다운로드 관리자를 확인해 주세요.",Toast.LENGTH_LONG).show();}
-     });
+     }).show());
     });
    }catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
   },"river-update-check").start();
@@ -85,18 +86,47 @@ public class SetupActivity extends Activity {
  private void openDownloadedUpdate(){
   long id=getPreferences(0).getLong("updateDownload",-1);if(id<0||downloadState(id)!=DownloadManager.STATUS_SUCCESSFUL){checkDownloadedUpdate(false);return;}
   try{
+   verifyDownloadedUpdate(id);
    if(!getPackageManager().canRequestPackageInstalls()){
-    updateDownloadStatus.setText("이 앱의 ‘이 출처 허용’을 켠 뒤 돌아와 설치 파일 열기를 눌러 주세요. 설치 후 다시 꺼 주세요.");
+    updateDownloadStatus.setText("유해 앱 경고가 없을 때만 ‘이 출처 허용’을 켜세요. 앱으로 돌아오면 설치 화면을 이어 엽니다. 설치 후 다시 꺼 주세요.");
+    getPreferences(0).edit().putBoolean("updateAwaitingPermission",true).apply();
     startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,android.net.Uri.parse("package:"+getPackageName())));return;
    }
    DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);android.net.Uri uri=manager.getUriForDownloadedFile(id);if(uri==null)throw new java.io.IOException("파일 없음");
    Intent install=new Intent(Intent.ACTION_VIEW);install.setDataAndType(uri,"application/vnd.android.package-archive");install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);install.setClipData(ClipData.newRawUri("업데이트 APK",uri));startActivity(install);openedDownload=id;
-  }catch(Exception e){updateDownloadStatus.setText("설치 화면을 열지 못했어요. 내 파일 → 다운로드에서 MARI-EDU APK를 여세요. 차단되면 보안 위험 자동 차단을 잠시 끄고 설치 후 다시 켜 주세요.");}
+  }catch(Exception e){updateDownloadStatus.setText("설치를 진행하지 못했어요. 파일·버전·서명 또는 설치 설정을 확인해 주세요. 유해 앱 경고가 있으면 설치를 중단하세요.");}
+ }
+ private void openSecuritySettings(){
+  try{startActivity(new Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS));}
+  catch(ActivityNotFoundException e){try{startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));}catch(ActivityNotFoundException ignored){Toast.makeText(this,"휴대폰 설정 → 보안 및 개인정보 보호에서 확인해 주세요.",Toast.LENGTH_LONG).show();}}
+ }
+ // This identity check is not a malware verdict. The platform installer still verifies APK signatures.
+ @SuppressWarnings("deprecation")
+ private void verifyDownloadedUpdate(long id)throws Exception{
+  DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+  android.net.Uri uri=manager.getUriForDownloadedFile(id);if(uri==null)throw new java.io.IOException("Missing APK");
+  java.io.File staged=new java.io.File(getCacheDir(),"update-identity.apk");
+  try{
+   try(java.io.InputStream in=getContentResolver().openInputStream(uri);java.io.OutputStream out=new java.io.FileOutputStream(staged)){
+    if(in==null)throw new java.io.IOException("Missing APK");byte[] buffer=new byte[8192];int count,total=0;
+    while((count=in.read(buffer))!=-1){total+=count;if(total>20*1024*1024)throw new java.io.IOException("APK too large");out.write(buffer,0,count);}
+   }
+   android.content.pm.PackageManager pm=getPackageManager();int flags=android.os.Build.VERSION.SDK_INT>=28?android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES:android.content.pm.PackageManager.GET_SIGNATURES;
+   android.content.pm.PackageInfo installed=pm.getPackageInfo(getPackageName(),flags),candidate=pm.getPackageArchiveInfo(staged.getAbsolutePath(),flags);
+   if(candidate==null)throw new java.io.IOException("Invalid APK");
+   long current=android.os.Build.VERSION.SDK_INT>=28?installed.getLongVersionCode():installed.versionCode,next=android.os.Build.VERSION.SDK_INT>=28?candidate.getLongVersionCode():candidate.versionCode;
+   android.content.pm.Signature[] oldSignatures=android.os.Build.VERSION.SDK_INT>=28?(installed.signingInfo==null?null:installed.signingInfo.getApkContentsSigners()):installed.signatures;
+   android.content.pm.Signature[] newSignatures=android.os.Build.VERSION.SDK_INT>=28?(candidate.signingInfo==null?null:candidate.signingInfo.getApkContentsSigners()):candidate.signatures;
+   java.util.Set<String> oldSet=new java.util.HashSet<>(),newSet=new java.util.HashSet<>();
+   if(oldSignatures!=null)for(android.content.pm.Signature signature:oldSignatures)oldSet.add(signature.toCharsString());
+   if(newSignatures!=null)for(android.content.pm.Signature signature:newSignatures)newSet.add(signature.toCharsString());
+   if(!UpdateIdentity.matches(getPackageName(),candidate.packageName,current,next,getPreferences(0).getInt("updateTarget",0),oldSet,newSet))throw new java.io.IOException("APK identity mismatch");
+  }finally{staged.delete();}
  }
  // Android 12 and older have no exported/not-exported receiver flags. Only our saved, successful download ID is accepted.
  @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
  private void registerLegacyDownloadReceiver(IntentFilter filter){registerReceiver(updateReceiver,filter);}
- @Override protected void onResume(){super.onResume();resumed=true;if(!receiverRegistered){IntentFilter filter=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(android.os.Build.VERSION.SDK_INT>=33)registerReceiver(updateReceiver,filter,Context.RECEIVER_EXPORTED);else registerLegacyDownloadReceiver(filter);receiverRegistered=true;}checkDownloadedUpdate(false);}
+ @Override protected void onResume(){super.onResume();resumed=true;if(!receiverRegistered){IntentFilter filter=new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);if(android.os.Build.VERSION.SDK_INT>=33)registerReceiver(updateReceiver,filter,Context.RECEIVER_EXPORTED);else registerLegacyDownloadReceiver(filter);receiverRegistered=true;}checkDownloadedUpdate(false);if(getPreferences(0).getBoolean("updateAwaitingPermission",false)){getPreferences(0).edit().remove("updateAwaitingPermission").apply();if(getPackageManager().canRequestPackageInstalls())openDownloadedUpdate();else if(updateDownloadStatus!=null)updateDownloadStatus.setText("설치 권한이 허용되지 않아 업데이트를 멈췄어요.");}}
  @Override protected void onPause(){resumed=false;super.onPause();}
  @Override protected void onDestroy(){if(receiverRegistered){unregisterReceiver(updateReceiver);receiverRegistered=false;}super.onDestroy();}
 
