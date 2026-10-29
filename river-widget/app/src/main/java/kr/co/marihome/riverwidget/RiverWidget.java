@@ -35,7 +35,7 @@ public class RiverWidget extends AppWidgetProvider {
   v.setOnClickPendingIntent(R.id.root,null);
   v.setOnClickPendingIntent(android.R.id.background,null);
   v.setOnClickPendingIntent(R.id.empty,null);
-  v.setImageViewBitmap(android.R.id.background,WidgetDesign.panel(WidgetDesign.color(c,"background",0xFF286F49)));v.setInt(android.R.id.background,"setImageAlpha",255);
+  v.setImageViewResource(android.R.id.background,WidgetStyle.drawable(c));v.setInt(android.R.id.background,"setColorFilter",WidgetDesign.color(c,"background",0xFF286F49));v.setInt(android.R.id.background,"setImageAlpha",255);
   v.setTextViewTextSize(R.id.heading,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.titleFont(c));v.setTextViewTextSize(R.id.empty,android.util.TypedValue.COMPLEX_UNIT_SP,WidgetStyle.font(c));
   Intent adapter=new Intent(c,RiverListService.class);adapter.setData(Uri.parse("river-widget://list/"+id));v.setRemoteAdapter(R.id.list,adapter);v.setEmptyView(R.id.list,R.id.empty);
   boolean configured=!Vault.get(c,"access").isEmpty();String error=Data.error(c);

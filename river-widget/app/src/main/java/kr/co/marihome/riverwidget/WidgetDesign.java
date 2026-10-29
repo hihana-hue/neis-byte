@@ -18,7 +18,7 @@ final class WidgetDesign {
  static String selectedId(Context c){String id=c.getSharedPreferences("widget-style",0).getString("designId","");return id.isEmpty()?IDS[WidgetStyle.theme(c)]:id;}
  static JSONObject selected(Context c){JSONObject d=find(list(c),selectedId(c));if(d!=null)return d;try{return new JSONObject(Vault.get(c,"designSnapshot"));}catch(Exception ignored){return defaults().optJSONObject(WidgetStyle.theme(c));}}
  static int selectedIndex(Context c){JSONArray a=list(c);for(int i=0;i<a.length();i++)if(selectedId(c).equals(a.optJSONObject(i).optString("id")))return i;return -1;}
- static void choose(Context c,String id){JSONObject d=find(list(c),id);if(d==null)return;c.getSharedPreferences("widget-style",0).edit().putString("designId",id).apply();Vault.put(c,"designSnapshot",d.toString());}
+ static boolean choose(Context c,String id){JSONObject d=find(list(c),id);if(d==null)return false;try{Vault.put(c,"designSnapshot",d.toString());c.getSharedPreferences("widget-style",0).edit().putString("designId",id).apply();return true;}catch(Exception e){return false;}}
  static boolean validColor(String s){return s!=null&&s.matches("#[0-9a-fA-F]{6}");}
  static void store(Context c,JSONObject response)throws Exception{
   if(response.optInt("schemaVersion")!=1)throw new Exception("디자인 서버를 업데이트해 주세요.");
