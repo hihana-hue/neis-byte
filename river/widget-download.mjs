@@ -19,7 +19,7 @@ export function createWidgetDownload(notify){
   try{localStorage.setItem(key(),String(manifest.versionCode));}catch{}render();notify('다운로드를 시작했어요. 완료 후 APK를 열어 설치해 주세요.');
  }
  const confirmDialog=document.createElement('dialog');confirmDialog.className='widget-download-dialog';confirmDialog.setAttribute('aria-labelledby','widget-download-title');
- confirmDialog.innerHTML='<h2 id="widget-download-title">최신 위젯을 다운로드할까요?</h2><p class="widget-release-label" role="status">최신 버전 확인 중…</p><ol><li>설치가 차단되면: 설정 → 보안 및 개인정보 보호 → 보안 위험 자동 차단 해제</li><li>다운로드 후: 완료 알림 또는 다운로드 목록의 APK 열기 → 업데이트</li><li>업데이트 후: 보안 위험 자동 차단 다시 켜기</li></ol><p>기존 앱은 삭제하지 마세요.</p><div class="widget-download-actions"><button type="button" class="btn" data-cancel>취소</button><button type="button" class="btn primary" data-download disabled>다운로드</button></div>';
+ confirmDialog.innerHTML='<h2 id="widget-download-title">최신 위젯을 다운로드할까요?</h2><p class="widget-release-label" role="status">최신 버전 확인 중…</p><ol><li>다운로드 후: 내 파일 → 다운로드에서 APK 직접 열기</li><li>설치 화면에서: 설치 또는 업데이트 누르기</li><li>Play 프로텍트가 유해 앱으로 경고하면: 설치 중단</li></ol><p>기존 앱은 삭제하지 마세요.</p><div class="widget-download-actions"><button type="button" class="btn" data-cancel>취소</button><button type="button" class="btn primary" data-download disabled>다운로드</button></div>';
  document.body.append(confirmDialog);const confirmButton=confirmDialog.querySelector('[data-download]'),label=confirmDialog.querySelector('.widget-release-label');
  confirmDialog.querySelector('[data-cancel]').onclick=()=>confirmDialog.close();
  confirmButton.onclick=()=>{if(!student||!validDownload(manifest))return;confirmDialog.close();download();};
