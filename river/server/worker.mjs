@@ -67,7 +67,7 @@ async function rpWidgetRoute(request,env,reply){
  if(!device||device.scope!=='widget:read')return reply({error:'해제된 위젯 연결입니다. 새 코드로 연결해 주세요.'},401);
  if(path==='/widget/disconnect'&&request.method==='POST'){if(device.studentId){const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'disconnect',id);if(!gate.ok)return reply({error:gate.error},gate.status);}else await kv.delete('widget-device:'+id);return reply({ok:true});}
  if(device.studentId){const student=await rpStudentDevice(env,device);if(!student)return reply({error:'학생 연결이 중지되었거나 코드가 변경됐어요.'},401);env=student;const gate=await rpWidgetGate(env,device.studentId,device.codeHash,'feed',id,{legacy:device});if(!gate.ok)return reply({error:gate.error},gate.status);}
- if(path==='/widget/designs'&&request.method==='GET')return reply(await rpWidgetDesigns(env));
+ if(path==='/widget/designs'&&request.method==='GET'){const design=await rpWidgetDesigns(env),icons=await rpWidgetIcons(env);return reply({...design,...icons});}
  if(path!=='/widget/feed'||request.method!=='GET')return reply({error:'위젯에서는 일정 조회만 할 수 있어요.'},405);
  if(!env.NOTION_TOKEN||!env.SCHOOL_DATA_SOURCE_ID)return reply({error:'노션 연결 설정을 확인해 주세요.'},503);
  const [sp,ap]=await Promise.all([rpPages(env,env.SCHOOL_DATA_SOURCE_ID),(env.STUDENT&&!env.ACADEMY_DATA_SOURCE_ID?Promise.resolve([]):rpPages(env,env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9'))]);
@@ -154,13 +154,32 @@ async function rpReadWidgetDesigns(env){
   const pages=await rpPages(env,env.WIDGET_DESIGN_SOURCE_ID||RP_DESIGN_SOURCE);
   const colors={background:'전체 배경색',titleColor:'타이틀 글자색',academyBackground:'학원 패널 배경색',academyText:'학원 글자색',separator:'학원 세로선 색상',schoolBackground:'학교 일정 배경색',schoolText:'학교 일정 글자색',divider:'학교 일정 하단선 색상',today:'오늘 강조색'};
   const designs=pages.map(page=>{
-   const p=page.properties,d={id:page.id,name:rpText(p['이름']?.title).trim(),titleBold:!!p['타이틀 굵게']?.checkbox,academyBold:!!p['학원 과목명 굵게']?.checkbox};
+   const p=page.properties,d={id:page.id,name:rpText(p['이름']?.title).trim(),titleBold:!!p['타이틀 굵게']?.checkbox,academyBold:!!p['학원 과목명 굵게']?.checkbox,isDefault:!!p['기본 디자인']?.checkbox};
    for(const [key,label] of Object.entries(colors)){const value=rpText(p[label]?.rich_text).trim();if(/^#[0-9a-f]{6}$/i.test(value))d[key]=value.toUpperCase();else if(key==='schoolBackground'&&value==='없음')d[key]='none';}
+   const opacity=p['학원 세로선 투명도']?.number;if(Number.isFinite(opacity)&&opacity>=0&&opacity<=100)d.separatorTransparency=Math.round(opacity);
    return d;
   }).filter(x=>x.name&&x.name.length<=100);
-  return {schemaVersion:1,designs};
+  const defaults=designs.filter(d=>d.isDefault);
+  return {schemaVersion:1,designs,defaultWarning:defaults.length>1?'기본 디자인은 하나만 체크해 주세요. 기존 선택을 유지합니다.':''};
  })();
  rpDesignPending.set(key,job);try{return await job;}finally{rpDesignPending.delete(key);}
+}
+
+const RP_ICON_SOURCE='ad0ae712-2960-47d3-afb2-3293687a4af1';
+const RP_ACADEMY_ICONS=new Set(['책','연필','실험병','원자','계산기','지구','컴퓨터','음표','건반','기타','마이크','팔레트','카메라','덤벨','축구공','농구공','수영','달리기','태권도','십자가','교회','별','하트','버스']);
+const rpIconKey=name=>{const key=String(name||'').normalize('NFKC').trim().toLowerCase();return key==='운동'?'바디pt':key;};
+async function rpWidgetIcons(env){
+ const studentId=env.STUDENT?.id;if(!studentId)return {iconStudentId:'',academyIcons:{}};
+ try{
+  const rows=[];let cursor;do{const response=await rpNotion(env,'data_sources/'+(env.WIDGET_ICON_SOURCE_ID||RP_ICON_SOURCE)+'/query','POST',{page_size:100,filter:{property:'학생',relation:{contains:studentId}},...(cursor?{start_cursor:cursor}:{})});rows.push(...response.results);cursor=response.has_more?response.next_cursor:null;}while(cursor);
+  const academyIcons={},seen=new Set();let duplicate=false;
+  for(const row of rows){if(row.archived||row.in_trash||!(row.properties?.['학생']?.relation||[]).some(s=>normalized(s.id)===normalized(studentId)))continue;
+   const name=rpIconKey(rpText(row.properties['학원명']?.title));if(!name||name.length>100)continue;
+   if(seen.has(name)){academyIcons[name]='';duplicate=true;continue;}seen.add(name);
+   const icon=row.properties['아이콘']?.select?.name||'';academyIcons[name]=RP_ACADEMY_ICONS.has(icon)?icon:'';
+  }
+  return {iconStudentId:studentId,academyIcons,iconsWarning:duplicate?'같은 학생·학원 아이콘 설정이 중복되어 해당 아이콘을 숨겼어요.':''};
+ }catch{return {iconStudentId:studentId,iconsWarning:'학원 아이콘 설정표에 서버용 노션 연결을 추가해 주세요. 기존 아이콘을 유지합니다.'};}
 }
 
 function rpJobs(school,academy,now){

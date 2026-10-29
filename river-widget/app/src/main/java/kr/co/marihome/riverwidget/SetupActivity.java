@@ -130,9 +130,9 @@ public class SetupActivity extends Activity {
   status=text(Vault.get(this,"access").isEmpty()?"연결 안 됨 · 연결 코드를 입력해 주세요.":"연결됨 · 이 기기에 위젯 연결이 저장되어 있어요.",13);root.addView(status);
   root.addView(text("코드를 입력한 뒤 연결하기를 눌러 주세요. 이미 연결되어 있으면 코드를 다시 입력하지 않아도 됩니다.",12));
   root.addView(text("위젯 모양",18));
-  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this)+" (기본 16)",14);root.addView(titleFontLabel);
+  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this)+" (기본 18)",14);root.addView(titleFontLabel);
   final SeekBar titleFontSize=new SeekBar(this);titleFontSize.setMax(12);titleFontSize.setProgress(WidgetStyle.titleFont(this)-12);root.addView(titleFontSize);
-  titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12)+" (기본 16)");}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
+  titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12)+" (기본 18)");}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
   final TextView fontLabel=text("글자 크기 · "+WidgetStyle.font(this),14);root.addView(fontLabel);
   final SeekBar fontSize=new SeekBar(this);fontSize.setMax(6);fontSize.setProgress(WidgetStyle.font(this)-12);root.addView(fontSize);
   fontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){fontLabel.setText("글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
@@ -159,9 +159,9 @@ public class SetupActivity extends Activity {
   connect.setOnClickListener(v->{
    if(busy)return;final String typed=password.getText().toString().trim();final String saved=Vault.get(this,"access");if(typed.isEmpty()&&saved.isEmpty()){status.setText("학생 연결코드를 입력해 주세요.");return;}
    busy=true;connect.setEnabled(false);pinState(pin,false);clear.setEnabled(false);status.setText("학원·학교 일정을 연결하고 있어요…");
-   new Thread(()->{String failure=null;try{String value=typed.isEmpty()?saved:Data.pair(typed,saved);Vault.put(getApplicationContext(),"access",value);Data.sync(getApplicationContext(),value);try{Data.syncDesigns(getApplicationContext(),value);}catch(Exception designError){Data.error(getApplicationContext(),"디자인은 기본값 유지 · 설정에서 새로고침해 주세요.");}}catch(Exception e){failure=e.getMessage();}
-    final String error=failure;runOnUiThread(()->{if(isDestroyed())return;busy=false;connect.setEnabled(true);pinState(pin,!Vault.get(this,"access").isEmpty());clear.setEnabled(true);
-     if(error!=null){status.setText(error);return;}password.setText("");screenTitle.setText(Data.widgetTitle(this));fillDesigns();RiverWidget.renderAll(this);status.setText("연결됨 · 학원·학교 일정을 불러왔어요.");Toast.makeText(this,"위젯 연결 완료",Toast.LENGTH_SHORT).show();
+   new Thread(()->{String failure=null;String designWarning="";try{String value=typed.isEmpty()?saved:Data.pair(typed,saved);Vault.put(getApplicationContext(),"access",value);Data.sync(getApplicationContext(),value);try{Data.syncDesigns(getApplicationContext(),value);}catch(Exception designError){designWarning=designError.getMessage();}}catch(Exception e){failure=e.getMessage();}
+    final String warning=designWarning;final String error=failure;runOnUiThread(()->{if(isDestroyed())return;busy=false;connect.setEnabled(true);pinState(pin,!Vault.get(this,"access").isEmpty());clear.setEnabled(true);
+     if(error!=null){status.setText(error);return;}password.setText("");screenTitle.setText(Data.widgetTitle(this));fillDesigns();RiverWidget.renderAll(this);status.setText("연결됨 · 학원·학교 일정을 불러왔어요."+(warning.isEmpty()?"":"\n"+warning));Toast.makeText(this,"위젯 연결 완료",Toast.LENGTH_SHORT).show();
      if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID){RiverWidget.render(this,AppWidgetManager.getInstance(this),widgetId);setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));}
     });
    },"river-widget-connect").start();

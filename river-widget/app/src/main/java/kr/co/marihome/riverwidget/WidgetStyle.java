@@ -2,7 +2,7 @@ package kr.co.marihome.riverwidget;
 import android.content.Context;
 import android.graphics.Color;
 final class WidgetStyle {
- static int titleFont(Context c){return Math.max(12,Math.min(24,c.getSharedPreferences("widget-style",0).getInt("titleFont",16)));}
+ static int titleFont(Context c){return Math.max(12,Math.min(24,c.getSharedPreferences("widget-style",0).getInt("titleFont",18)));}
  static void saveTitleFont(Context c,int size){c.getSharedPreferences("widget-style",0).edit().putInt("titleFont",Math.max(12,Math.min(24,size))).apply();}
  static int font(Context c){return Math.max(12,Math.min(18,c.getSharedPreferences("widget-style",0).getInt("font",14)));}
  static int transparency(Context c){return Math.max(0,Math.min(80,c.getSharedPreferences("widget-style",0).getInt("transparency",20)));}

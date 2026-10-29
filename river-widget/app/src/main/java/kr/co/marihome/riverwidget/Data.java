@@ -35,7 +35,7 @@ final class Data {
  static void disconnect(Context c,String token){if(token.isEmpty())return;try{
   HttpURLConnection conn=(HttpURLConnection)new URL(API+"/widget/disconnect").openConnection();try{conn.setInstanceFollowRedirects(false);conn.setConnectTimeout(5000);conn.setReadTimeout(5000);conn.setRequestMethod("POST");conn.setRequestProperty("Authorization","Bearer "+token);conn.getResponseCode();}finally{conn.disconnect();}
  }catch(Exception ignored){}}
- static void syncDesigns(Context c,String token)throws Exception {WidgetDesign.store(c,get("/widget/designs",token));}
+ static void syncDesigns(Context c,String token)throws Exception {JSONObject settings=get("/widget/designs",token);WidgetDesign.store(c,settings);String warning=settings.optString("defaultWarning","")+settings.optString("iconsWarning","");if(settings.optBoolean("stale"))warning="노션 조회에 실패해 마지막 설정을 유지했어요. "+warning;if(!warning.isEmpty())throw new Exception(warning);}
  static void sync(Context c,String token) throws Exception {
   JSONObject all=get("/widget/feed",token);
   if(!(all.opt("school") instanceof JSONArray)||!(all.opt("academy") instanceof JSONArray))throw new Exception("조회 전용 위젯 서버를 확인해 주세요.");
@@ -72,6 +72,7 @@ final class Data {
  static boolean validId(String id){return id!=null&&id.matches("[a-fA-F0-9-]{32,36}");}
  static void error(Context c,String message){c.getSharedPreferences("river-state",0).edit().putString("error",message).apply();}
  static String error(Context c){return c.getSharedPreferences("river-state",0).getString("error","");}
+ static String studentId(Context c){try{JSONObject student=new JSONObject(Vault.get(c,"cache")).optJSONObject("student");return student==null?"":student.optString("id","");}catch(Exception e){return "";}}
  static String widgetTitle(Context c){try{JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONObject student=cache.optJSONObject("student");if(student!=null){String title=student.optString("widgetTitle","").trim(),name=student.optString("name","").trim();if(!title.isEmpty()&&!"CHOI RIVER 포레버".equals(title)&&!title.equals(name+"의 일정"))return title;if(!name.isEmpty())return name+" Fighting";}}catch(Exception ignored){}return "나의 일정";}
  static String updated(Context c){try{return new JSONObject(Vault.get(c,"cache")).optString("at");}catch(Exception e){return "";}}
  private Data(){}

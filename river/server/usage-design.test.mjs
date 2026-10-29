@@ -17,7 +17,19 @@ for(let i=0;i<20;i++)await rate('rate-failure');assert.equal((await rate('rate')
 // Record validation is independent of theme, strips malformed values and makes one paginated read.
 const source=fs.readFileSync(new URL('./worker.mjs',import.meta.url),'utf8');
 const block=source.slice(source.indexOf("const RP_DESIGN_SOURCE="),source.indexOf('function rpJobs('));
-let calls=0;const context=vm.createContext({Map,rpText:x=>(x||[]).map(x=>x.plain_text).join(''),rpPages:async()=>{calls++;return [{id:'a'.repeat(32),properties:{이름:{title:[{plain_text:'새 이름'}]},'전체 배경색':{rich_text:[{plain_text:'#123abc'}]},'학교 일정 배경색':{rich_text:[{plain_text:'없음'}]},'학원 글자색':{rich_text:[{plain_text:'javascript:bad'}]},'타이틀 굵게':{checkbox:true}}}];}});
+let calls=0;const context=vm.createContext({Map,rpText:x=>(x||[]).map(x=>x.plain_text).join(''),rpPages:async()=>{calls++;return [{id:'a'.repeat(32),properties:{이름:{title:[{plain_text:'새 이름'}]},'전체 배경색':{rich_text:[{plain_text:'#123abc'}]},'학교 일정 배경색':{rich_text:[{plain_text:'없음'}]},'학원 글자색':{rich_text:[{plain_text:'javascript:bad'}]},'타이틀 굵게':{checkbox:true},'기본 디자인':{checkbox:true},'학원 세로선 투명도':{number:50}}}];}});
 vm.runInContext(block+';this.designs=rpReadWidgetDesigns;',context);
-const [one,two]=await Promise.all([context.designs(env),context.designs(env)]);assert.equal(calls,1);assert.equal(one.designs[0].name,'새 이름');assert.equal(one.designs[0].background,'#123ABC');assert.equal(one.designs[0].schoolBackground,'none');assert.equal(one.designs[0].academyText,undefined);assert.deepEqual(one,two);
+const [one,two]=await Promise.all([context.designs(env),context.designs(env)]);assert.equal(calls,1);assert.equal(one.designs[0].name,'새 이름');assert.equal(one.designs[0].background,'#123ABC');assert.equal(one.designs[0].schoolBackground,'none');assert.equal(one.designs[0].academyText,undefined);assert.equal(one.designs[0].isDefault,true);assert.equal(one.designs[0].separatorTransparency,50);assert.deepEqual(one,two);
 console.log('PASS disabled cron/push = zero KV; no rate writes for reads; failed-code limit; coalesced, validated explicit design reads');
+// Explicit per-student icon configuration never returns another student's rows.
+const iconStart=source.indexOf('const RP_ICON_SOURCE=');
+const iconEnd=source.indexOf('function rpJobs(');
+let selectedStudent;const iconContext=vm.createContext({Set,normalized:x=>x.replaceAll('-',''),rpText:x=>(x||[]).map(x=>x.plain_text).join(''),rpNotion:async(env,path,method,body)=>{selectedStudent=body.filter.relation.contains;return {results:[
+ {properties:{'학생':{relation:[{id:'student-a'}]},'학원명':{title:[{plain_text:'TEEN'}]},'아이콘':{select:{name:'십자가'}}}},
+ {properties:{'학생':{relation:[{id:'student-b'}]},'학원명':{title:[{plain_text:'과학'}]},'아이콘':{select:{name:'실험병'}}}},
+ {properties:{'학생':{relation:[{id:'student-a'}]},'학원명':{title:[{plain_text:'바디PT'}]},'아이콘':{select:null}}}
+ ],has_more:false};}});
+vm.runInContext(source.slice(iconStart,iconEnd)+';this.icons=rpWidgetIcons;',iconContext);
+const icons=await iconContext.icons({STUDENT:{id:'student-a'}});assert.equal(selectedStudent,'student-a');assert.equal(icons.academyIcons.teen,'십자가');assert.equal(icons.academyIcons['바디pt'],'');assert.equal(icons.academyIcons['과학'],undefined);
+const noStudent=await iconContext.icons({});assert.equal(Object.keys(noStudent.academyIcons).length,0);
+console.log('PASS student-scoped icons, explicit empty hides icon, other-student configuration excluded');
