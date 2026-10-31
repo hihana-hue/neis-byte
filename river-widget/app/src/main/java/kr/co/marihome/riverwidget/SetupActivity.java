@@ -26,44 +26,80 @@ public class SetupActivity extends Activity {
   b.setMinHeight(dp(32));b.setMinimumHeight(dp(32));b.setPadding(dp(5),dp(1),dp(5),dp(1));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(3);b.setLayoutParams(lp);
  }
 
- // Comparison build: download only. This app never requests permission to install packages.
+ // Download only: no package-install permission or installer intent.
+ private final android.os.Handler downloadHandler=new android.os.Handler(android.os.Looper.getMainLooper());
+ private boolean updateScreenVisible=false;
+ private LinearLayout updateSection;private Button updateAction;private TextView downloadStatus;
+ private UpdateRelease availableRelease;
+ private final Runnable downloadPoll=new Runnable(){public void run(){if(updateScreenVisible&&renderDownloadState())downloadHandler.postDelayed(this,1500);}};
  private void addUpdateSection(LinearLayout root){
   final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 중…",12);root.addView(version);
-  final LinearLayout section=new LinearLayout(this);section.setOrientation(LinearLayout.VERTICAL);section.setVisibility(View.GONE);root.addView(section);
-  final TextView available=text("",13);section.addView(available);
-  final Button update=new Button(this);update.setText("Update");flatButton(update);update.setTextColor(Color.rgb(189,53,76));section.addView(update);
-  section.addView(text("1. Update: 설치 파일만 다운로드합니다.",12));
-  section.addView(text("2. 다운로드 완료: 내 파일 → 다운로드에서 APK를 직접 여세요.",12));
-  section.addView(text("3. Play 프로텍트가 유해 앱으로 경고하면: 설치를 중단하세요.",12));
-  final TextView downloadStatus=text("",12);root.addView(downloadStatus);
+  updateSection=new LinearLayout(this);updateSection.setOrientation(LinearLayout.VERTICAL);updateSection.setVisibility(View.GONE);root.addView(updateSection);
+  final TextView available=text("",13);updateSection.addView(available);
+  updateAction=new Button(this);updateAction.setText("Update");flatButton(updateAction);updateAction.setTextColor(Color.rgb(189,53,76));updateSection.addView(updateAction);
+  updateSection.addView(text("1. Update를 눌러 파일 다운로드",12));
+  updateSection.addView(text("2. 완료 후 ‘다운로드 목록 열기’ 누르기",12));
+  updateSection.addView(text("3. 표시된 APK 파일 선택 → 업데이트",12));
+  updateSection.addView(text("유해 앱 경고가 나타나면 설치를 중단하세요.",12));
+  downloadStatus=text("",12);updateSection.addView(downloadStatus);
+  updateAction.setOnClickListener(v->{if(downloadComplete()){openDownloads();return;}confirmDownload();});
+  renderDownloadState();
   new Thread(()->{
-   try{
-    final UpdateRelease release=UpdateRelease.load();
-    runOnUiThread(()->{
-     if(isFinishing()||isDestroyed())return;
-     version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
-     if(!release.newerThan(BuildConfig.VERSION_CODE))return;
-     available.setText("새 버전 · "+release.version);section.setVisibility(View.VISIBLE);
-     update.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("업데이트 다운로드")
-      .setMessage("설치 파일만 다운로드합니다. 완료 후 내 파일 → 다운로드에서 직접 여세요. 유해 앱 경고가 나타나면 설치를 중단하세요.")
-      .setNegativeButton("취소",null).setPositiveButton("다운로드",(dialog,which)->{
-       try{
-        DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
-        DownloadManager.Request request=new DownloadManager.Request(android.net.Uri.parse(release.url));
-        request.setTitle("마리 에듀 "+release.version+" 업데이트");
-        request.setMimeType("application/vnd.android.package-archive");
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        String name="MARI-EDU-Widget-"+release.version+"-"+release.code+"-"+System.currentTimeMillis()+".apk";
-        if(android.os.Build.VERSION.SDK_INT>=29)request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS,name);
-        else request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,name);
-        manager.enqueue(request);update.setEnabled(false);
-        downloadStatus.setText("다운로드를 시작했어요. 완료 후 내 파일 → 다운로드에서 APK를 직접 여세요.");
-       }catch(Exception e){downloadStatus.setText("다운로드를 시작하지 못했어요. 인터넷 연결과 다운로드 관리자를 확인해 주세요.");}
-      }).show());
-    });
-   }catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
+   try{final UpdateRelease release=UpdateRelease.load();runOnUiThread(()->{
+    if(isFinishing()||isDestroyed())return;availableRelease=release;
+    version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
+    if(release.newerThan(BuildConfig.VERSION_CODE)){available.setText("새 버전 · "+release.version);updateSection.setVisibility(View.VISIBLE);}
+    renderDownloadState();
+   });}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
   },"river-update-check").start();
  }
+ private void confirmDownload(){
+  final UpdateRelease release=availableRelease;if(release==null||!release.newerThan(BuildConfig.VERSION_CODE)){downloadStatus.setText("새 버전을 확인한 뒤 다시 눌러 주세요.");return;}
+  new AlertDialog.Builder(this).setTitle("업데이트 다운로드")
+   .setMessage("다운로드가 끝나면 ‘다운로드 목록 열기’를 누르세요. 목록에서 아래에 표시된 APK 파일을 선택하고 업데이트하세요. 유해 앱 경고가 나타나면 설치를 중단하세요.")
+   .setNegativeButton("취소",null).setPositiveButton("다운로드",(dialog,which)->{
+    try{
+     DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+     DownloadManager.Request request=new DownloadManager.Request(android.net.Uri.parse(release.url));
+     request.setTitle("마리 에듀 "+release.version+" 업데이트");request.setMimeType("application/vnd.android.package-archive");
+     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+     String name="MARI-EDU-Widget-"+release.version+"-"+release.code+"-"+System.currentTimeMillis()+".apk";
+     if(android.os.Build.VERSION.SDK_INT>=29)request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS,name);
+     else request.setDestinationInExternalFilesDir(this,android.os.Environment.DIRECTORY_DOWNLOADS,name);
+     long id=manager.enqueue(request);getPreferences(0).edit().putLong("updateDownload",id).putInt("updateTarget",release.code).putString("updateName",name).apply();
+     downloadHandler.removeCallbacks(downloadPoll);renderDownloadState();if(updateScreenVisible)downloadHandler.postDelayed(downloadPoll,1500);
+    }catch(Exception e){downloadStatus.setText("다운로드를 시작하지 못했어요. 인터넷 연결과 다운로드 관리자를 확인한 뒤 다시 눌러 주세요.");}
+   }).show();
+ }
+ private int downloadState(){
+  long id=getPreferences(0).getLong("updateDownload",-1);if(id<0)return -1;
+  try(android.database.Cursor cursor=((DownloadManager)getSystemService(DOWNLOAD_SERVICE)).query(new DownloadManager.Query().setFilterById(id))){
+   if(cursor!=null&&cursor.moveToFirst())return cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+  }catch(Exception ignored){}return -1;
+ }
+ private boolean downloadComplete(){return UpdateDownloadState.canOpen(downloadState(),getPreferences(0).getInt("updateTarget",0),BuildConfig.VERSION_CODE);}
+ private boolean renderDownloadState(){
+  if(updateAction==null)return false;
+  if(getPreferences(0).getInt("updateTarget",0)<=BuildConfig.VERSION_CODE){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();return false;}
+  long id=getPreferences(0).getLong("updateDownload",-1);if(id<0)return false;
+  updateSection.setVisibility(View.VISIBLE);
+  try(android.database.Cursor cursor=((DownloadManager)getSystemService(DOWNLOAD_SERVICE)).query(new DownloadManager.Query().setFilterById(id))){
+   if(cursor==null||!cursor.moveToFirst())throw new java.io.IOException("Missing download");
+   int state=cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+   String name=getPreferences(0).getString("updateName","MARI-EDU APK");
+   if(state==DownloadManager.STATUS_SUCCESSFUL){updateAction.setEnabled(true);updateAction.setText("다운로드 목록 열기");downloadStatus.setText("다운로드 완료\n1. 위 버튼을 누르세요.\n2. 목록에서 아래 파일을 선택하세요.\n"+name+"\n3. 설치 화면에서 업데이트를 누르세요.");return false;}
+   if(state==DownloadManager.STATUS_FAILED)throw new java.io.IOException("Download failed");
+   long done=cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),total=cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));int percent=UpdateDownloadState.percent(done,total);
+   updateAction.setEnabled(false);updateAction.setText(percent<0?"다운로드 중…":"다운로드 중 · "+percent+"%");downloadStatus.setText(state==DownloadManager.STATUS_PAUSED?"다운로드가 일시 중지됐어요. 인터넷 연결을 확인해 주세요.":"완료되면 이 버튼이 ‘다운로드 목록 열기’로 바뀝니다.");return true;
+  }catch(Exception e){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();updateAction.setEnabled(true);updateAction.setText("다시 다운로드");downloadStatus.setText("다운로드에 실패했거나 파일이 삭제됐어요. 다시 다운로드를 눌러 주세요.");return false;}
+ }
+ private void openDownloads(){
+  try{startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS));}
+  catch(ActivityNotFoundException e){downloadStatus.setText("다운로드 목록을 열지 못했어요. 내 파일 → 다운로드에서 "+getPreferences(0).getString("updateName","MARI-EDU APK")+" 파일을 선택하세요.");}
+ }
+ @Override protected void onResume(){super.onResume();updateScreenVisible=true;downloadHandler.removeCallbacks(downloadPoll);downloadHandler.post(downloadPoll);}
+ @Override protected void onPause(){updateScreenVisible=false;downloadHandler.removeCallbacks(downloadPoll);super.onPause();}
+ @Override protected void onDestroy(){downloadHandler.removeCallbacks(downloadPoll);super.onDestroy();}
 
  private void fillDesigns(){
   org.json.JSONArray designs=WidgetDesign.list(this);java.util.List<String> names=new java.util.ArrayList<>();for(int i=0;i<designs.length();i++)names.add(designs.optJSONObject(i).optString("name"));
