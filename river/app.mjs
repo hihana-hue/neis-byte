@@ -1,7 +1,7 @@
 import {createWidgetDownload} from './widget-download.mjs?v=7';
 import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=6';
-import {createAcademy} from './main-academy.mjs?v=32';
+import {createAcademy} from './main-academy.mjs?v=attention40-32';
 import {groups,todayKey,weekBounds,dayNumber,complete,active,visibleStatus} from './model.mjs?v=2';
 const $=id=>document.getElementById(id), base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
 let items=[], loaded=false, demo=false, selected='', token='', loading=false;
@@ -48,7 +48,7 @@ async function saveStatus(status){
  }catch(e){const error=$('detail-error');error.textContent=e.message;error.hidden=false;}
  finally{saving.delete(x.id);for(const id of ['detail-start','detail-progress','detail-done'])$(id).disabled=false;render();}
 }
-function card(x){const el=text('article','','card'),b=text('button','✓','done');
+function card(x){const el=text('article','','card'+(!complete(x.status)&&x.due&&dayNumber(x.due)<=dayNumber(todayKey())?' needs-attention':'')),b=text('button','✓','done');
  b.title='상태 변경';b.setAttribute('aria-label',x.title+' 상태 변경');b.disabled=saving.has(x.id);b.onclick=()=>openDetail(x);
  const body=text('div','','card-body'),heading=text('div','','card-heading'),tags=text('div','','tags');for(const subject of x.subjects){const tag=text('span',subject,'tag');paintSubject(tag,x.subjectColors?.[subject],subject);tags.append(tag);}heading.append(tags);body.append(heading);
  const title=text('button',x.title,'title');title.type='button';title.onclick=()=>openDetail(x);body.append(title);

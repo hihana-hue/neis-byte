@@ -8,7 +8,7 @@ public class ScheduleTest {
  @Test public void schoolUsesSelectedStatusesAcrossDates(){
   for(String status:new String[]{"시작전","진행 중","진행 2차","작성 완료"})assertTrue(Schedule.schoolVisible(status,"2026-10-25",monday));
   for(String status:new String[]{"완료","봉사완료","3.픽-예정","1.검토전",""})assertFalse(Schedule.schoolVisible(status,"2026-10-20",monday));
-  assertFalse(Schedule.schoolVisible("시작전","2026-10-18",monday));assertTrue(Schedule.schoolVisible("시작전","2026-10-26",monday));
+  assertTrue(Schedule.schoolVisible("시작전","2026-10-18",monday));assertTrue(Schedule.schoolVisible("시작전","2026-10-26",monday));
  }
  @Test public void missedAcademyStaysUntilAttendance(){
   assertTrue(Schedule.academyVisible("예정","2026-09-01T18:00:00+09:00",monday));

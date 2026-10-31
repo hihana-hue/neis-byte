@@ -7,7 +7,7 @@ public final class Schedule {
  static LocalDate sunday(Instant now){LocalDate d=today(now);return d.plusDays(7-d.getDayOfWeek().getValue());}
  static boolean schoolVisible(String status,String due,Instant now){
   if(!("시작전".equals(status)||"진행 중".equals(status)||"진행 2차".equals(status)||"작성 완료".equals(status)))return false;
-  try{LocalDate d=LocalDate.parse(due.substring(0,10));return !d.isBefore(today(now))&&!d.isAfter(today(now).plusDays(14));}catch(Exception e){return false;}
+  try{LocalDate d=LocalDate.parse(due.substring(0,10));return !d.isAfter(today(now).plusDays(14));}catch(Exception e){return false;}
  }
  static boolean academyVisible(String status,String start,Instant now){
   if(!"예정".equals(status))return false;
@@ -23,5 +23,6 @@ public final class Schedule {
   }catch(Exception e){return "예정";}
  }
  static boolean isToday(String value,Instant now,boolean timed){try{return (timed?OffsetDateTime.parse(value).atZoneSameInstant(SEOUL).toLocalDate():LocalDate.parse(value.substring(0,10))).equals(today(now));}catch(Exception e){return false;}}
+ static boolean needsAttention(String value,Instant now,boolean timed){try{LocalDate date=timed?OffsetDateTime.parse(value).atZoneSameInstant(SEOUL).toLocalDate():LocalDate.parse(value.substring(0,10));return !date.isAfter(today(now));}catch(Exception e){return false;}}
  private Schedule(){}
 }
