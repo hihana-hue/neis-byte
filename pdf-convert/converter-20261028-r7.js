@@ -11,7 +11,8 @@ function buildTransferDocument(pages,name,headers=true,audit=[]){
  const checked=audit.filter(a=>a.verified===true).length,ocr=audit.filter(a=>a.kind.includes('ocr')).map(a=>a.page);
  const safeName=name.replace(/[\r\n]/g,' ');
  let info='## 추출 정보 · 원문 아님\n- 파일: '+safeName+'\n- 추출 구간: '+pages.length+'개\n';
- if(pdf){const total=audit.filter(a=>a.verified!==null).length;info+=total?'- 텍스트 재배치 문자 보존 검사: '+checked+'/'+total+'쪽 통과. PDF 텍스트 층 기준이며 원본 이미지와의 정확도 검증은 아닙니다.\n':'- 텍스트 재배치 문자 보존 검사: 미실시(OCR 페이지).\n'}
+ if(pdf){const total=audit.filter(a=>a.verified!==null).length;info+=total?'- PDF 텍스트 층 문자 보존 검사(그림·의미·읽기 순서 제외): '+checked+'/'+total+'쪽 통과. PDF 텍스트 층 기준이며 원본 이미지와의 정확도 검증은 아닙니다.\n':'- PDF 텍스트 층 문자 보존 검사(그림·의미·읽기 순서 제외): 미실시(OCR 페이지).\n'}
+ if(audit.some(a=>a.ocrIncomplete))info+='- 그림 OCR 일부 실패: 그림 속 정보가 누락될 수 있습니다.\n';
  if(ocr.length||image)info+='- OCR 사용: '+(image?'업로드 이미지':ocr.join(', ')+'쪽')+'. 오인식·누락 가능성이 있어 원본 대조가 필요합니다.\n';
  if(audit.some(a=>a.verified===false))info+='- 구조화 검사 실패 페이지는 원문 위치 순서의 텍스트로 대체했습니다.\n';
  if(!pdf&&!image)info+='- 이 형식은 페이지별 문자 보존 검사를 수행하지 않았습니다.\n';
@@ -111,7 +112,7 @@ async function readImage(source=file,crop=true){
   if(quality.failed)throw Error('OCR 품질 부족 · 글자 오인식이 많아 결과 전달을 중단했습니다. 문서를 정면에서 선명하게 촬영하거나 원본 PDF를 사용해 주세요.');
   // OCR line geometry does not establish headings or table cells.
   const text=markdownText(result.data.text||'');
-  return '[추출 도구 안내: OCR 결과는 원본 대조가 필요합니다. 표의 셀·배점 관계는 복원하지 않았습니다.'+(quality.review?' 인식 품질이 낮은 구간이 있습니다.':'')+']\\n'+text;
+  return '[추출 도구 안내: OCR 결과는 원본 대조가 필요합니다. 표의 셀·배점 관계는 복원하지 않았습니다.'+(quality.review?' 인식 품질이 낮은 구간이 있습니다.':'')+']\n'+text;
  }finally{if(worker)await worker.terminate();ocrWorker=null}
 }
 function readHwpx(bytes){const zip=fflate.unzipSync(bytes,{filter:e=>/^Contents\/section\d+\.xml$/i.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/section(\d+)/i)[1]-+b.match(/section(\d+)/i)[1]);if(!names.length)throw Error('HWPX 본문을 찾지 못했습니다. 암호 설정과 파일 형식을 확인해 주세요.');const pages=[];function text(n){if(n.nodeType!==1)return '';if(n.localName==='tbl')return '\n\n'+table(n)+'\n\n';if(n.localName==='t')return n.textContent;if(n.localName==='lineBreak')return '\n';if(n.localName==='tab')return '\t';return Array.from(n.children).map(text).join('')+(n.localName==='p'?'\n':'')}
@@ -121,13 +122,18 @@ for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(
 
 
 async function pdfRules(page){
- const ops=await page.getOperatorList(),O=pdfjsLib.OPS,lines=[];let matrix=[1,0,0,1,0,0],stack=[],pending=[];
+ const ops=await page.getOperatorList(),O=pdfjsLib.OPS,lines=[];lines.imageRects=[];let matrix=[1,0,0,1,0,0],stack=[],pending=[];
  const point=(x,y)=>[matrix[0]*x+matrix[2]*y+matrix[4],matrix[1]*x+matrix[3]*y+matrix[5]];
  const add=(a,b)=>{if(Math.abs(a[1]-b[1])<.6&&Math.abs(a[0]-b[0])>15)pending.push({axis:'h',x0:Math.min(a[0],b[0]),x1:Math.max(a[0],b[0]),y:a[1]});else if(Math.abs(a[0]-b[0])<.6&&Math.abs(a[1]-b[1])>3)pending.push({axis:'v',x:a[0],y0:Math.min(a[1],b[1]),y1:Math.max(a[1],b[1])})};
  const paints=new Set([O.stroke,O.closeStroke,O.fillStroke,O.eoFillStroke,O.closeFillStroke,O.closeEOFillStroke]);
  for(let k=0;k<ops.fnArray.length;k++){
   const op=ops.fnArray[k],args=ops.argsArray[k];
   if([O.paintImageXObject,O.paintInlineImageXObject].includes(op)&&Math.abs(matrix[0]*matrix[3]-matrix[1]*matrix[2])>(page.view[2]-page.view[0])*(page.view[3]-page.view[1])*.15)lines.largeImage=true;
+  if([O.paintImageXObject,O.paintInlineImageXObject].includes(op)){
+   const corners=[point(0,0),point(1,0),point(0,1),point(1,1)];
+   const rect={left:Math.min(...corners.map(p=>p[0])),right:Math.max(...corners.map(p=>p[0])),bottom:Math.min(...corners.map(p=>p[1])),top:Math.max(...corners.map(p=>p[1]))};
+   if(rect.right-rect.left>40&&rect.top-rect.bottom>25)lines.imageRects.push(rect);
+  }
   if(op===O.save)stack.push([...matrix]);
   else if(op===O.restore)matrix=stack.pop()||[1,0,0,1,0,0];
   else if(op===O.transform){const [a,b,c,d,e,f]=args,[A,B,C,D,E,F]=matrix;matrix=[A*a+C*b,B*a+D*b,A*c+C*d,B*c+D*d,A*e+C*f+E,B*e+D*f+F]}
@@ -215,6 +221,21 @@ function pdfStructure(items,rules=[]){
  for(const row of plainRows(all.filter(i=>!used.has(i)))){events.push({y:row.y,row,text:row.text});sourceParts.push(row.items.map(i=>i.str).join(''))}
  const looseRows=plainRows(all.filter(i=>!used.has(i)));
  const layoutUncertain=!budgetOK||looseRows.filter(r=>r.items.some((it,i,arr)=>i&&it.x-(arr[i-1].x+(arr[i-1].width||0))>r.size*5)).length>=3;
+ if(layoutUncertain&&groups.length===0){
+  const rows=plainRows(all),cuts=[];
+  for(const row of rows)for(let j=1;j<row.items.length;j++){
+   const prev=row.items[j-1],next=row.items[j];
+   if(next.x-(prev.x+(prev.width||0))>row.size*.8)cuts.push(next.x);
+  }
+  const minX=Math.min(...all.map(i=>i.transform[4])),maxX=Math.max(...all.map(i=>i.transform[4]+(i.width||0)));
+  const candidates=cuts.filter(x=>x<minX+(maxX-minX)*.4&&cuts.filter(y=>Math.abs(x-y)<4).length>=3);
+  if(candidates.length){
+   const cut=candidates.sort((a,b)=>a-b)[0];
+   const left=all.filter(i=>i.transform[4]<cut-2),right=all.filter(i=>i.transform[4]>=cut-2);
+   if(left.length&&right.length&&sameCharacters(all.map(i=>i.str).join(''),left.concat(right).map(i=>i.str).join('')))
+    return {text:'[왼쪽 열 · 항목명과 본문 연결은 원본 확인 필요]\n'+preserveText(left)+'\n\n[오른쪽 열]\n'+preserveText(right),verified:true,tables:0,layoutUncertain:true};
+  }
+ }
  const valid=sameCharacters(all.map(i=>i.str).join(''),sourceParts.join(''));
  if(!valid)return {text:preserveText(all),verified:false,tables:0};
  events.sort((a,b)=>b.y-a.y);
@@ -232,8 +253,28 @@ function pdfStructure(items,rules=[]){
 }
 function pdfMarkdown(items,rules=[]){return pdfStructure(items,rules).text}
 
-async function extract(){extractionAudit=[];if(/\.(jpe?g|png|webp)$/i.test(file.name))return [await readImage()];if(/\.hwpx$/i.test(file.name))return readHwpx(new Uint8Array(await file.arrayBuffer()));const bytes=new Uint8Array(await file.arrayBuffer()),pages=[];if(/\.pdf$/i.test(file.name)){const doc=await pdfjsLib.getDocument({data:bytes,isEvalSupported:false}).promise;try{if(doc.numPages>150)throw Error('150페이지 이하 PDF로 나누어 업로드해 주세요.');for(let i=1;i<=doc.numPages;i++){checkAbort();status(`PDF 읽는 중 · ${i} / ${doc.numPages}페이지`);const page=await doc.getPage(i),content=await page.getTextContent();const rules=await pdfRules(page),structure=pdfStructure(content.items,rules),source=preserveText(content.items);let text=structure.text;const audit={page:i,kind:'text',verified:structure.verified,tables:structure.tables,layoutUncertain:structure.layoutUncertain,largeImage:!!rules.largeImage};if(!text||rules.largeImage){status(`스캔 PDF 인식 중 · ${i} / ${doc.numPages}페이지`);const viewport=page.getViewport({scale:Math.min(2,2400/page.getViewport({scale:1}).width)}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;checkAbort();const ocr=await readImage(canvas,false);audit.kind=source?'text+ocr':'ocr';audit.verified=source?structure.verified:null;text=source?text+'\n\n[추출 도구 안내: 같은 페이지의 OCR 보조 결과입니다. 위 내용과 중복될 수 있고, 숫자·기호·표 관계는 원본 대조가 필요합니다.]'+'\n'+(ocr||'[OCR로 읽힌 텍스트 없음]'):(ocr||'[OCR로 읽힌 텍스트 없음]');canvas.width=canvas.height=0}extractionAudit.push(audit);pages.push(text);page.cleanup()}}finally{await doc.destroy()}}else{const zip=fflate.unzipSync(bytes,{filter:e=>/^ppt\/slides\/slide\d+\.xml$/.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/slide(\d+)/)[1]-+b.match(/slide(\d+)/)[1]);if(names.length>150)throw Error('150슬라이드 이하로 나누어 업로드해 주세요.');for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(fflate.strFromU8(zip[name]),'application/xml');pages.push(Array.from(xml.getElementsByTagNameNS('*','p')).map(p=>Array.from(p.getElementsByTagNameNS('*','t')).map(x=>x.textContent).join('')).filter(Boolean).join('\n'))}if(!pages.length)throw Error('PPTX에서 슬라이드를 찾지 못했습니다. 파일을 확인해 주세요.')}return pages}
+async function extract(){extractionAudit=[];if(/\.(jpe?g|png|webp)$/i.test(file.name))return [await readImage()];if(/\.hwpx$/i.test(file.name))return readHwpx(new Uint8Array(await file.arrayBuffer()));const bytes=new Uint8Array(await file.arrayBuffer()),pages=[];if(/\.pdf$/i.test(file.name)){const doc=await pdfjsLib.getDocument({data:bytes,isEvalSupported:false}).promise;try{if(doc.numPages>150)throw Error('150페이지 이하 PDF로 나누어 업로드해 주세요.');for(let i=1;i<=doc.numPages;i++){checkAbort();status(`PDF 읽는 중 · ${i} / ${doc.numPages}페이지`);const page=await doc.getPage(i),content=await page.getTextContent();const rules=await pdfRules(page),structure=pdfStructure(content.items,rules),source=preserveText(content.items);let text=structure.text;const audit={page:i,kind:'text',verified:structure.verified,tables:structure.tables,layoutUncertain:structure.layoutUncertain,largeImage:!!rules.largeImage};if(!text||rules.imageRects?.length){
+ const viewport=page.getViewport({scale:Math.min(3,3200/page.getViewport({scale:1}).width)}),canvas=document.createElement('canvas');
+ canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+ await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;checkAbort();
+ const regions=source?rules.imageRects:[null];let supplements=[];audit.ocrRegions=regions.length;
+ for(const [ri,rect] of regions.entries()){
+  checkAbort();let target=canvas;
+  if(rect){
+   const b=viewport.convertToViewportRectangle([rect.left,rect.bottom,rect.right,rect.top]);
+   const x=Math.max(0,Math.floor(Math.min(b[0],b[2]))),y=Math.max(0,Math.floor(Math.min(b[1],b[3])));
+   target=document.createElement('canvas');target.width=Math.min(canvas.width-x,Math.ceil(Math.abs(b[2]-b[0])));target.height=Math.min(canvas.height-y,Math.ceil(Math.abs(b[3]-b[1])));
+   target.getContext('2d').drawImage(canvas,x,y,target.width,target.height,0,0,target.width,target.height);
+  }
+  try{const ocr=await readImage(target,false);supplements.push('[그림 영역 '+(ri+1)+' OCR · 항목과 숫자의 대응 및 단위는 미검증]\n'+ocr)}
+  catch(e){if(controller.signal.aborted)throw e;supplements.push('[그림 영역 '+(ri+1)+' 인식 실패 · 원본 그림 확인 필요]');audit.ocrIncomplete=true}
+  finally{if(target!==canvas)target.width=target.height=0}
+ }
+ audit.kind=source?'text+ocr':'ocr';audit.verified=source?structure.verified:null;
+ text=(source?text+'\n\n':'')+supplements.join('\n\n');canvas.width=canvas.height=0;
+ }extractionAudit.push(audit);pages.push(text);page.cleanup()}}finally{await doc.destroy()}}else{const zip=fflate.unzipSync(bytes,{filter:e=>/^ppt\/slides\/slide\d+\.xml$/.test(e.name)&&e.originalSize<10*1024*1024});const names=Object.keys(zip).sort((a,b)=>+a.match(/slide(\d+)/)[1]-+b.match(/slide(\d+)/)[1]);if(names.length>150)throw Error('150슬라이드 이하로 나누어 업로드해 주세요.');for(const name of names){checkAbort();const xml=new DOMParser().parseFromString(fflate.strFromU8(zip[name]),'application/xml');pages.push(Array.from(xml.getElementsByTagNameNS('*','p')).map(p=>Array.from(p.getElementsByTagNameNS('*','t')).map(x=>x.textContent).join('')).filter(Boolean).join('\n'))}if(!pages.length)throw Error('PPTX에서 슬라이드를 찾지 못했습니다. 파일을 확인해 주세요.')}return pages}
 
-$('convert').onclick=async()=>{if(!file||busy)return;busy=true;controller=new AbortController();$('convert').disabled=true;$('cancel').hidden=false;$('file').disabled=$('headers').disabled=true;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=true);try{const pages=await extract();checkAbort();if(!pages.some(p=>p.trim()))throw Error('읽을 수 있는 글자가 없습니다. 이미지는 선명한 원본으로 시도하고 제외 영역을 확인해 주세요.');$('output').value=buildTransferDocument(pages,file.name,$('headers').checked,extractionAudit);update();status('변환 완료 · v20261029.8 · 원문과 비교해 표·수식·누락 여부를 확인해 주세요.')}catch(e){status(controller.signal.aborted?'변환을 중지했습니다.':e.name==='PasswordException'?'암호가 설정된 PDF입니다. 암호를 해제한 파일을 사용해 주세요.':e.message||'파일을 읽지 못했습니다.')}finally{busy=false;$('convert').disabled=false;$('cancel').hidden=true;$('file').disabled=$('headers').disabled=false;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=false)}};
+$('convert').onclick=async()=>{if(!file||busy)return;busy=true;controller=new AbortController();$('convert').disabled=true;$('cancel').hidden=false;$('file').disabled=$('headers').disabled=true;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=true);try{const pages=await extract();checkAbort();if(!pages.some(p=>p.trim()))throw Error('읽을 수 있는 글자가 없습니다. 이미지는 선명한 원본으로 시도하고 제외 영역을 확인해 주세요.');$('output').value=buildTransferDocument(pages,file.name,$('headers').checked,extractionAudit);update();status('변환 완료 · v20261031.9 · 원문과 비교해 표·수식·누락 여부를 확인해 주세요.')}catch(e){status(controller.signal.aborted?'변환을 중지했습니다.':e.name==='PasswordException'?'암호가 설정된 PDF입니다. 암호를 해제한 파일을 사용해 주세요.':e.message||'파일을 읽지 못했습니다.')}finally{busy=false;$('convert').disabled=false;$('cancel').hidden=true;$('file').disabled=$('headers').disabled=false;document.querySelectorAll('#ocrOptions input').forEach(x=>x.disabled=false)}};
 $('cancel').onclick=()=>{controller?.abort();if(ocrWorker)ocrWorker.terminate().catch(()=>{})};$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(withTransferNote($('output').value));status('결과를 복사했습니다.')}catch{$('output').focus();$('output').select();status('결과를 선택했습니다. Ctrl+C 또는 복사를 눌러 주세요.')}};
 $('download').onclick=()=>{const blob=new Blob([withTransferNote($('output').value)],{type:'text/markdown;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(file?.name.replace(/\.[^.]+$/,'')||'document')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+
