@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
  namespace 'kr.co.marihome.riverwidget'
  compileSdk 35
- defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 40; versionName '1.30' }
+ defaultConfig { applicationId 'kr.co.marihome.riverwidget'; minSdk 26; targetSdk 35; versionCode 41; versionName '1.30' }
  buildFeatures { buildConfig true }
  buildTypes { release { minifyEnabled false; debuggable false } }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }

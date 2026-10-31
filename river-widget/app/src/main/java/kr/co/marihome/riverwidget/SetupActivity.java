@@ -10,9 +10,11 @@ import android.widget.*;
 public class SetupActivity extends Activity {
  private int widgetId=AppWidgetManager.INVALID_APPWIDGET_ID;private boolean busy=false;private TextView status;private TextView screenTitle;private Spinner designSpinner;private EditText password;
  private int dp(int value){return (int)(value*getResources().getDisplayMetrics().density+.5f);}
- private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(35,72,94));t.setPadding(0,dp(5),0,dp(5));return t;}
+ private TextView text(String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(Color.rgb(35,72,94));t.setIncludeFontPadding(false);t.setPadding(0,dp(2),0,dp(2));return t;}
+ private TextView heading(String value,int size){TextView t=text(value,size);t.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);return t;}
+ private ArrayAdapter<String> compactOptions(String[] values){return new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,values){private View option(int position){TextView t=text(getItem(position),14);t.setPadding(dp(8),dp(3),dp(8),dp(3));return t;}@Override public View getView(int position,View convert,android.view.ViewGroup parent){return option(position);}@Override public View getDropDownView(int position,View convert,android.view.ViewGroup parent){return option(position);}};}
  private void outline(View view){
-  android.graphics.drawable.GradientDrawable border=new android.graphics.drawable.GradientDrawable();border.setColor(Color.TRANSPARENT);border.setStroke(dp(1),Color.rgb(132,156,171));border.setCornerRadius(dp(8));view.setBackground(border);view.setPadding(dp(10),dp(6),dp(10),dp(6));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(4);view.setLayoutParams(lp);
+  android.graphics.drawable.GradientDrawable border=new android.graphics.drawable.GradientDrawable();border.setColor(Color.TRANSPARENT);border.setStroke(dp(1),Color.rgb(132,156,171));border.setCornerRadius(dp(8));view.setBackground(border);view.setMinimumHeight(0);view.setPadding(dp(10),dp(3),dp(10),dp(3));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(2);view.setLayoutParams(lp);
  }
  private void pinState(Button button,boolean connected){button.setEnabled(connected);button.setAlpha(connected?1f:.35f);}
  private void flatButton(Button b){
@@ -21,7 +23,7 @@ public class SetupActivity extends Activity {
   android.graphics.drawable.GradientDrawable pressed=new android.graphics.drawable.GradientDrawable();pressed.setColor(Color.rgb(170,207,224));pressed.setCornerRadius(dp(8));
   android.graphics.drawable.GradientDrawable disabled=new android.graphics.drawable.GradientDrawable();disabled.setColor(Color.rgb(237,241,243));disabled.setCornerRadius(dp(8));
   android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();states.addState(new int[]{-android.R.attr.state_enabled},disabled);states.addState(new int[]{android.R.attr.state_pressed},pressed);states.addState(new int[]{android.R.attr.state_focused},pressed);states.addState(new int[]{},normal);b.setBackground(states);
-  b.setMinHeight(dp(44));b.setMinimumHeight(dp(44));b.setPadding(dp(5),dp(2),dp(5),dp(2));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(6);b.setLayoutParams(lp);
+  b.setMinHeight(dp(32));b.setMinimumHeight(dp(32));b.setPadding(dp(5),dp(1),dp(5),dp(1));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(3);b.setLayoutParams(lp);
  }
 
  // Comparison build: download only. This app never requests permission to install packages.
@@ -67,7 +69,7 @@ public class SetupActivity extends Activity {
   org.json.JSONArray designs=WidgetDesign.list(this);java.util.List<String> names=new java.util.ArrayList<>();for(int i=0;i<designs.length();i++)names.add(designs.optJSONObject(i).optString("name"));
   int selected=WidgetDesign.selectedIndex(this);
   designSpinner.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,names){
-   private View option(int position){org.json.JSONObject design=WidgetDesign.list(SetupActivity.this).optJSONObject(position);TextView t=text(getItem(position)+"  ▾",16);int bg=Color.parseColor(design.optString("background","#286F49"));t.setTextColor(Color.luminance(bg)>.45?Color.BLACK:Color.WHITE);android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();shape.setColor(bg);shape.setCornerRadius(dp(8));t.setBackground(shape);t.setPadding(dp(12),dp(8),dp(12),dp(8));return t;}
+   private View option(int position){org.json.JSONObject design=WidgetDesign.list(SetupActivity.this).optJSONObject(position);TextView t=text(getItem(position)+"  ▾",16);int bg=Color.parseColor(design.optString("background","#286F49"));t.setTextColor(Color.luminance(bg)>.45?Color.BLACK:Color.WHITE);android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();shape.setColor(bg);shape.setCornerRadius(dp(8));t.setBackground(shape);t.setPadding(dp(10),dp(3),dp(10),dp(3));return t;}
    @Override public View getView(int position,View convert,android.view.ViewGroup parent){return option(position);}
    @Override public View getDropDownView(int position,View convert,android.view.ViewGroup parent){return option(position);}
   });
@@ -84,29 +86,29 @@ public class SetupActivity extends Activity {
   screenTitle=text(Data.widgetTitle(this),24);root.addView(screenTitle);root.addView(text("학원 일정 · 오늘부터 2주 학교 할 일",16));
   addUpdateSection(root);
   root.addView(text("노션 위젯관리에 등록한 학생 연결코드를 입력해 주세요. 웹에서도 같은 코드로 연결합니다.",14));
-  password=new EditText(this);password.setSingleLine(true);password.setHint("학생 연결코드");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);root.addView(password);
+  password=new EditText(this);password.setSingleLine(true);password.setHint("학생 연결코드");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setMinimumHeight(0);password.setPadding(dp(8),dp(4),dp(8),dp(4));password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);root.addView(password);
   Button connect=new Button(this);connect.setText("연결하기");
   Button pin=new Button(this);pin.setText("위젯 추가");pin.setOnClickListener(v->{if(Vault.get(this,"access").isEmpty()){status.setText("먼저 위젯 연결 코드를 등록해 주세요.");return;}AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported())m.requestPinAppWidget(new ComponentName(this,RiverWidget.class),null,null);else status.setText("홈 화면 빈 공간 길게 누르기 → 위젯 → CHOI RIVER에서 추가해 주세요.");});
-  Button refresh=new Button(this);refresh.setText("새로고침");
+  Button refresh=new Button(this);refresh.setText("템플릿 업데이트");
   LinearLayout connectionButtons=new LinearLayout(this);connectionButtons.setOrientation(LinearLayout.HORIZONTAL);root.addView(connectionButtons);
-  for(Button button:new Button[]{connect,pin,refresh}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(6),dp(2),0);connectionButtons.addView(button,lp);}pinState(pin,!Vault.get(this,"access").isEmpty());
+  for(Button button:new Button[]{connect,pin,refresh}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(3),dp(2),0);connectionButtons.addView(button,lp);}pinState(pin,!Vault.get(this,"access").isEmpty());
   status=text(Vault.get(this,"access").isEmpty()?"연결 안 됨 · 연결 코드를 입력해 주세요.":"연결됨 · 이 기기에 위젯 연결이 저장되어 있어요.",13);root.addView(status);
   root.addView(text("코드를 입력한 뒤 연결하기를 눌러 주세요. 이미 연결되어 있으면 코드를 다시 입력하지 않아도 됩니다.",12));
-  root.addView(text("위젯 모양",18));
-  final TextView titleFontLabel=text("제목 글자 크기 · "+WidgetStyle.titleFont(this)+" (기본 18)",14);root.addView(titleFontLabel);
+  root.addView(heading("위젯 모양",18));
+  final TextView titleFontLabel=heading("제목 글자 크기 · "+WidgetStyle.titleFont(this)+" (기본 18)",14);root.addView(titleFontLabel);
   final SeekBar titleFontSize=new SeekBar(this);titleFontSize.setMax(12);titleFontSize.setProgress(WidgetStyle.titleFont(this)-12);root.addView(titleFontSize);
   titleFontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){titleFontLabel.setText("제목 글자 크기 · "+(n+12)+" (기본 18)");}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
-  final TextView fontLabel=text("글자 크기 · "+WidgetStyle.font(this),14);root.addView(fontLabel);
+  final TextView fontLabel=heading("글자 크기 · "+WidgetStyle.font(this),14);root.addView(fontLabel);
   final SeekBar fontSize=new SeekBar(this);fontSize.setMax(6);fontSize.setProgress(WidgetStyle.font(this)-12);root.addView(fontSize);
   fontSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){fontLabel.setText("글자 크기 · "+(n+12));}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
-  final TextView opacityLabel=text("배경 진하기 · "+WidgetStyle.backgroundOpacity(this)+"%",14);root.addView(opacityLabel);
+  final TextView opacityLabel=heading("배경 진하기 · "+WidgetStyle.backgroundOpacity(this)+"%",14);root.addView(opacityLabel);
   root.addView(text("100%는 불투명 · 0%는 배경 투명 · 글자색은 유지",12));
   final SeekBar opacity=new SeekBar(this);opacity.setMax(100);opacity.setProgress(WidgetStyle.backgroundOpacity(this));root.addView(opacity);
   opacity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){opacityLabel.setText("배경 진하기 · "+n+"%");}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
-  root.addView(text("디자인",14));designSpinner=new Spinner(this);fillDesigns();outline(designSpinner);root.addView(designSpinner);
-  root.addView(text("디자인은 처음 연결하거나 여기서 새로고침할 때만 불러옵니다.",12));
-  root.addView(text("학원 일정 표시 개수",14));final Spinner count=new Spinner(this);count.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"3개  ▾","6개  ▾","9개  ▾"}));count.setSelection(WidgetStyle.academyLimit(this)/3-1);outline(count);root.addView(count);
-  root.addView(text("학교 일정 표시 상태",14));final CheckBox showStart=new CheckBox(this);showStart.setText("시작 전");showStart.setChecked(WidgetStyle.schoolStatus(this,"시작전"));outline(showStart);final CheckBox showProgress=new CheckBox(this);showProgress.setText("진행 중");showProgress.setChecked(WidgetStyle.schoolStatus(this,"진행 중"));outline(showProgress);LinearLayout stateButtons=new LinearLayout(this);stateButtons.setOrientation(LinearLayout.HORIZONTAL);root.addView(stateButtons);for(CheckBox box:new CheckBox[]{showStart,showProgress}){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(4),dp(2),0);stateButtons.addView(box,lp);}
+  root.addView(heading("디자인",14));designSpinner=new Spinner(this);fillDesigns();outline(designSpinner);root.addView(designSpinner);
+  root.addView(text("디자인은 최초 연결·템플릿 업데이트 때만 불러옵니다.",12));
+  root.addView(heading("학원 일정 표시 개수",14));final Spinner count=new Spinner(this);count.setAdapter(compactOptions(new String[]{"3개  ▾","6개  ▾","9개  ▾"}));count.setSelection(WidgetStyle.academyLimit(this)/3-1);outline(count);root.addView(count);
+  root.addView(heading("학교 일정 표시 상태",14));final CheckBox showStart=new CheckBox(this);showStart.setText("시작 전");showStart.setChecked(WidgetStyle.schoolStatus(this,"시작전"));outline(showStart);final CheckBox showProgress=new CheckBox(this);showProgress.setText("진행 중");showProgress.setChecked(WidgetStyle.schoolStatus(this,"진행 중"));outline(showProgress);LinearLayout stateButtons=new LinearLayout(this);stateButtons.setOrientation(LinearLayout.HORIZONTAL);root.addView(stateButtons);for(CheckBox box:new CheckBox[]{showStart,showProgress}){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(2),dp(2),0);stateButtons.addView(box,lp);}
   Button applyStyle=new Button(this);applyStyle.setText("설정 저장");
   final TextView styleResult=text("",12);root.addView(styleResult);
   applyStyle.setOnClickListener(v->{WidgetStyle.saveBackgroundOpacity(this,opacity.getProgress());WidgetStyle.saveTitleFont(this,titleFontSize.getProgress()+12);WidgetStyle.saveFilters(this,(count.getSelectedItemPosition()+1)*3,showStart.isChecked(),showProgress.isChecked());int position=designSpinner.getSelectedItemPosition();org.json.JSONObject design=WidgetDesign.list(this).optJSONObject(position);if(design!=null&&!WidgetDesign.choose(this,design.optString("id"))){styleResult.setText("디자인을 저장하지 못했어요. 다시 시도해 주세요.");return;}WidgetStyle.save(this,fontSize.getProgress()+12,WidgetStyle.theme(this),0);if(widgetId!=AppWidgetManager.INVALID_APPWIDGET_ID)setResult(RESULT_OK,new Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,widgetId));styleResult.setText("홈 화면 위젯에 적용했어요.");});
@@ -114,11 +116,11 @@ public class SetupActivity extends Activity {
   clear.setOnClickListener(v->{if(busy)return;try{final String disconnectToken=Vault.get(this,"access");new Thread(()->Data.disconnect(getApplicationContext(),disconnectToken),"river-widget-disconnect").start();Vault.put(this,"access",null);Vault.put(this,"cache",null);Data.error(this,"");RiverWidget.renderAll(this);pinState(pin,false);screenTitle.setText("나의 일정");status.setText("위젯 연결을 해제했어요.");}catch(Exception e){status.setText("연결 해제에 실패했어요.");}});
   Button close=new Button(this);close.setText("닫기");close.setOnClickListener(v->finish());
   LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);root.addView(buttons);
-  for(Button button:new Button[]{applyStyle,clear,close}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);button.setPadding(dp(3),dp(10),dp(3),dp(10));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(6),dp(2),0);buttons.addView(button,lp);}
+  for(Button button:new Button[]{applyStyle,clear,close}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);button.setPadding(dp(3),dp(1),dp(3),dp(1));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(3),dp(2),0);buttons.addView(button,lp);}
   root.addView(text("자동 갱신은 약 30분 간격이며 휴대폰 절전 상태에 따라 늦어질 수 있어요. ↻를 누르면 새로 불러와요. 항목을 누르면 기존 사이트가 열려요.",12));
   refresh.setOnClickListener(v->{
    if(busy)return;String token=Vault.get(this,"access");if(token.isEmpty()){status.setText("먼저 학생코드를 연결해 주세요.");return;}
-   busy=true;refresh.setEnabled(false);connect.setEnabled(false);pinState(pin,false);clear.setEnabled(false);status.setText("일정과 디자인 새로고침 중…");
+   busy=true;refresh.setEnabled(false);connect.setEnabled(false);pinState(pin,false);clear.setEnabled(false);status.setText("템플릿·일정 업데이트 중…");
    new Thread(()->{String message;try{Data.sync(getApplicationContext(),token);Data.syncDesigns(getApplicationContext(),token);message="일정·디자인을 새로 불러왔어요.";}catch(Exception e){message="기존 디자인 유지 · "+e.getMessage();}
     final String result=message;runOnUiThread(()->{if(isDestroyed())return;busy=false;refresh.setEnabled(true);connect.setEnabled(true);pinState(pin,!Vault.get(this,"access").isEmpty());clear.setEnabled(true);screenTitle.setText(Data.widgetTitle(this));fillDesigns();RiverWidget.renderAll(this);status.setText(result);});
    },"river-design-refresh").start();
