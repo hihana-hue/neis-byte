@@ -5,10 +5,10 @@ import org.json.*;
 /** Explicitly refreshed Notion designs. No timers or network calls in this class. */
 final class WidgetDesign {
  static final String[] IDS={"407215b9-b774-8000-b436-e28e5cd87fcb","407215b9-b774-8116-9598-d4d90e9d11b4","407215b9-b774-80e4-8901-d5f6c8573ecc"};
- static final String[] COLORS={"background","titleColor","academyBackground","academyText","separator","schoolBackground","schoolText","divider","today"};
+ static final String[] COLORS={"background","titleColor","academyBackground","academyText","separator","schoolBackground","schoolText","divider","today","schoolToday"};
  static JSONArray defaults(){
   JSONArray a=new JSONArray();String[][] values={{"그린","#286F49","#F1ECD7","#307852","#F1ECD7","#F1ECD7","#B44077"},{"블랙","#0C0C0C","#F5F5F5","#191919","#52E5B1","#F5F5F5","#F2A065"},{"스카이블루","#FAF6DA","#145C97","#286599","#FAF2D9","#145C97","#D7A176"}};
-  try{for(int i=0;i<3;i++){String[] v=values[i];a.put(new JSONObject().put("id",IDS[i]).put("name",v[0]).put("background",v[1]).put("titleColor",v[2]).put("academyBackground",v[3]).put("academyText",v[4]).put("schoolText",v[5]).put("today",v[6]).put("divider","#407F5D").put("separator","#FFFFFF").put("schoolBackground","none").put("titleBold",true).put("academyBold",true).put("separatorTransparency",0).put("isDefault",i==0));}}catch(JSONException ignored){}return a;
+  try{for(int i=0;i<3;i++){String[] v=values[i];a.put(new JSONObject().put("id",IDS[i]).put("name",v[0]).put("background",v[1]).put("titleColor",v[2]).put("academyBackground",v[3]).put("academyText",v[4]).put("schoolText",v[5]).put("today",v[6]).put("schoolToday",new String[]{"#FFD2E4","#FFB57C","#A44726"}[i]).put("divider","#407F5D").put("separator","#FFFFFF").put("schoolBackground","none").put("titleBold",true).put("academyBold",true).put("separatorTransparency",0).put("isDefault",i==0));}}catch(JSONException ignored){}return a;
  }
  static JSONArray list(Context c){try{JSONArray a=new JSONArray(Vault.get(c,"designs"));if(a.length()>0)return a;}catch(Exception ignored){}return defaults();}
  static JSONObject find(JSONArray a,String id){for(int i=0;i<a.length();i++){JSONObject d=a.optJSONObject(i);if(d!=null&&id.equals(d.optString("id")))return d;}return null;}
@@ -35,6 +35,7 @@ final class WidgetDesign {
   Vault.put(c,"academyIcons",null);
  }
  static String initialDefault(JSONArray designs){String id="";int count=0;for(int i=0;i<designs.length();i++){JSONObject d=designs.optJSONObject(i);if(d!=null&&d.optBoolean("isDefault")){id=d.optString("id");count++;}}return count>1?"":count==1?id:find(designs,IDS[0])!=null?IDS[0]:"";}
+ static int schoolAccent(Context c){int fallback=new int[]{0xFFFFD2E4,0xFFFFB57C,0xFFA44726}[WidgetStyle.theme(c)];return color(c,"schoolToday",fallback);}
  static int separatorAlpha(Context c){return alpha(selected(c).optInt("separatorTransparency",0));}
  static int alpha(int transparency){return Math.round((100-Math.max(0,Math.min(100,transparency)))*2.55f);}
  static int color(Context c,String key,int fallback){String s=selected(c).optString(key);return validColor(s)?Color.parseColor(s):("schoolBackground".equals(key)&&"none".equals(s)?Color.TRANSPARENT:fallback);}

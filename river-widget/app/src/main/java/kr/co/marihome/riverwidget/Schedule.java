@@ -9,20 +9,22 @@ public final class Schedule {
   if(!("시작전".equals(status)||"진행 중".equals(status)||"진행 2차".equals(status)||"작성 완료".equals(status)))return false;
   try{LocalDate d=LocalDate.parse(due.substring(0,10));return !d.isAfter(today(now).plusDays(14));}catch(Exception e){return false;}
  }
+ static LocalDate lessonDay(String s){return s.length()==10?LocalDate.parse(s):OffsetDateTime.parse(s).atZoneSameInstant(SEOUL).toLocalDate();}
+ static Instant lessonInstant(String s){return s.length()==10?LocalDate.parse(s).atStartOfDay(SEOUL).toInstant():OffsetDateTime.parse(s).toInstant();}
  static boolean academyVisible(String status,String start,Instant now){
   if(!"예정".equals(status))return false;
-  try{OffsetDateTime.parse(start);return true;}catch(Exception e){return false;}
+  try{lessonDay(start);return true;}catch(Exception e){return false;}
  }
  static String lessonTime(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("M/d (E) HH:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
  static String dueTime(String due){try{return LocalDate.parse(due.substring(0,10)).format(DateTimeFormatter.ofPattern("M/d"));}catch(Exception e){return "";}}
- static String lessonDate(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("M.dd.(E)",java.util.Locale.KOREAN));}catch(Exception e){return "날짜 확인";}}
- static String lessonClock(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("a h:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
+ static String lessonDate(String start){try{return lessonDay(start).format(DateTimeFormatter.ofPattern("M.dd.(E)",java.util.Locale.KOREAN));}catch(Exception e){return "날짜 확인";}}
+ static String lessonClock(String start){if(start.length()==10)return "시간 미정";try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("a h:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
  static String academyStatus(String start,Instant now){
-  try{LocalDate d=OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).toLocalDate();
+  try{LocalDate d=lessonDay(start);
    return d.equals(today(now))?"오늘":d.isBefore(today(now))?"확인 필요":"예정";
   }catch(Exception e){return "예정";}
  }
- static boolean isToday(String value,Instant now,boolean timed){try{return (timed?OffsetDateTime.parse(value).atZoneSameInstant(SEOUL).toLocalDate():LocalDate.parse(value.substring(0,10))).equals(today(now));}catch(Exception e){return false;}}
- static boolean needsAttention(String value,Instant now,boolean timed){try{LocalDate date=timed?OffsetDateTime.parse(value).atZoneSameInstant(SEOUL).toLocalDate():LocalDate.parse(value.substring(0,10));return !date.isAfter(today(now));}catch(Exception e){return false;}}
+ static boolean isToday(String value,Instant now,boolean timed){try{return (timed?lessonDay(value):LocalDate.parse(value.substring(0,10))).equals(today(now));}catch(Exception e){return false;}}
+ static boolean needsAttention(String value,Instant now,boolean timed){try{LocalDate date=timed?lessonDay(value):LocalDate.parse(value.substring(0,10));return !date.isAfter(today(now));}catch(Exception e){return false;}}
  private Schedule(){}
 }

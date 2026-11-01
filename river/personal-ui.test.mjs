@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import fs from 'node:fs';
+const require=createRequire(import.meta.url),{JSDOM}=require('jsdom');
+const dom=new JSDOM(fs.readFileSync(new URL('./index.html',import.meta.url),'utf8'),{url:'https://test.invalid/river/'});
+for(const key of ['document','Event','location','history'])globalThis[key]=dom.window[key];
+globalThis.setInterval=()=>0;
+dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+const {createAcademy}=await import('./main-academy.mjs');
+const $=id=>document.getElementById(id),writes=[],notify=[];
+const controller=createAcademy(async(path,opts)=>{const body=JSON.parse(opts.body);writes.push(body);return {ok:true,item:{id:path==='/academy'?'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa':path.split('/').at(-1),kind:'친구',category:'약속',title:'친구 저녁약속',start:'2026-10-01T19:00:00+09:00',...body,status:body.status||'예정',updated:'v2'}}},msg=>notify.push(msg));
+await controller.load({items:[{id:'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',title:'친구 저녁약속',kind:'친구',category:'약속',start:'2026-10-01T19:00:00+09:00',status:'예정',updated:'v1'}],kinds:['과학','친구']});
+assert.match($('academy-rows').textContent,/친구 저녁약속/);assert.equal(document.querySelectorAll('.personal-flame').length,1);assert.equal(document.querySelector('.academy-round').textContent,'');
+$('academy-add').click();assert.equal($('academy-dialog').open,true);$('academy-category').value='약속';$('academy-category').onchange();assert.equal($('academy-type-field').hidden,true);$('academy-title').value='저녁 식사';$('academy-kind').value='친구';$('academy-date').value='2026-11-03T19:00';await $('academy-form').onsubmit({preventDefault(){}});
+assert.equal(writes[0].title,'저녁 식사');assert.equal(writes[0].category,'약속');assert.equal($('academy-dialog').open,false);assert.equal($('academy-error').textContent,'');
+document.querySelector('.academy-line').click();assert.equal($('academy-attend').textContent,'완료');assert.equal($('academy-absent').textContent,'취소');await $('academy-attend').onclick();assert.equal(writes.at(-1).status,'완료');assert.equal($('academy-dialog').open,false);
+console.log('PASS personal title/category, overdue flame, no round, successful-save close and personal completion');dom.window.close();

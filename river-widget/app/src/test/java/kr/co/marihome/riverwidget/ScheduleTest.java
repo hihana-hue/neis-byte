@@ -27,5 +27,6 @@ public class ScheduleTest {
   assertTrue(Schedule.schoolVisible("시작전","2026-11-02",monday));
   assertFalse(Schedule.schoolVisible("진행 중","2026-11-03",monday));
  }
+ @Test public void dateOnlyPersonalSchedulesRemainVisible(){assertTrue(Schedule.academyVisible("예정","2026-10-19",monday));assertEquals("10.19.(월)",Schedule.lessonDate("2026-10-19"));assertEquals("시간 미정",Schedule.lessonClock("2026-10-19"));assertTrue(Schedule.isToday("2026-10-19",monday,true));assertTrue(Schedule.needsAttention("2026-10-18",monday,true));assertFalse(Schedule.academyVisible("완료","2026-10-19",monday));assertEquals(Instant.parse("2026-10-18T15:00:00Z"),Schedule.lessonInstant("2026-10-19"));}
  @Test public void datesNeverUsePhoneTimezone(){assertEquals("10/25 (일) 18:00",Schedule.lessonTime("2026-10-25T09:00:00Z"));assertFalse(Schedule.academyVisible("예정","bad",monday));assertFalse(Schedule.schoolVisible("시작전","bad",monday));}
 }

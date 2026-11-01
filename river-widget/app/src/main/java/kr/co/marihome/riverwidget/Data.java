@@ -47,12 +47,13 @@ final class Data {
    JSONObject cache=new JSONObject(Vault.get(c,"cache"));JSONArray aa=cache.optJSONArray("academy"),ss=cache.optJSONArray("school");
    if(aa!=null)for(int i=0;i<aa.length();i++){JSONObject x=aa.getJSONObject(i);String start=x.optString("start"),id=x.optString("id");
     if(!validId(id)||!Schedule.academyVisible(x.optString("status"),start,now))continue;
-    String kind=x.optString("kind"),name=academyName(kind),type=x.optString("subtype","수업");
+    String kind=x.optString("kind"),name=academyName(kind.isEmpty()?x.optString("title"):kind),type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
-    String round="클리닉".equals(type)?"(클)":x.optString("round","");if(!"(클)".equals(round)&&!round.matches("[1-9][0-9]*/[1-9][0-9]*"))round="";
+    boolean regular="학원".equals(x.optString("category","학원"));
+    String round=!regular?"":"클리닉".equals(type)?"(클)":x.optString("round","");if(!"(클)".equals(round)&&!round.matches("[1-9][0-9]*/[1-9][0-9]*"))round="";
     String status=Schedule.academyStatus(start,now);if("예정".equals(status))status="";
     Row r=new Row(id,"lesson",name+" "+round+" · "+Schedule.lessonTime(start)+" · "+status,start);
-    r.subject=name;r.auxiliary=round;r.title=status;r.detail="";r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
+    r.subject=name;r.auxiliary=round;r.title=status;r.detail=!regular&&!kind.isEmpty()&&!x.optString("title").equals(kind)?x.optString("title"):"";r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
     r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
@@ -61,7 +62,7 @@ final class Data {
     Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.today=Schedule.isToday(due,now,false);r.attention=Schedule.needsAttention(due,now,false);r.due=Schedule.dueTime(due);school.add(r);
    }
   }catch(Exception ignored){}
-  academy.sort(Comparator.comparing((Row x)->OffsetDateTime.parse(x.sort).toInstant()).thenComparing(x->x.id));int limit=WidgetStyle.academyLimit(c);if(academy.size()>limit)academy=new ArrayList<>(academy.subList(0,limit));school.sort(Comparator.comparing(x->x.sort));
+  academy.sort(Comparator.comparing((Row x)->Schedule.lessonInstant(x.sort)).thenComparing(x->x.id));int limit=WidgetStyle.academyLimit(c);if(academy.size()>limit)academy=new ArrayList<>(academy.subList(0,limit));school.sort(Comparator.comparing(x->x.sort));
   try{JSONObject cache=new JSONObject(Vault.get(c,"cache"));if(!cache.optBoolean("academyConnected",true)){
    int start=0,progress=0,today=0;JSONArray all=cache.optJSONArray("school");if(all!=null)for(int i=0;i<all.length();i++){JSONObject x=all.getJSONObject(i);String due=x.optString("due"),status=x.optString("status");if(!Schedule.schoolVisible(status,due,now))continue;if("시작전".equals(status)||"시작 전".equals(status))start++;else progress++;if(Schedule.isToday(due,now,false))today++;}
    String[] names={"시작 전","진행 중","오늘 마감"};int[] values={start,progress,today};for(int i=0;i<3;i++){Row summary=new Row("summary"+i,"summary",names[i]+" "+values[i],"");summary.subject=names[i];summary.date=String.valueOf(values[i]);academy.add(summary);}

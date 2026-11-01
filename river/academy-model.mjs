@@ -9,7 +9,7 @@ export function localInput(start){if(!start)return '';const n=Date.parse(start);
 export function lessonRounds(items){
  const labels=new Map(),groups=new Map();
  const key=x=>x.kind==='운동'?'바디PT':x.kind;
- const regular=x=>!['클리닉','연습'].includes(x.subtype);
+ const regular=x=>(!x.category||x.category==='학원')&&!['클리닉','연습'].includes(x.subtype);
  const advances=x=>regular(x)&&(counted(x)||x.status==='예정');
  const ordered=[...items].sort((a,b)=>(a.originalStart||a.start||'').localeCompare(b.originalStart||b.start||'')||String(a.id).localeCompare(String(b.id)));
  for(const x of ordered){const k=key(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);}
@@ -19,6 +19,7 @@ export function lessonRounds(items){
   const before=anchors.length===1?rows.slice(0,rows.indexOf(anchors[0])).filter(advances).length:0;
   let used=0;
   for(const x of rows){
+   if(x.category&&x.category!=='학원')continue;
    if(!regular(x)){labels.set(x.id,'클리닉');continue;}
    if(!size)continue;
    if(advances(x))used++;
