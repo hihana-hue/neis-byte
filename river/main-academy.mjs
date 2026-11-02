@@ -3,9 +3,9 @@ import {weekday} from './date-weekday.mjs?v=1';
 import {toStart,localInput,lessonRounds,packSize,scheduleCategory,scheduleKindLabel,scheduleTitle} from './academy-model.mjs?v=7';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
- let rows=[],current=null,mode='',busy=false,connected=false,expanded=false;
+ let rows=[],current=null,mode='',busy=false,connected=false,expanded=false,opening=false,connectionEpoch=0;
  const category=x=>x.category||scheduleCategory(x.kind),name=scheduleTitle,kindLabel=scheduleKindLabel;
- const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');for(const c of ['전체','학원','교회','약속','기타']){const o=el('option',c);o.value=c;categoryFilter.append(o);}$('message').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};
+ const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');const allOption=el('option','전체');allOption.value='__all';categoryFilter.append(allOption);$('message').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};
  const moreButton=el('button','more...','academy-more');moreButton.type='button';moreButton.hidden=true;moreButton.setAttribute('aria-controls','academy-rows');$('academy-rows').after(moreButton);moreButton.onclick=()=>{expanded=!expanded;render();};
  const calendar=mountAcademyCalendar($('academy-date'));
  const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);calendar.refresh();};
@@ -23,13 +23,19 @@ export function createAcademy(api,notify){
  function courseText(x){return x.packSize&&x.fee!=null?x.packSize+'회 · '+money(x.fee)+' · 1회 '+money(x.fee/x.packSize)+(x.paid?' · 납부':' · 미납'):'회차·원비 미설정';}
  function render(){
   $('academy-rows').replaceChildren();categoryFilter.hidden=!connected;const rounds=lessonRounds(rows);
-  const pending=rows.filter(x=>x.status==='예정'&&(categoryFilter.value==='전체'||category(x)===categoryFilter.value)).sort((a,b)=>(a.start||'9999').localeCompare(b.start||'9999'));
+  const pending=rows.filter(x=>x.status==='예정'&&(categoryFilter.value==='__all'||x.kind===categoryFilter.value)).sort((a,b)=>(a.start||'9999').localeCompare(b.start||'9999'));
   if(connected&&!pending.length)$('academy-rows').append(el('span','예정된 개인 일정 없음','academy-empty'));
   moreButton.hidden=!connected||pending.length<=4;moreButton.textContent=expanded?'접기':'more...';moreButton.setAttribute('aria-expanded',String(expanded));moreButton.disabled=busy;
   for(const x of (expanded?pending:pending.slice(0,4))){const b=el('button','','academy-line');b.type='button';const attention=!!x.start&&Number.isFinite(Date.parse(x.start))&&seoulDay(x.start)<=seoulDay(Date.now());b.classList.toggle('academy-today',attention);b.disabled=busy;b.setAttribute('aria-label',name(x)+' '+label(x.start)+' 일정 확인');if(attention)b.append(el('span','🔥','personal-flame'));
    b.append(icon(kindLabel(x.kind)),el('strong',name(x)),el('span',rounds.get(x.id)==='클리닉'?'(클)':rounds.get(x.id)||'','academy-round'),el('span',label(x.start),'academy-time'));if(x.originalStart&&category(x)==='학원'&&seoulDay(x.originalStart)!==seoulDay(x.start)){const note=el('small','원 수업 : '+label(x.originalStart));note.style.display='block';b.querySelector('.academy-time').append(note);}b.onclick=()=>open('status',x);$('academy-rows').append(b);}
  }
- function updateKinds(kinds=[]){const select=$('academy-kind'),previous=select.value,values=[...new Set([...kinds,...rows.map(x=>x.kind),'약속','교회','기타'].filter(Boolean))];select.replaceChildren(...values.map(k=>{const o=el('option',kindLabel(k)+(scheduleCategory(k)==='학원'?' (학원)':''));o.value=k;return o;}));const add=el('option','＋ 새 학원');add.value='__new_academy';select.append(add);select.value=values.includes(previous)?previous:'약속';}
+ function updateKinds(kinds){
+  const select=$('academy-kind'),previous=select.value,filterValue=categoryFilter.value,values=[...new Set((Array.isArray(kinds)?kinds:rows.map(x=>x.kind)).filter(Boolean))];
+  select.replaceChildren(...values.map(k=>{const o=el('option',k);o.value=k;return o;}));
+  const add=el('option','＋ 새 학원');add.value='__new_academy';select.append(add);
+  select.value=values.includes(previous)?previous:values.includes('약속')?'약속':values.find(k=>scheduleCategory(k)!=='학원')||values[0]||'__new_academy';
+  const all=el('option','전체');all.value='__all';categoryFilter.replaceChildren(all,...values.map(k=>{const o=el('option',k);o.value=k;return o;}));categoryFilter.value=values.includes(filterValue)?filterValue:'__all';
+ }
  const selectedKind=()=>$('academy-kind').value==='__new_academy'?'학원 · '+$('academy-new-kind').value.trim():$('academy-kind').value;
  function defaults(kind){const known=rows.filter(x=>x.kind===kind&&x.packSize&&x.fee!=null).sort((a,b)=>(b.start||'').localeCompare(a.start||''))[0];return known||{packSize:packSize[kind]||null,fee:null,paid:false};}
  function fillCourse(x){$('academy-pack').value=x?.packSize||'';$('academy-fee').value=x?.fee??'';$('academy-paid').checked=!!x?.paid;estimate();}
@@ -46,7 +52,7 @@ export function createAcademy(api,notify){
   $('academy-attend').textContent=regular?'완료 · 출석':'완료';$('academy-absent').textContent=regular?'결석':'취소';
   $('academy-current').replaceChildren();if(x){$('academy-current').append(el('span',name(x),'academy-current-kind'),el('span',label(x.start),'academy-current-date'));if(x.originalStart&&seoulDay(x.originalStart)!==seoulDay(x.start))$('academy-current').append(el('span','원 수업 : '+label(x.originalStart),'academy-original-date'));}
   $('academy-status-actions').hidden=action!=='status';$('academy-save').hidden=action==='status';$('academy-kind-field').hidden=action!=='add';$('academy-title-field').hidden=!['add','next'].includes(action);$('academy-title').disabled=$('academy-title-field').hidden;$('academy-title').required=!$('academy-title-field').hidden;
-  if(action==='add'){$('academy-kind').value='약속';$('academy-title').value='';$('academy-new-kind').value='';}else if(action==='next')$('academy-title').value=kindLabel(x.kind);
+  if(action==='add'){$('academy-title').value='';$('academy-new-kind').value='';}else if(action==='next')$('academy-title').value=kindLabel(x.kind);
   $('academy-type').value=['수업','클리닉'].includes(x?.subtype)?x.subtype:'수업';
   fillCourse(action==='course'?x:action==='next'?{...defaults(x.kind),paid:false}:defaults(selectedKind()));
   const dated=['add','next','change'].includes(action);$('academy-date-field').hidden=!dated;$('academy-date').disabled=!dated;$('academy-date').required=dated;$('academy-date-label').textContent=action==='next'?'다음 수업 날짜 · 시간':'날짜 · 시간';
@@ -57,7 +63,13 @@ export function createAcademy(api,notify){
   try{const d=await api(path,{method:mode==='add'?'POST':'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!d.ok||!d.item)throw Error('저장 결과를 확인하지 못했어요.');rows=rows.filter(x=>x.id!==d.item.id&&x.id!==d.next?.id);rows.push(d.item);if(d.next)rows.push(d.next);busy=false;success(d);}catch(err){$('academy-error').textContent=err.message;notify('저장하지 못했어요. '+err.message);}finally{busy=false;for(const id of ['academy-save','academy-cancel','academy-attend','academy-change','academy-absent','academy-course-settings'])$(id).disabled=false;render();}
  }
  $('academy-kind').onchange=()=>{fillCourse(defaults(selectedKind()));configure();};$('academy-type').onchange=configure;$('academy-pack').oninput=estimate;$('academy-fee').oninput=estimate;
- $('academy-add').onclick=()=>open('add');$('academy-cancel').onclick=()=>$('academy-dialog').close();$('academy-dialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});$('academy-change').onclick=()=>open('change',current);$('academy-absent').onclick=()=>open('absent',current);$('academy-course-settings').onclick=()=>open('course',current);
+ $('academy-add').onclick=async()=>{
+  if(busy||opening)return;if(!connected){notify('먼저 학생코드를 연결해 주세요.');return;}
+  const epoch=connectionEpoch;opening=true;$('academy-add').disabled=true;
+  try{const d=await api('/academy');if(!connected||epoch!==connectionEpoch)return;if(!Array.isArray(d.items)||!Array.isArray(d.kinds))throw Error('노션 일정구분을 확인하지 못했어요.');rows=d.items;updateKinds(d.kinds);render();open('add');}
+  catch(e){notify('노션 최신 일정구분을 불러오지 못했어요. '+e.message);}
+  finally{opening=false;$('academy-add').disabled=false;}
+ };$('academy-cancel').onclick=()=>$('academy-dialog').close();$('academy-dialog').addEventListener('cancel',e=>{if(busy)e.preventDefault();});$('academy-change').onclick=()=>open('change',current);$('academy-absent').onclick=()=>open('absent',current);$('academy-course-settings').onclick=()=>open('course',current);
  $('academy-attend').onclick=()=>{if(!current)return;return persist('/academy/'+encodeURIComponent(current.id),{action:'attendance',status:category(current)==='학원'?'출석':'완료',charge:false,updated:current.updated},d=>{if(category(d.item)==='학원'){notify('출석을 기록했어요.');open('next',d.item);}else{$('academy-dialog').close();notify('완료로 기록했어요.');}});};
  $('academy-form').onsubmit=async e=>{e.preventDefault();if(busy||mode==='status')return;try{
    let start;if(['add','change','next'].includes(mode))start=toStart($('academy-date').value);
@@ -69,5 +81,5 @@ export function createAcademy(api,notify){
   }catch(err){$('academy-error').textContent=err.message;}
  };
  setInterval(()=>{if(connected&&!busy)render();},60000);render();
- return {async load(prefetched){try{const d=prefetched||await api('/academy');if(!Array.isArray(d.items))throw Error('개인 일정 데이터를 확인해 주세요.');rows=d.items;updateKinds(d.kinds||[]);connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 처리되거나 변경된 일정이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){moreButton.hidden=true;$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){rows=[];connected=false;expanded=false;render();$('academy-dialog').close();}};
+ return {async load(prefetched){try{const d=prefetched||await api('/academy');if(!Array.isArray(d.items))throw Error('개인 일정 데이터를 확인해 주세요.');rows=d.items;updateKinds(d.kinds);connected=true;render();const id=new URL(location.href).searchParams.get('lesson');if(id){const x=rows.find(x=>x.id===id&&x.status==='예정');if(x)open('status',x);else notify('이미 처리되거나 변경된 일정이에요.');const u=new URL(location.href);u.searchParams.delete('lesson');history.replaceState(null,'',u);}}catch(e){moreButton.hidden=true;$('academy-rows').replaceChildren(el('span',e.message,'academy-empty'));}},reset(){connectionEpoch++;rows=[];connected=false;expanded=false;render();$('academy-dialog').close();}};
 }
