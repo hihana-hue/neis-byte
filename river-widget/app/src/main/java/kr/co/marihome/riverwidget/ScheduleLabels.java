@@ -1,7 +1,7 @@
 package kr.co.marihome.riverwidget;
 final class ScheduleLabels {
  static String title(String title,String kind){if(title!=null&&!title.trim().isEmpty())return title.trim();String fallback=kind==null?"":kind.replaceFirst("^(학원|교회|약속|기타) · ","").trim();return fallback.isEmpty()?"일정명 없음":fallback;}
- static String subject(String kind){return kind==null?"":kind.replaceFirst("^(학원|교회|약속|기타) · ","").trim().replaceFirst("^운동$","바디PT");}
+ static String subject(String kind){return kind==null?"":kind.replaceFirst("^(학원|교회|약속|기타) · ","").trim();}
  static String heading(String title,String kind,boolean academy){String label=subject(kind);return academy&&!label.isEmpty()?label:title(title,kind);}
  static String detail(String title,String kind,String type,String round,boolean academy){
   if(!academy)return "";
@@ -21,8 +21,7 @@ final class ScheduleLabels {
  static String detail(String title,String kind,String type,String round,String category){
   String group=category(category,kind);
   if("학원".equals(group))return detail(title,kind,type,round,true);
-  if("기타".equals(group)&&("schedule".equalsIgnoreCase(kind)||"개인 일정".equals(kind)||"개인일정".equals(kind)))return "개인 일정";
-  return group;
+  return kind==null?"":kind.trim();
  }
  private ScheduleLabels(){}
 }

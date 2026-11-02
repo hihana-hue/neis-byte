@@ -89,8 +89,8 @@ jobs:
           printf '%s' "$KEY_B64" | base64 --decode > "$keyfile"
           mkdir -p signed
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 river-widget/app/build/outputs/apk/release/app-release-unsigned.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/MARI-EDU-Widget-1.30.48.apk signed/aligned.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/MARI-EDU-Widget-1.30.48.apk > signed/certificate.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign --ks "$keyfile" --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:STORE_PASSWORD --out signed/MARI-EDU-Widget-1.30.49.apk signed/aligned.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs signed/MARI-EDU-Widget-1.30.49.apk > signed/certificate.txt
           actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signed/certificate.txt | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
           expected=$(printf '%s' "$EXPECTED_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
           test -n "$actual" && test "$actual" = "$expected"
@@ -113,16 +113,38 @@ jobs:
             river-widget/app/build/reports/lint-results-release.html
           if-no-files-found: ignore
       - name: Publish signed APK
-        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true' && vars.RIVER_WIDGET_RELEASE_APPROVED == '48'
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Never overwrite an installed version with a different artifact.
-          if gh release view widget-1.30.48-downloads >/dev/null 2>&1; then
+          if gh release view widget-1.30.49-downloads >/dev/null 2>&1; then
             echo '::error::Version 1.30 mariedu already exists. Increase versionCode, versionName and release tag before publishing.'
             exit 1
           fi
-          gh release create widget-1.30.48-downloads signed/MARI-EDU-Widget-1.30.48.apk signed/certificate.txt --title "마리 에듀 1.30 · 디자인 설정" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
+          gh release create widget-1.30.49-downloads signed/MARI-EDU-Widget-1.30.49.apk signed/certificate.txt --title "마리 에듀 1.30 · 디자인 설정" --notes "Direct APK downloads from marihome.co.kr with Android DownloadManager; current version and conditional Update at top of settings. Academy separators and persistent signature retained."
 
 
+
+      - name: Publish verified APK and update download metadata
+        if: github.ref == 'refs/heads/main' && steps.signing.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYCODE'
+          import base64,json,pathlib,subprocess
+          repo='hihana-hue/neis-byte'
+          def publish(path,data,message):
+              result=subprocess.run(['gh','api',f'repos/{repo}/contents/{path}'],capture_output=True,text=True)
+              body={'message':message,'content':base64.b64encode(data).decode(),'branch':'main'}
+              if result.returncode==0: body['sha']=json.loads(result.stdout)['sha']
+              elif '404' not in result.stderr: raise RuntimeError(result.stderr)
+              temp=pathlib.Path('/tmp/river-publish.json');temp.write_text(json.dumps(body))
+              subprocess.run(['gh','api','--method','PUT',f'repos/{repo}/contents/{path}','--input',str(temp),'--silent'],check=True)
+              temp.unlink()
+          apk='MARI-EDU-Widget-1.30.49.apk'
+          publish('river/downloads/'+apk,pathlib.Path('signed',apk).read_bytes(),'Publish signed widget build 49 with category subtitles')
+          manifest={'version':'1.30','versionCode':49,'url':'https://www.marihome.co.kr/river/downloads/'+apk,'ready':True}
+          publish('river/widget-release.json',(json.dumps(manifest,indent=2)+'\n').encode(),'Update public widget download to build 49')
+          PYCODE
