@@ -22,3 +22,11 @@ p=page();writes=[];res=await call({action:'courseSettings',updated:'v1',packSize
 p=page();writes=[];res=await call({schemaVersion:2,action:'attendanceNext',nextStart:'2026-11-08T19:00:00+09:00',nextSubtype:'수업',title:'다음 과학',updated:'v1',packSize:4,fee:350000,paid:false},'/academy/'+id,'PATCH');assert.equal(res.status,200);const nextWrite=writes.find(w=>w.parent);assert.equal(nextWrite.properties['일정구분'].select.name,'과학');assert.equal(nextWrite.properties['일정명'].title[0].text.content,'다음 과학');assert.equal(nextWrite.properties['묶음 원비'].number,350000);assert.equal(queries[1].filter.and[0].property,'일정구분');
 p=page();writes=[];res=await call({action:'reschedule',start:'2026-11-01T20:00:00+09:00',updated:'v1'},'/academy/'+id,'PATCH');assert.equal(res.status,200);assert.deepEqual(Object.keys(writes[0].properties),['일정일시']);assert.equal(p.properties['수강 회차'].number,4);assert.equal(p.properties['회차 기준'].checkbox,true);
 console.log('PASS merged schedule kind, actual title, conditional course requirements, free/clinic/personal, immutable date/anchor on financial edit, next reuse filters, web/feed round parity');
+
+// Server generates academy titles for empty or omitted titles, including next lessons.
+for(const [kind,subtype,expected] of [['과학','수업','과학 수업'],['과학','클리닉','과학 클리닉'],['바디PT','수업','바디PT 수업']]){
+ writes=[];res=await call({...base,kind,subtype,title:'',packSize:4,fee:350000,paid:false});assert.equal(res.status,201);assert.equal((await res.json()).item.title,expected);
+}
+res=await call({...base,kind:'약속',title:''});assert.equal(res.status,400);
+p=page();writes=[];res=await call({schemaVersion:2,action:'attendanceNext',nextStart:'2026-11-08T19:00:00+09:00',nextSubtype:'수업',updated:'v1',packSize:4,fee:350000,paid:false},'/academy/'+id,'PATCH');assert.equal(res.status,200);assert.equal(writes.find(w=>w.parent).properties['일정명'].title[0].text.content,'과학 수업');
+console.log('PASS academy auto-title for lesson/clinic/PT and next class; personal title remains required');
