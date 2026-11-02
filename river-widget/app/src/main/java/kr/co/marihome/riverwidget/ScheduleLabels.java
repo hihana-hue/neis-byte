@@ -20,7 +20,9 @@ final class ScheduleLabels {
  }
  static String detail(String title,String kind,String type,String round,String category){
   String group=category(category,kind);
-  return "학원".equals(group)?detail(title,kind,type,round,true):group;
+  if("학원".equals(group))return detail(title,kind,type,round,true);
+  if("기타".equals(group)&&("schedule".equalsIgnoreCase(kind)||"개인 일정".equals(kind)||"개인일정".equals(kind)))return "개인 일정";
+  return group;
  }
  private ScheduleLabels(){}
 }

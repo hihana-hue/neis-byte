@@ -9,6 +9,8 @@ public class ScheduleLabelsTest {
  @Test public void nonAcademyCategoriesUseTheSameSecondLine(){
   assertEquals("교회",ScheduleLabels.detail("TEEN 수업","TEEN","수업","","교회"));
   assertEquals("교회",ScheduleLabels.detail("Teen","Teen","수업","",""));
+  assertEquals("개인 일정",ScheduleLabels.detail("미용실","schedule","수업","","기타"));
+  assertEquals("개인 일정",ScheduleLabels.detail("병원","개인 일정","수업","",""));
   assertEquals("약속",ScheduleLabels.detail("미용실","약속","수업","","약속"));
   assertEquals("기타",ScheduleLabels.detail("개인일정","기타","수업","","기타"));
   assertEquals("수업 · 3/5회",ScheduleLabels.detail("바디PT 수업","바디PT","수업","3/5","학원"));
