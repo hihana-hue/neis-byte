@@ -5,7 +5,7 @@ export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  let rows=[],current=null,mode='',busy=false,connected=false,expanded=false;
  const category=x=>x.category||scheduleCategory(x.kind),name=scheduleTitle,kindLabel=scheduleKindLabel;
- const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');for(const c of ['전체','학원','교회','약속','기타']){const o=el('option',c);o.value=c;categoryFilter.append(o);}$('academy-rows').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};
+ const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');for(const c of ['전체','학원','교회','약속','기타']){const o=el('option',c);o.value=c;categoryFilter.append(o);}$('message').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};
  const moreButton=el('button','more...','academy-more');moreButton.type='button';moreButton.hidden=true;moreButton.setAttribute('aria-controls','academy-rows');$('academy-rows').after(moreButton);moreButton.onclick=()=>{expanded=!expanded;render();};
  const calendar=mountAcademyCalendar($('academy-date'));
  const updateWeekday=()=>{$('academy-weekday').textContent=weekday($('academy-date').value);calendar.refresh();};
