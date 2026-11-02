@@ -49,11 +49,11 @@ final class Data {
     if(!validId(id)||!Schedule.academyVisible(x.optString("status"),start,now))continue;
     String kind=x.optString("kind"),name=ScheduleLabels.title(x.optString("title"),kind),type=x.optString("subtype","수업");
     if("연습".equals(type))type="클리닉";
-    boolean regular="학원".equals(x.optString("category","학원"));
+    String category=ScheduleLabels.category(x.optString("category"),kind);boolean regular="학원".equals(category);
     String round=!regular?"":"클리닉".equals(type)?"(클)":x.optString("round","");if(!"(클)".equals(round)&&!round.matches("[1-9][0-9]*/[1-9][0-9]*"))round="";
     String status=Schedule.academyStatus(start,now);if("예정".equals(status))status="";
     Row r=new Row(id,"lesson",name+" "+round+" · "+Schedule.lessonTime(start)+" · "+status,start);
-    r.subject=ScheduleLabels.heading(x.optString("title"),kind,regular);r.auxiliary="";r.title=status;r.detail=ScheduleLabels.detail(x.optString("title"),kind,type,round,regular);r.caption=r.subject+" "+r.detail+" · "+Schedule.lessonTime(start);r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
+    r.subject=ScheduleLabels.heading(x.optString("title"),kind,regular);r.auxiliary="";r.title=status;r.detail=ScheduleLabels.detail(x.optString("title"),kind,type,round,category);r.caption=r.subject+" "+r.detail+" · "+Schedule.lessonTime(start);r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
     r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
