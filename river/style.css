@@ -215,3 +215,6 @@ main:not(.write-page),main.write-page{width:100%;max-width:480px;display:block;p
 .task-grid .card-heading{display:flex;align-items:center;flex-wrap:wrap;gap:3px 7px;margin-bottom:3px}
 .task-grid .card-heading .tags{margin:0;flex:0 1 auto}
 .task-grid .card-heading .meta,.schedule-workspace .task-grid .card-heading .meta{margin:0;font-size:10px;line-height:1.3;gap:3px 6px}
+
+/* Subject labels keep straight sides, with only slightly rounded corners. */
+.tag,.detail-subject{border-radius:4px}
