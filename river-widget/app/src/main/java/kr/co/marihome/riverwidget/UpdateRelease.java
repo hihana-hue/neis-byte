@@ -12,6 +12,7 @@ import org.json.JSONObject;
 final class UpdateRelease {
  final boolean ready;final int code;final String version,url;
  UpdateRelease(boolean ready,int code,String version,String url){this.ready=ready;this.code=code;this.version=version;this.url=url;}
+ static boolean needsUpdate(UpdateRelease release,int downloadedTarget,int installed){return release!=null&&release.newerThan(installed)||downloadedTarget>installed;}
  boolean newerThan(int installed){return ready&&code>installed&&allowedUrl(url);}
  static boolean allowedUrl(String value){
   try{URI u=new URI(value);return "https".equals(u.getScheme())&&"www.marihome.co.kr".equals(u.getHost())&&u.getUserInfo()==null&&u.getPort()==-1&&u.getQuery()==null&&u.getFragment()==null&&u.getRawPath().matches("/river/downloads/(?:CHOI-RIVER|MARI-EDU)-Widget-[0-9.]+\\.apk");}

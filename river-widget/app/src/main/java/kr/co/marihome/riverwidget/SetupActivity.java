@@ -16,7 +16,8 @@ public class SetupActivity extends Activity {
  private void outline(View view){
   android.graphics.drawable.GradientDrawable border=new android.graphics.drawable.GradientDrawable();border.setColor(Color.TRANSPARENT);border.setStroke(dp(1),Color.rgb(132,156,171));border.setCornerRadius(dp(8));view.setBackground(border);view.setMinimumHeight(0);view.setPadding(dp(10),dp(3),dp(10),dp(3));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(2);view.setLayoutParams(lp);
  }
- private void pinState(Button button,boolean connected){button.setEnabled(connected);button.setAlpha(connected?1f:.35f);}
+ private boolean hasWidgetUpdate(){return UpdateRelease.needsUpdate(availableRelease,getPreferences(0).getInt("updateTarget",0),BuildConfig.VERSION_CODE);}
+ private void pinState(Button button,boolean connected){boolean update=button==pinButton&&hasWidgetUpdate(),enabled=!busy&&(connected||update);button.setEnabled(enabled);button.setAlpha(enabled?1f:.35f);if(button==pinButton)button.setTextColor(update?Color.rgb(189,53,76):Color.rgb(35,72,94));}
  private void flatButton(Button b){
   b.setStateListAnimator(null);b.setElevation(0);b.setTranslationZ(0);b.setAllCaps(false);b.setTextColor(Color.rgb(35,72,94));
   android.graphics.drawable.GradientDrawable normal=new android.graphics.drawable.GradientDrawable();normal.setColor(Color.rgb(228,238,243));normal.setCornerRadius(dp(8));
@@ -30,33 +31,37 @@ public class SetupActivity extends Activity {
  private final android.os.Handler downloadHandler=new android.os.Handler(android.os.Looper.getMainLooper());
  private boolean updateScreenVisible=false;
  private LinearLayout updateSection;private Button updateAction;private TextView downloadStatus;
- private UpdateRelease availableRelease;
+ private UpdateRelease availableRelease;private Button pinButton;private TextView versionLabel,availableLabel;private boolean checkingRelease=false;private long lastReleaseCheck=0;
+ private final Runnable releasePoll=new Runnable(){public void run(){if(updateScreenVisible){checkRelease();downloadHandler.postDelayed(this,300000);}}};
  private final Runnable downloadPoll=new Runnable(){public void run(){if(updateScreenVisible&&renderDownloadState())downloadHandler.postDelayed(this,1500);}};
  private void addUpdateSection(LinearLayout root){
-  final TextView version=text("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 중…",12);root.addView(version);
+  versionLabel=text("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 중…",12);root.addView(versionLabel);
   updateSection=new LinearLayout(this);updateSection.setOrientation(LinearLayout.VERTICAL);updateSection.setVisibility(View.GONE);root.addView(updateSection);
-  final TextView available=text("",13);updateSection.addView(available);
-  updateAction=new Button(this);updateAction.setText("Update");flatButton(updateAction);updateAction.setTextColor(Color.rgb(189,53,76));updateSection.addView(updateAction);
-  updateSection.addView(text("1. Update를 눌러 파일 다운로드",12));
-  updateSection.addView(text("2. 완료 후 ‘다운로드 목록 열기’ 누르기",12));
+  availableLabel=text("",13);updateSection.addView(availableLabel);
+  updateAction=pinButton;
+  updateSection.addView(text("1. 위쪽 업데이트 버튼을 눌러 파일 다운로드",12));
+  updateSection.addView(text("2. 다운로드 완료 후 위쪽 업데이트 버튼 누르기",12));
   updateSection.addView(text("3. 표시된 APK 파일 선택 → 업데이트",12));
   updateSection.addView(text("유해 앱 경고가 나타나면 설치를 중단하세요.",12));
   downloadStatus=text("",12);updateSection.addView(downloadStatus);
-  updateAction.setOnClickListener(v->{if(downloadComplete()){openDownloads();return;}confirmDownload();});
-  renderDownloadState();
+  renderDownloadState();checkRelease();
+ }
+ private void checkRelease(){
+  if(versionLabel==null||checkingRelease||System.currentTimeMillis()-lastReleaseCheck<30000)return;checkingRelease=true;lastReleaseCheck=System.currentTimeMillis();
   new Thread(()->{
    try{final UpdateRelease release=UpdateRelease.load();runOnUiThread(()->{
-    if(isFinishing()||isDestroyed())return;availableRelease=release;
-    version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
-    if(release.newerThan(BuildConfig.VERSION_CODE)){available.setText("새 버전 · "+release.version);updateSection.setVisibility(View.VISIBLE);}
+    checkingRelease=false;if(isFinishing()||isDestroyed())return;availableRelease=release;
+    int target=getPreferences(0).getInt("updateTarget",0);if(release.newerThan(BuildConfig.VERSION_CODE)&&target>BuildConfig.VERSION_CODE&&target<release.code)getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();
+    versionLabel.setText("현재 버전 · "+BuildConfig.VERSION_NAME+(release.newerThan(BuildConfig.VERSION_CODE)?"":" · 최신 버전입니다."));
+    if(release.newerThan(BuildConfig.VERSION_CODE)){availableLabel.setText("새 버전 · "+release.version);updateSection.setVisibility(View.VISIBLE);}
     renderDownloadState();
-   });}catch(Exception e){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())version.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
+   });}catch(Exception e){runOnUiThread(()->{checkingRelease=false;if(!isFinishing()&&!isDestroyed())versionLabel.setText("현재 버전 · "+BuildConfig.VERSION_NAME+" · 업데이트 확인 실패");});}
   },"river-update-check").start();
  }
  private void confirmDownload(){
   final UpdateRelease release=availableRelease;if(release==null||!release.newerThan(BuildConfig.VERSION_CODE)){downloadStatus.setText("새 버전을 확인한 뒤 다시 눌러 주세요.");return;}
   new AlertDialog.Builder(this).setTitle("업데이트 다운로드")
-   .setMessage("다운로드가 끝나면 ‘다운로드 목록 열기’를 누르세요. 목록에서 아래에 표시된 APK 파일을 선택하고 업데이트하세요. 유해 앱 경고가 나타나면 설치를 중단하세요.")
+   .setMessage("다운로드가 끝나면 위쪽 업데이트 버튼을 다시 누르세요. 목록에서 아래에 표시된 APK 파일을 선택하고 업데이트하세요. 유해 앱 경고가 나타나면 설치를 중단하세요.")
    .setNegativeButton("취소",null).setPositiveButton("다운로드",(dialog,which)->{
     try{
      DownloadManager manager=(DownloadManager)getSystemService(DOWNLOAD_SERVICE);
@@ -80,26 +85,27 @@ public class SetupActivity extends Activity {
  private boolean downloadComplete(){return UpdateDownloadState.canOpen(downloadState(),getPreferences(0).getInt("updateTarget",0),BuildConfig.VERSION_CODE);}
  private boolean renderDownloadState(){
   if(updateAction==null)return false;
-  if(getPreferences(0).getInt("updateTarget",0)<=BuildConfig.VERSION_CODE){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();return false;}
+  updateAction.setText(hasWidgetUpdate()?"업데이트":"위젯 추가");pinState(updateAction,!Vault.get(this,"access").isEmpty());
+  if(getPreferences(0).getInt("updateTarget",0)<=BuildConfig.VERSION_CODE){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();if(updateSection!=null)updateSection.setVisibility(availableRelease!=null&&availableRelease.newerThan(BuildConfig.VERSION_CODE)?View.VISIBLE:View.GONE);return false;}
   long id=getPreferences(0).getLong("updateDownload",-1);if(id<0)return false;
   updateSection.setVisibility(View.VISIBLE);
   try(android.database.Cursor cursor=((DownloadManager)getSystemService(DOWNLOAD_SERVICE)).query(new DownloadManager.Query().setFilterById(id))){
    if(cursor==null||!cursor.moveToFirst())throw new java.io.IOException("Missing download");
    int state=cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
    String name=getPreferences(0).getString("updateName","MARI-EDU APK");
-   if(state==DownloadManager.STATUS_SUCCESSFUL){updateAction.setEnabled(true);updateAction.setText("다운로드 목록 열기");downloadStatus.setText("다운로드 완료\n1. 위 버튼을 누르세요.\n2. 목록에서 아래 파일을 선택하세요.\n"+name+"\n3. 설치 화면에서 업데이트를 누르세요.");return false;}
+   if(state==DownloadManager.STATUS_SUCCESSFUL){updateAction.setEnabled(true);updateAction.setText("업데이트");downloadStatus.setText("다운로드 완료\n1. 위쪽 업데이트 버튼을 누르세요.\n2. 목록에서 아래 파일을 선택하세요.\n"+name+"\n3. 설치 화면에서 업데이트를 누르세요.");return false;}
    if(state==DownloadManager.STATUS_FAILED)throw new java.io.IOException("Download failed");
    long done=cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),total=cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));int percent=UpdateDownloadState.percent(done,total);
-   updateAction.setEnabled(false);updateAction.setText(percent<0?"다운로드 중…":"다운로드 중 · "+percent+"%");downloadStatus.setText(state==DownloadManager.STATUS_PAUSED?"다운로드가 일시 중지됐어요. 인터넷 연결을 확인해 주세요.":"완료되면 이 버튼이 ‘다운로드 목록 열기’로 바뀝니다.");return true;
+   updateAction.setEnabled(false);updateAction.setText(percent<0?"다운로드 중…":"다운로드 중 · "+percent+"%");downloadStatus.setText(state==DownloadManager.STATUS_PAUSED?"다운로드가 일시 중지됐어요. 인터넷 연결을 확인해 주세요.":"완료되면 위쪽 업데이트 버튼을 눌러 다운로드 목록을 여세요.");return true;
   }catch(Exception e){getPreferences(0).edit().remove("updateDownload").remove("updateTarget").remove("updateName").apply();updateAction.setEnabled(true);updateAction.setText("다시 다운로드");downloadStatus.setText("다운로드에 실패했거나 파일이 삭제됐어요. 다시 다운로드를 눌러 주세요.");return false;}
  }
  private void openDownloads(){
   try{startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS));}
   catch(ActivityNotFoundException e){downloadStatus.setText("다운로드 목록을 열지 못했어요. 내 파일 → 다운로드에서 "+getPreferences(0).getString("updateName","MARI-EDU APK")+" 파일을 선택하세요.");}
  }
- @Override protected void onResume(){super.onResume();updateScreenVisible=true;downloadHandler.removeCallbacks(downloadPoll);downloadHandler.post(downloadPoll);}
- @Override protected void onPause(){updateScreenVisible=false;downloadHandler.removeCallbacks(downloadPoll);super.onPause();}
- @Override protected void onDestroy(){downloadHandler.removeCallbacks(downloadPoll);super.onDestroy();}
+ @Override protected void onResume(){super.onResume();updateScreenVisible=true;downloadHandler.removeCallbacks(downloadPoll);downloadHandler.post(downloadPoll);downloadHandler.removeCallbacks(releasePoll);downloadHandler.post(releasePoll);}
+ @Override protected void onPause(){updateScreenVisible=false;downloadHandler.removeCallbacks(downloadPoll);downloadHandler.removeCallbacks(releasePoll);super.onPause();}
+ @Override protected void onDestroy(){downloadHandler.removeCallbacks(downloadPoll);downloadHandler.removeCallbacks(releasePoll);super.onDestroy();}
 
  private void fillDesigns(){
   org.json.JSONArray designs=WidgetDesign.list(this);java.util.List<String> names=new java.util.ArrayList<>();for(int i=0;i<designs.length();i++)names.add(designs.optJSONObject(i).optString("name"));
@@ -130,7 +136,7 @@ public class SetupActivity extends Activity {
   connection.addView(text("노션 위젯관리에 등록한 학생 연결코드를 입력해 주세요. 웹에서도 같은 코드로 연결합니다.",14));
   password=new EditText(this);password.setSingleLine(true);password.setHint("학생 연결코드");password.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);password.setTextSize(16);password.setMinimumHeight(0);password.setPadding(dp(8),dp(4),dp(8),dp(4));password.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);connection.addView(password);
   Button connect=new Button(this);connect.setText("연결하기");
-  Button pin=new Button(this);pin.setText("위젯 추가");pin.setOnClickListener(v->{if(Vault.get(this,"access").isEmpty()){status.setText("먼저 위젯 연결 코드를 등록해 주세요.");return;}AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported())m.requestPinAppWidget(new ComponentName(this,RiverWidget.class),null,null);else status.setText("홈 화면 빈 공간 길게 누르기 → 위젯 → CHOI RIVER에서 추가해 주세요.");});
+  Button pin=new Button(this);pinButton=pin;pin.setText("위젯 추가");pin.setOnClickListener(v->{if(hasWidgetUpdate()){if(downloadComplete())openDownloads();else confirmDownload();return;}if(Vault.get(this,"access").isEmpty()){status.setText("먼저 위젯 연결 코드를 등록해 주세요.");return;}AppWidgetManager m=AppWidgetManager.getInstance(this);if(m.isRequestPinAppWidgetSupported())m.requestPinAppWidget(new ComponentName(this,RiverWidget.class),null,null);else status.setText("홈 화면 빈 공간 길게 누르기 → 위젯 → CHOI RIVER에서 추가해 주세요.");});
   Button refresh=new Button(this);refresh.setText("템플릿 업데이트");
   LinearLayout connectionButtons=new LinearLayout(this);connectionButtons.setOrientation(LinearLayout.HORIZONTAL);connection.addView(connectionButtons);
   for(Button button:new Button[]{connect,pin,refresh}){flatButton(button);button.setTextSize(12);button.setMinWidth(0);button.setMinimumWidth(0);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(2),dp(3),dp(2),0);connectionButtons.addView(button,lp);}pinState(pin,!Vault.get(this,"access").isEmpty());
