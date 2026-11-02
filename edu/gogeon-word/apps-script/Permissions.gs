@@ -15,10 +15,10 @@ function mariFinishLogin_(auth,app){
  }catch(error){logout(auth.token);throw error;}
 }
 function mariSignIn(id,pin,remember,device,label,app){
- return mariFinishLogin_(login(id,pin,remember,device,label,null,app),app);
+ return mariFinishLogin_(login_(id,pin,remember,device,label,null,app),app);
 }
 function mariReplaceDevice(id,pin,remember,device,label,app,generation){
- return mariFinishLogin_(login(id,pin,remember,device,label,generation,app),app);
+ return mariFinishLogin_(login_(id,pin,remember,device,label,generation,app),app);
 }
 function mariRestore(token,app,device,label){return lock_(()=>{
  const context=device&&label?deviceRefresh_(token,device,label):session_(token,false),{a,s,layout}=context;
@@ -32,11 +32,11 @@ function mariCheck(token,app){return lock_(()=>{
 });}
 function mariSave(token,event,app){return lock_(()=>{
  const {a,s,layout}=session_(token,false);mariRequire_(a,app);
- const result=app==='classic'?saveClassic_(a,event):app==='economy'?saveEconomy_(a,event):app==='gyodae'?{ok:true}:saveExam(token,event);
+ const result=app==='classic'?saveClassic_(a,event):app==='economy'?saveEconomy_(a,event):app==='gyodae'?{ok:true}:saveExam_(event);
  mariLearningCounts_(s,app,result);
  visitRecord_(a,s,app,false,layout);return result;
 });}
-function setupAppPermissions(){
+function setupAppPermissions_(){
  const sheet=db_().getSheetByName('시트1');if(!sheet)throw Error('회원 시트1이 없습니다.');
  const names=Object.values(MARI_ACCESS_COLUMNS);let headers=sheet.getRange(1,1,1,sheet.getLastColumn()).getDisplayValues()[0];
  for(const name of names){let col=headers.indexOf(name)+1;if(!col){col=headers.length+1;if(col>sheet.getMaxColumns())sheet.insertColumnsAfter(sheet.getMaxColumns(),col-sheet.getMaxColumns());sheet.getRange(1,col).setValue(name);headers.push(name);}

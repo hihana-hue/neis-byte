@@ -12,7 +12,7 @@ function tab_(a,create){if(!/^[A-Za-z0-9_.-]{1,70}$/.test(a.id))throw Error('아
  if(!s){s=d.insertSheet(a.id);s.getRange('A1:C2').setValues([['아이디','사용자','최초등록일'],[a.id,literal_(a.name),'']]);s.getRange('A4:H4').setValues([['기기 이름','최초 등록','최근 접속','상태','','','기기 식별값','등록 버전']]);s.getRange('D5:D7').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['등록','해제'],true).setAllowInvalid(false).build());s.getRange('A10:E10').setValues([VISIT_HEADERS]);s.getRange('A1:C1').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A4:D4').setBackground('#17838c').setFontColor('#ffffff').setFontWeight('bold');s.getRange('A10:E10').setBackground('#1c555a').setFontColor('#ffffff').setFontWeight('bold');s.setFrozenRows(10);s.setColumnWidths(1,5,170);s.hideColumns(7,2);s.getRange('B5:C7').setNumberFormat('yyyy-mm-dd hh:mm:ss');s.getRange('C2').setNumberFormat('yyyy-mm-dd HH:mm:ss');}
  if(s.getRange('A2').getDisplayValue()!==a.id)throw Error('동명 탭 충돌: 관리자에게 문의하세요.');visitMigrateTab_(s);deviceMigrateHeader_(s);if(s.getRange('B2').getDisplayValue()!==String(a.name))s.getRange('B2').setValue(literal_(a.name));if(isNew)deviceMemberLink_(a.id,s);return s;}
 // 배포 전 한 번 실행: 기존 기본 한도 3과 빈 값을 5로 바꾸고, 다른 개별 한도는 보존합니다.
-function setupDeviceLimits(){return lock_(()=>{const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getValues(),h=rows.shift().map(String),idCol=h.indexOf('아이디');let col=h.indexOf('기기한도');
+function setupDeviceLimits_(){return lock_(()=>{const s=db_().getSheetByName('시트1'),rows=s.getDataRange().getValues(),h=rows.shift().map(String),idCol=h.indexOf('아이디');let col=h.indexOf('기기한도');
  if(idCol<0)throw Error('아이디 열이 없습니다.');if(col<0){col=h.length;if(col+1>s.getMaxColumns())s.insertColumnsAfter(s.getMaxColumns(),1);s.getRange(1,col+1).setValue('기기한도');}
  let changed=0;rows.forEach((r,i)=>{if(String(r[idCol]||'').trim()&&(!String(r[col]||'').trim()||Number(r[col])===3)){s.getRange(i+2,col+1).setValue(5);changed++;}});return changed+'개 ID의 기본 기기한도를 5로 변경했습니다.';});}
 // 같은 기기의 브라우저 식별값은 공백으로 구분해 보존합니다(기기 한도와 별개).
@@ -20,8 +20,8 @@ function deviceHashes_(v){return String(v||'').split(' ').filter(Boolean);}
 function cleanSessions_(){const p=PropertiesService.getScriptProperties(),all=p.getProperties();for(const k of Object.keys(all)){if(k.startsWith('session:')){try{if(JSON.parse(all[k]).expiry<Date.now())p.deleteProperty(k);}catch{p.deleteProperty(k);}}}}
 function session_(token,touch){if(typeof token!=='string'||token.length>100)throw Error('다시 로그인하세요.');const p=PropertiesService.getScriptProperties(),raw=p.getProperty('session:'+hash_(token));if(!raw)throw Error('다시 로그인하세요.');const v=JSON.parse(raw),a=account_(v.id);if(v.expiry<Date.now()||!a||a.version!==v.version)throw Error('로그인이 만료되었습니다.');const s=tab_(a),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),i=rows.findIndex(r=>r[3]==='등록'&&deviceHashes_(r[6]).includes(v.device)&&r[7]===v.generation);if(i<0)throw Error('관리자가 이 기기를 해제했습니다.');const registered=rows.map((r,j)=>r[3]==='등록'?j:-1).filter(j=>j>=0);if(registered.indexOf(i)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다.');if(touch)s.getRange(5+i,3).setValue(new Date());return {a,s,layout,rows,v};}
 function logout(token){PropertiesService.getScriptProperties().deleteProperty('session:'+hash_(String(token)));return true;}
-function recordProgress(token,event){return lock_(()=>saveClassic_(session_(token,true).a,event));}
-function saveClassic_(a,event){return learningSave_(a.id,'classic',event,new Set(cardIds_()));}
+function recordProgress(token,event){return mariSave(token,event,'classic');}
+function saveClassic_(a,event){mariRequire_(a,'classic');return learningSave_(a.id,'classic',event,new Set(cardIds_()));}
 
 
 function corpus_(){
@@ -74,8 +74,8 @@ function economyCorpus_(){
  return {data,coverage:{cardCount:data.length,works:[],suwanWorks:[]}};
 }
 function economyPayload_(id){const c=economyCorpus_(),state=learningRead_(id,'economy');return {id,data:c.data,coverage:c.coverage,...state};}
-function saveEconomy(token,event){return lock_(()=>saveEconomy_(session_(token,false).a,event));}
-function saveEconomy_(a,event){return learningSave_(a.id,'economy',event,new Set(economyCorpus_().data.map(d=>d.id)));}
+function saveEconomy(token,event){return mariSave(token,event,'economy');}
+function saveEconomy_(a,event){mariRequire_(a,'economy');return learningSave_(a.id,'economy',event,new Set(economyCorpus_().data.map(d=>d.id)));}
 
 function learningKey_(id,app){return (app==='economy'?'economy:state:':'state:')+hash_(id);}
 function learningRead_(id,app){

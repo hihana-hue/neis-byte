@@ -1,0 +1,24 @@
+name: Learning server security checks
+on:
+  push:
+    paths:
+      - 'edu/gogeon-word/apps-script/**'
+      - 'tests/apps-script-security.test.mjs'
+      - '.github/workflows/apps-script-security.yml'
+  pull_request:
+    paths:
+      - 'edu/gogeon-word/apps-script/**'
+      - 'tests/apps-script-security.test.mjs'
+      - '.github/workflows/apps-script-security.yml'
+permissions:
+  contents: read
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/apps-script-security.test.mjs

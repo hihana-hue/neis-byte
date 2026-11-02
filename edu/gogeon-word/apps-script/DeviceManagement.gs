@@ -28,14 +28,14 @@ function deviceMigrateHeader_(s){
  s.getRange('I4').setValue('기기 판별 정보');s.hideColumns(7,3);
 }
 function deviceLimitResult_(a,rows){return {deviceLimit:true,id:a.id,limit:a.limit,devices:rows.filter(r=>r[3]==='등록').map(r=>({generation:String(r[7]),name:deviceTitle_(r[8]||r[0],r[1]),lastSeen:r[2] instanceof Date?Utilities.formatDate(r[2],'Asia/Seoul','yyyy-MM-dd HH:mm'):'확인 불가'}))};}
-function login(id,pin,remember,device,label,replaceGeneration,app){
+function login_(id,pin,remember,device,label,replaceGeneration,app){
  id=String(id||'').trim();pin=String(pin||'');const identity=deviceIdentity_(label);
  if(!id||id.length>70||pin.length>100||!/^[a-zA-Z0-9-]{20,100}$/.test(device||'')||!identity)throw Error('로그인 입력과 기기 종류를 확인하세요.');
  return lock_(()=>{
   const cache=CacheService.getScriptCache(),key='fail:'+hash_(id),fails=Number(cache.get(key)||0);if(fails>=10)throw Error('15분 후 다시 시도하세요.');
   const a=account_(id);if(!a||hash_(a.pin)!==hash_(pin)){cache.put(key,String(fails+1),900);throw Error('아이디 또는 PIN이 일치하지 않습니다.');}cache.remove(key);
-  const permissions=app?mariRequire_(a,app):null;if(!app&&replaceGeneration)throw Error('앱 설정을 확인하세요.');
-  const payload=app?mariPayload_(a.id,app):null;
+  const permissions=mariRequire_(a,app);
+  const payload=mariPayload_(a.id,app);
   const s=tab_(a,true),layout=deviceLayout_(s,a),rows=s.getRange(5,1,layout.capacity,9).getValues(),dh=hash_(device),registered=rows.map((r,i)=>r[3]==='등록'?i:-1).filter(i=>i>=0);
   let slot=deviceSlot_(rows,dh,identity),changed=false;const now=new Date();
   if(slot>=0&&registered.indexOf(slot)>=a.limit)throw Error('관리자가 기기한도를 줄였습니다. 관리자에게 문의하세요.');
@@ -66,7 +66,7 @@ function deviceMemberLink_(id,tab){
  const url=book.getUrl()+'#gid='+tab.getSheetId();s.getRange(i+2,col+1).setRichTextValue(SpreadsheetApp.newRichTextValue().setText(id).setLinkUrl(url).build());
 }
 // 기존 회원 탭만 정리합니다. 아직 로그인하지 않은 회원 탭은 만들지 않습니다.
-function setupDeviceManagement(){return lock_(()=>{
+function setupDeviceManagement_(){return lock_(()=>{
  const book=db_(),members=book.getSheetByName('시트1'),rows=members.getDataRange().getDisplayValues(),headers=rows.shift(),col=headers.indexOf('아이디');
  if(col<0)throw Error('아이디 열이 없습니다.');
  let count=0;
