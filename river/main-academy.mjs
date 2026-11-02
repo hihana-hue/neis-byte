@@ -1,4 +1,4 @@
-import {mountAcademyCalendar} from './academy-calendar.mjs?v=2';
+import {mountAcademyCalendar} from './academy-calendar.mjs?v=3';
 import {weekday} from './date-weekday.mjs?v=1';
 import {toStart,localInput,lessonRounds,packSize,scheduleCategory,scheduleKindLabel,scheduleTitle} from './academy-model.mjs?v=7';
 export function createAcademy(api,notify){

@@ -28,7 +28,7 @@ export function mountAcademyCalendar(input){
  find('[data-next]').onclick=()=>{if(month===11){year++;month=0;}else month++;draw();};
  time.addEventListener('input',setValue);time.addEventListener('change',setValue);
  function refresh(){
-  if(input.value!==lastValue){selected=input.value.slice(0,10);time.value=input.value.length===11?'':input.value.slice(11,16)||'19:00';const base=selected||seoulDate();year=Number(base.slice(0,4));month=Number(base.slice(5,7))-1;lastValue=input.value;draw();}
+  if(input.value!==lastValue){selected=input.value.slice(0,10);time.value=input.value.length===11?'':input.value.slice(11,16)||'18:00';const base=selected||seoulDate();year=Number(base.slice(0,4));month=Number(base.slice(5,7))-1;lastValue=input.value;draw();}
   time.disabled=input.disabled;time.required=!input.disabled;
  }
  refresh();return {refresh};
