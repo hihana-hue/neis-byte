@@ -3,7 +3,7 @@ function rpLessonTitle(a){return ((a['일정명']||a['수업명'])?.title||[]).m
 const RP_NAMES={'수업명':'일정명','학원':'과목·모임명','수업일시':'일정일시','학원 DB 링크':'개인 일정 DB 링크','학원 패널 배경색':'개인 일정 패널 배경색','학원 글자색':'개인 일정 글자색','학원 세로선 색상':'개인 일정 세로선 색상','학원 세로선 투명도':'개인 일정 세로선 투명도','학원 과목명 굵게':'개인 일정 이름 굵게'};
 function rpAlias(value,names={}){
  if(!value||typeof value!=='object')return value;
- if(value.properties){for(const [old,next] of Object.entries(RP_NAMES))if(Object.hasOwn(value.properties,next)){names[old]=next;value.properties[old]=value.properties[next];}}
+ if(value.properties){for(const [old,next] of Object.entries(RP_NAMES))if(Object.hasOwn(value.properties,next)){names[old]=next;value.properties[old]=value.properties[next];}if(Object.hasOwn(value.properties,'일정구분')){names['학원']='일정구분';names['과목·모임명']='일정구분';value.properties['학원']=value.properties['일정구분'];}}
  if(Array.isArray(value.results))for(const item of value.results)rpAlias(item,names);
  return value;
 }
@@ -12,7 +12,13 @@ function rpWriteNames(value,names){
  if(!value||typeof value!=='object')return value;
  return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,k==='properties'?Object.fromEntries(Object.entries(v).map(([name,x])=>[names[name]||name,x])):k==='property'?(names[v]||v):rpWriteNames(v,names)]));
 }
-function rpCategory(a){const explicit=a['일정 분류']?.select?.name;if(['학원','교회','약속','기타'].includes(explicit))return explicit;const kind=a['학원']?.select?.name||a['과목·모임명']?.select?.name||'',title=rpLessonTitle(a);return /^(TEEN|교회)$/i.test(kind)?'교회':kind?'학원':title==='약속'?'약속':'기타';}
+function rpKind(a){return (a['일정구분']||a['과목·모임명']||a['학원'])?.select?.name||'';}
+function rpKindCategory(kind){const tagged=String(kind).match(/^(학원|교회|약속|기타) · .+$/);if(tagged)return tagged[1];if(['과학','바디PT','운동','수학','국어','영어','학원'].includes(kind))return '학원';if(/^(TEEN|교회)$/i.test(kind))return '교회';return kind==='약속'?'약속':'기타';}
+function rpCategory(a){if(a['일정구분'])return rpKindCategory(rpKind(a));const explicit=a['일정 분류']?.select?.name;if(['학원','교회','약속','기타'].includes(explicit))return explicit;return rpKindCategory(rpKind(a));}
+function rpCourse(a){const size=a['수강 회차']?.number,fee=a['묶음 원비']?.number;return {packSize:Number.isInteger(size)&&size>0&&size<=1000?size:null,fee:Number.isInteger(fee)&&fee>=0&&fee<=100000000?fee:null,paid:!!a['원비 납부']?.checkbox};}
+function rpCourseProperties(input){return {'수강 회차':{number:input.packSize},'묶음 원비':{number:input.fee},'원비 납부':{checkbox:!!input.paid}};}
+function rpValidCourse(input){return Number.isInteger(input.packSize)&&input.packSize>0&&input.packSize<=1000&&Number.isInteger(input.fee)&&input.fee>=0&&input.fee<=100000000&&typeof input.paid==='boolean';}
+function rpKindLabel(kind){return String(kind||'').replace(/^(학원|교회|약속|기타) · /,'').replace(/^운동$/,'바디PT');}
 function rpSeoulDay(s){const n=Date.parse(s);return Number.isFinite(n)?new Date(n+9*3600000).toISOString().slice(0,10):'';}
 function rpLessonRounds(items){
  const labels=new Map(),groups=new Map();
@@ -22,15 +28,15 @@ function rpLessonRounds(items){
  const ordered=[...items].sort((a,b)=>(a.originalStart||a.start||'').localeCompare(b.originalStart||b.start||'')||String(a.id).localeCompare(String(b.id)));
  for(const x of ordered){const k=key(x);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);}
  for(const [kind,rows] of groups){
-  const size=({과학:4,바디PT:5})[kind],anchors=rows.filter(x=>x.roundAnchor);
+  const fallbackSize=({과학:4,바디PT:5})[kind],anchors=rows.filter(x=>x.roundAnchor&&(!x.category||x.category==='학원'));
   const invalid=anchors.length>1||(anchors.length===1&&(!advances(anchors[0])||!(anchors[0].originalStart||anchors[0].start)));
   const before=anchors.length===1?rows.slice(0,rows.indexOf(anchors[0])).filter(advances).length:0;
   let used=0;
   for(const x of rows){
    if(x.category&&x.category!=='학원')continue;
    if(!regular(x)){labels.set(x.id,'클리닉');continue;}
-   if(!size)continue;
    if(advances(x))used++;
+   const size=Number.isInteger(x.packSize)&&x.packSize>0?x.packSize:fallbackSize;if(!size)continue;
    if(x.status==='예정')labels.set(x.id,invalid?'기준 확인':(((used-before-1)%size+size)%size+1)+'/'+size);
   }
  }
@@ -91,8 +97,8 @@ async function rpWidgetRoute(request,env,reply){
  const text=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
  const subjectColors=await rpSubjectColors(env);
  const school=sp.filter(p=>['시작전','진행 중','진행 2차','작성 완료'].includes(p.properties['상태']?.status?.name)).map(p=>{const a=p.properties;return {id:p.id,title:text(a['주제']?.title),subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name};});
- const rounds=rpLessonRounds(ap.map(p=>{const a=p.properties;return {id:p.id,title:rpLessonTitle(a),category:rpCategory(a),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox};}));
- const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,title:rpLessonTitle(a),category:rpCategory(a),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
+ const rounds=rpLessonRounds(ap.map(p=>{const a=p.properties;return {id:p.id,title:rpLessonTitle(a),category:rpCategory(a),...rpCourse(a),kind:rpKind(a),subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox};}));
+ const academy=ap.filter(p=>(p.properties['출결']?.select?.name||'예정')==='예정').map(p=>{const a=p.properties;return {id:p.id,title:rpLessonTitle(a),category:rpCategory(a),...rpCourse(a),kind:rpKind(a),subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:'예정',round:rounds.get(p.id)||''};});
  return reply({school,academy,student:env.STUDENT||null,academyConnected:!env.STUDENT||!!env.ACADEMY_DATA_SOURCE_ID});
 }
 
@@ -288,7 +294,7 @@ async function rpFetch(request,env){
    const ds=env.ACADEMY_DATA_SOURCE_ID||'3fd215b9-b774-806e-9ed3-000b1b1df0f9';
    const rt=value=>(value||[]).map(x=>x.plain_text??x.text?.content??'').join('');
    const rich=value=>Array.from({length:Math.ceil(value.length/1900)},(_,i)=>({text:{content:value.slice(i*1900,(i+1)*1900)}}));
-   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),category:rpCategory(a),kind:a['학원']?.select?.name||'',subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
+   const lesson=p=>{const a=p.properties;return {id:p.id,title:rt(a['수업명']?.title),category:rpCategory(a),...rpCourse(a),kind:rpKind(a),subtype:a['수업 구분']?.select?.name||'수업',start:a['수업일시']?.date?.start||null,originalStart:a['최초 수업일']?.date?.start||null,status:a['출결']?.select?.name||'예정',charge:!!a['회차 차감']?.checkbox,roundAnchor:!!a['회차 기준']?.checkbox,history:rt(a['변경 이력']?.rich_text),note:rt(a['메모']?.rich_text),updated:p.last_edited_time,url:p.url};};
    const validSubtype=(kind,value)=>typeof kind==='string'&&!!kind.trim()&&['수업','클리닉'].includes(value);
    const validStart=s=>{if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+09:00$/.test(s))return false;const n=Date.parse(s);return Number.isFinite(n)&&new Date(n+9*3600000).toISOString().slice(0,19)===s.slice(0,19);};
    if(path==='/academy'&&request.method==='GET'){
@@ -301,13 +307,17 @@ async function rpFetch(request,env){
    const raw=await request.text();if(raw.length>12000)return reply({error:'입력 내용이 너무 깁니다.'},413);
    let input;try{input=JSON.parse(raw);}catch{return reply({error:'입력 형식을 확인해 주세요.'},400);}
    if(path==='/academy'&&request.method==='POST'){
-    if(typeof input.kind!=='string'||!input.kind.trim()||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'학원·날짜·시간을 확인해 주세요.'},400);
-    const source=await notion('data_sources/'+ds);
-    const category=input.category||(/^(TEEN|교회)$/i.test(input.kind)?'교회':'학원');
-    if(!['학원','교회','약속','기타'].includes(category)||input.title!=null&&(typeof input.title!=='string'||!input.title.trim()||input.title.length>200))return reply({error:'일정 분류와 이름을 확인해 주세요.'},400);
-    if(!input.category&&!(source.properties?.['학원']?.select?.options||[]).some(x=>x.name===input.kind))return reply({error:'현재 노션에 등록된 학원·일정을 선택해 주세요. 새로고침 후 다시 시도해 주세요.'},400);
-    const subtype=input.subtype||'수업';if(!validSubtype(input.kind,subtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);
-    const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{...(source.properties?.['일정 분류']?{'일정 분류':{select:{name:category}}}:{}),'수업명':{title:[{text:{content:input.title?.trim()||(category==='학원'?input.kind+' 수업':input.kind)}}]},'학원':{select:{name:input.kind}},'수업 구분':{select:{name:subtype}},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)}}});
+    if(typeof input.kind!=='string'||!input.kind.trim()||input.kind.length>100||!validStart(input.start)||typeof input.note!=='string'||input.note.length>1000)return reply({error:'일정구분·날짜·시간을 확인해 주세요.'},400);
+    const source=await notion('data_sources/'+ds),merged=!!source.properties?.['일정구분'];
+    const category=merged||input.schemaVersion===2?rpKindCategory(input.kind):input.category||rpKindCategory(input.kind);
+    if(!['학원','교회','약속','기타'].includes(category)||input.title!=null&&(typeof input.title!=='string'||!input.title.trim()||input.title.length>200)||input.schemaVersion===2&&!input.title?.trim())return reply({error:'일정명을 입력해 주세요.'},400);
+    if(!merged&&input.schemaVersion!==2&&!input.category&&!(source.properties?.['학원']?.select?.options||[]).some(x=>x.name===input.kind))return reply({error:'노션에 등록된 일정구분을 선택해 주세요.'},400);
+    const subtype=category==='학원'?input.subtype||'수업':null;
+    if(category==='학원'&&!validSubtype(input.kind,subtype))return reply({error:'수업·클리닉 구분을 선택해 주세요.'},400);
+    const billable=category==='학원'&&subtype==='수업';
+    if(billable&&(merged||input.schemaVersion===2)&&!rpValidCourse(input))return reply({error:'수강 회차와 묶음 원비를 입력해 주세요. 무료 수업은 0원입니다.'},400);
+    if(billable&&(merged||input.schemaVersion===2)&&(!source.properties?.['수강 회차']||!source.properties?.['묶음 원비']))return reply({error:'노션 수강 설정 항목을 먼저 확인해 주세요.'},409);
+    const p=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{...(!merged&&source.properties?.['일정 분류']?{'일정 분류':{select:{name:category}}}:{}),'수업명':{title:[{text:{content:input.title?.trim()||rpKindLabel(input.kind)}}]},'학원':{select:{name:input.kind}},'수업 구분':{select:subtype?{name:subtype}:null},'수업일시':{date:{start:input.start}},'출결':{select:{name:'예정'}},'메모':{rich_text:rich(input.note)},...(billable&&rpValidCourse(input)?rpCourseProperties(input):{})}});
     return reply({ok:true,item:lesson(p)},201);
    }
    const m=path.match(/^\/academy\/([a-f0-9-]{32,36})$/i);
@@ -321,6 +331,9 @@ async function rpFetch(request,env){
     if(!['예정','출석'].includes(old.status))return reply({error:'출결이 변경됐어요. 새로고침해 주세요.'},409);
     if(old.status!=='출석'&&(!input.updated||input.updated!==p.last_edited_time))return reply({error:'다른 곳에서 변경된 수업입니다. 새로고침 후 다시 시도해 주세요.'},409);
     if(input.nextStart!==null&&(!validStart(input.nextStart)||Date.parse(input.nextStart)<=Date.parse(old.start||'')))return reply({error:'다음 수업은 이번 수업 이후 날짜로 입력해 주세요.'},400);
+    if(input.title!=null&&(typeof input.title!=='string'||!input.title.trim()||input.title.length>200))return reply({error:'다음 일정명을 확인해 주세요.'},400);
+    const hasBilling=input.packSize!=null||input.fee!=null||input.schemaVersion===2;
+    if(input.nextStart!==null&&nextSubtype==='수업'&&hasBilling&&!rpValidCourse(input))return reply({error:'다음 수업의 수강 회차·원비를 확인해 주세요.'},400);
     let next=null;
     if(input.nextStart!==null){
      const linked=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{property:'이전 수업 ID',rich_text:{equals:p.id}}});
@@ -330,7 +343,7 @@ async function rpFetch(request,env){
       const existing=await notion('data_sources/'+ds+'/query','POST',{page_size:100,filter:{and:[{property:'학원',select:{equals:old.kind}},{property:'수업 구분',select:{equals:nextSubtype}},{property:'수업일시',date:{equals:input.nextStart}}]}});
       next=existing.results.find(x=>!x.archived&&!x.in_trash&&x.id!==p.id&&x.properties?.['출결']?.select?.name==='예정')||null;
       if(next)next=await notion('pages/'+next.id,'PATCH',{properties:{'이전 수업 ID':{rich_text:rich(p.id)}}});
-      else next=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:old.kind+' 수업'}}]},'학원':{select:{name:old.kind}},'수업 구분':{select:{name:nextSubtype}},'수업일시':{date:{start:input.nextStart}},'출결':{select:{name:'예정'}},'이전 수업 ID':{rich_text:rich(p.id)}}});
+      else next=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:ds},properties:{'수업명':{title:[{text:{content:input.title?.trim()||rpKindLabel(old.kind)}}]},'학원':{select:{name:old.kind}},'수업 구분':{select:{name:nextSubtype}},'수업일시':{date:{start:input.nextStart}},'출결':{select:{name:'예정'}},'이전 수업 ID':{rich_text:rich(p.id)},...(nextSubtype==='수업'&&rpValidCourse(input)?rpCourseProperties(input):nextSubtype==='수업'&&old.packSize&&old.fee!=null?rpCourseProperties({...old,paid:false}):{})}});
      }
     }
     if(old.status==='출석')return reply({ok:true,item:old,next:next?lesson(next):null});
@@ -342,6 +355,11 @@ async function rpFetch(request,env){
    }
    if(!input.updated||input.updated!==p.last_edited_time)return reply({error:'다른 곳에서 변경된 수업입니다. 새로고침 후 다시 시도해 주세요.'},409);
    const old=lesson(p),props={};let entry='';
+   if(input.action==='courseSettings'){
+    if(old.category!=='학원'||!rpValidCourse(input))return reply({error:'학원 수강 회차·원비를 확인해 주세요.'},400);
+    const source=await notion('data_sources/'+ds);if(!source.properties?.['수강 회차']||!source.properties?.['묶음 원비'])return reply({error:'노션 수강 설정 항목을 확인해 주세요.'},409);
+    const updated=await notion('pages/'+p.id,'PATCH',{properties:rpCourseProperties(input)});return reply({ok:true,item:lesson(updated)});
+   }
    if(input.action==='reschedule'){
     if(!validStart(input.start))return reply({error:'새 날짜와 시간을 확인해 주세요.'},400);
     const subtype=input.subtype||old.subtype||'수업';if(!validSubtype(old.kind,subtype))return reply({error:'학원에 맞는 수업 구분을 선택해 주세요.'},400);

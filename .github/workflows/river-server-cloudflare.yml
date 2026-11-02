@@ -40,6 +40,7 @@ jobs:
           node river/server/makeup.test.mjs
           node river/server/academy-create.test.mjs
           node river/server/personal-schedules.test.mjs
+          node river/server/schedule-kind.test.mjs
   cloudflare:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: tests
