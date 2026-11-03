@@ -8,4 +8,5 @@ public class WidgetDefaultsTest {
  @Test public void transparencyEndpointsAndClamp(){assertEquals(255,WidgetDesign.alpha(0));assertEquals(128,WidgetDesign.alpha(50));assertEquals(0,WidgetDesign.alpha(100));assertEquals(0,WidgetDesign.alpha(120));assertEquals(255,WidgetDesign.alpha(-5));}
  @Test public void onlySixLessonInternalGapShrinks(){assertEquals(6,LayoutRules.academyBottom(6,true));assertEquals(12,LayoutRules.academyBottom(6,false));assertEquals(12,LayoutRules.academyBottom(3,true));assertEquals(12,LayoutRules.academyBottom(9,true));}
  @Test public void iconKeysAndEmptyChoice(){assertEquals("teen",AcademyIcons.key(" TEEN "));assertEquals("바디pt",AcademyIcons.key("운동"));assertEquals(0,AcademyIcons.resource(""));assertEquals(0,AcademyIcons.resource("unknown"));assertTrue(AcademyIcons.resource("십자가")!=0);}
+ @Test public void academyTimeIsSmallerAtEveryAllowedSize(){for(int body=12;body<=18;body++){assertTrue(LayoutRules.academyTimeFont(body)<LayoutRules.academyDateFont(body));assertTrue(LayoutRules.academyTimeFont(body)>=10);}assertEquals(13,LayoutRules.academyDateFont(14));assertEquals(11,LayoutRules.academyTimeFont(14));}
 }

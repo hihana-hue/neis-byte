@@ -17,8 +17,8 @@ public final class Schedule {
  }
  static String lessonTime(String start){try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("M/d (E) HH:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}
  static String dueTime(String due){try{return LocalDate.parse(due.substring(0,10)).format(DateTimeFormatter.ofPattern("M/d"));}catch(Exception e){return "";}}
- static String schoolDueTime(String due,Instant now){
-  try{LocalDate date=LocalDate.parse(due.substring(0,10));long days=java.time.temporal.ChronoUnit.DAYS.between(today(now),date);String countdown=days==0?"D-DAY":days>0?"D-"+days:"D+"+(-days);return countdown+" "+dueTime(due);}catch(Exception e){return "";}
+ static String schoolCountdown(String due,Instant now){
+  try{LocalDate date=LocalDate.parse(due.substring(0,10));long days=java.time.temporal.ChronoUnit.DAYS.between(today(now),date);return days>3?"":days==0?"D-DAY":days>0?"D-"+days:"D+"+(-days);}catch(Exception e){return "";}
  }
  static String lessonDate(String start){try{return lessonDay(start).format(DateTimeFormatter.ofPattern("M.dd.(E)",java.util.Locale.KOREAN));}catch(Exception e){return "날짜 확인";}}
  static String lessonClock(String start){if(start.length()==10)return "시간 미정";try{return OffsetDateTime.parse(start).atZoneSameInstant(SEOUL).format(DateTimeFormatter.ofPattern("a h:mm",java.util.Locale.KOREAN));}catch(Exception e){return "시간 확인";}}

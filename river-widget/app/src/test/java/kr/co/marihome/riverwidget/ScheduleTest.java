@@ -31,12 +31,14 @@ public class ScheduleTest {
  @Test public void datesNeverUsePhoneTimezone(){assertEquals("10/25 (일) 18:00",Schedule.lessonTime("2026-10-25T09:00:00Z"));assertFalse(Schedule.academyVisible("예정","bad",monday));assertFalse(Schedule.schoolVisible("시작전","bad",monday));}
  @Test public void schoolCountdownUsesSeoulCalendarDays(){
   Instant beforeMidnight=Instant.parse("2026-11-02T14:59:59Z"),midnight=Instant.parse("2026-11-02T15:00:00Z");
-  assertEquals("D-4 11/6",Schedule.schoolDueTime("2026-11-06",beforeMidnight));
-  assertEquals("D-3 11/6",Schedule.schoolDueTime("2026-11-06",midnight));
-  assertEquals("D-DAY 11/3",Schedule.schoolDueTime("2026-11-03",midnight));
-  assertEquals("D+1 11/2",Schedule.schoolDueTime("2026-11-02",midnight));
-  assertEquals("D-1 1/1",Schedule.schoolDueTime("2027-01-01",Instant.parse("2026-12-30T15:00:00Z")));
-  assertEquals("D-2 3/1",Schedule.schoolDueTime("2028-03-01",Instant.parse("2028-02-27T15:00:00Z")));
-  assertEquals("",Schedule.schoolDueTime("",midnight));assertEquals("",Schedule.schoolDueTime("bad",midnight));
+  assertEquals("",Schedule.schoolCountdown("2026-11-06",beforeMidnight));
+  assertEquals("D-3",Schedule.schoolCountdown("2026-11-06",midnight));
+  assertEquals("D-2",Schedule.schoolCountdown("2026-11-05",midnight));assertEquals("D-1",Schedule.schoolCountdown("2026-11-04",midnight));
+  assertEquals("",Schedule.schoolCountdown("2026-11-07",midnight));assertEquals("D+2",Schedule.schoolCountdown("2026-11-01",midnight));
+  assertEquals("D-DAY",Schedule.schoolCountdown("2026-11-03",midnight));
+  assertEquals("D+1",Schedule.schoolCountdown("2026-11-02",midnight));
+  assertEquals("D-1",Schedule.schoolCountdown("2027-01-01",Instant.parse("2026-12-30T15:00:00Z")));
+  assertEquals("D-2",Schedule.schoolCountdown("2028-03-01",Instant.parse("2028-02-27T15:00:00Z")));
+  assertEquals("",Schedule.schoolCountdown("",midnight));assertEquals("",Schedule.schoolCountdown("bad",midnight));
  }
 }

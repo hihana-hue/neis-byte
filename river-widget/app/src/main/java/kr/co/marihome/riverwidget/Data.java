@@ -7,7 +7,7 @@ import java.time.*;
 import java.util.*;
 final class Data {
  static final String API="https://choi-river-notion.hihana77.workers.dev";
- static final class Row {boolean today=false,attention=false;String auxiliary="";String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="",detail="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
+ static final class Row {boolean today=false,attention=false;String auxiliary="",countdown="";String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="",detail="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
  static JSONObject get(String path,String token) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+path).openConnection();
   try{
@@ -59,7 +59,7 @@ final class Data {
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
     if(!validId(id)||(!Schedule.schoolVisible(x.optString("status"),due,now)||!WidgetStyle.schoolStatus(c,x.optString("status"))))continue;
     JSONArray subjects=x.optJSONArray("subjects");String subject=subjects!=null&&subjects.length()>0?subjects.optString(0):"학교";
-    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.schoolDueTime(due,now),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.today=Schedule.isToday(due,now,false);r.attention=Schedule.needsAttention(due,now,false);r.due=Schedule.schoolDueTime(due,now);school.add(r);
+    Row r=new Row(id,"task",subject+" · "+x.optString("title","할 일")+" · "+Schedule.dueTime(due),due);r.subject=subject;r.subjectColor=x.optJSONObject("subjectColors")==null?NotionSubjects.fallback(subject):x.optJSONObject("subjectColors").optString(subject,NotionSubjects.fallback(subject));r.title=x.optString("title","할 일");r.today=Schedule.isToday(due,now,false);r.attention=Schedule.needsAttention(due,now,false);r.due=Schedule.dueTime(due);r.countdown=Schedule.schoolCountdown(due,now);school.add(r);
    }
   }catch(Exception ignored){}
   academy.sort(Comparator.comparing((Row x)->Schedule.lessonInstant(x.sort)).thenComparing(x->x.id));int limit=WidgetStyle.academyLimit(c);if(academy.size()>limit)academy=new ArrayList<>(academy.subList(0,limit));school.sort(Comparator.comparing(x->x.sort));
