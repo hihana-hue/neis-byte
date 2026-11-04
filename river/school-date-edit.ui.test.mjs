@@ -6,6 +6,7 @@ const dom=new JSDOM(fs.readFileSync(new URL('./index.html',import.meta.url),'utf
 for(const key of ['window','document','Event','location','history','localStorage','sessionStorage'])globalThis[key]=dom.window[key];
 globalThis.setInterval=()=>0;globalThis.setTimeout=()=>0;
 dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;};
+const pickerDates=[];dom.window.HTMLInputElement.prototype.showPicker=function(){pickerDates.push(this.value);};
 window.RIVER_CONFIG={apiBase:'https://api.test'};sessionStorage.setItem('river-return-code','test-code');
 const id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',record={id,title:'날짜 변경 검증 보고서',subjects:['과학'],due:'2026-11-05',status:'진행 중',url:'https://app.notion.com/p/'+id.replaceAll('-','')};
 const writes=[];let fail=false;
@@ -18,9 +19,13 @@ globalThis.fetch=async(url,options={})=>{
 };
 await import('./app.mjs');const flush=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve));};await flush();
 const $=id=>document.getElementById(id);
-let date=document.querySelector('.card .school-date-trigger');assert.ok(date,'existing dates must be clickable');date.click();assert.equal($('detail').open,true);assert.equal($('detail-date-form').hidden,false);assert.equal($('detail-date-input').value,'2026-11-05');
+let date=document.querySelector('.card .school-date-trigger');assert.ok(date,'existing dates must be clickable');date.click();assert.equal($('detail').open,true);assert.equal($('detail-date-form').hidden,false);assert.equal($('detail-date-input').value,'2026-11-05');assert.deepEqual(pickerDates,['2026-11-05']);
 $('detail-date-input').value='2026-11-07';await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.length,1);assert.deepEqual(writes[0].body,{due:'2026-11-07',from:'2026-11-05'});assert.equal($('detail-title').textContent,record.title);assert.match($('detail-due').textContent,/11/);assert.equal($('detail-date-form').hidden,true);assert.equal($('detail-status').textContent,'진행 중');
-$('detail-date-open').click();assert.equal($('detail-date-input').value,'2026-11-07');$('detail-date-input').value='2026-11-09';$('detail-date-cancel').click();assert.equal(writes.length,1);assert.equal($('detail-date-form').hidden,true);
-$('detail-date-open').click();assert.equal($('detail-date-input').value,'2026-11-07');fail=true;$('detail-date-input').value='2026-11-08';await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal($('detail-date-form').hidden,false);assert.equal($('detail-date-input').value,'2026-11-08');assert.match($('detail-error').textContent,/保存|저장 실패/);assert.equal($('detail-date-save').disabled,false);
+$('detail-date-open').click();assert.equal(pickerDates.at(-1),'2026-11-07');assert.equal($('detail-date-input').value,'2026-11-07');$('detail-date-input').value='2026-11-09';$('detail-date-cancel').click();assert.equal(writes.length,1);assert.equal($('detail-date-form').hidden,true);
+$('detail-date-open').click();assert.equal(pickerDates.at(-1),'2026-11-07');assert.equal($('detail-date-input').value,'2026-11-07');fail=true;$('detail-date-input').value='2026-11-08';await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal($('detail-date-form').hidden,false);assert.equal($('detail-date-input').value,'2026-11-08');assert.match($('detail-error').textContent,/保存|저장 실패/);assert.equal($('detail-date-save').disabled,false);
 fail=false;await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.at(-1).body.from,'2026-11-07');assert.equal($('detail-date-form').hidden,true);
+let fallbackClicks=0;$('detail-date-input').addEventListener('click',()=>fallbackClicks++);
+ delete dom.window.HTMLInputElement.prototype.showPicker;$('detail-date-open').click();assert.equal(fallbackClicks,1);assert.equal($('detail-date-form').hidden,false);
+ dom.window.HTMLInputElement.prototype.showPicker=function(){throw Error('Picker blocked');};$('detail-date-open').click();assert.equal(fallbackClicks,2);
+ console.log('PASS immediate native picker from date/edit clicks, prefilled current date, graceful unsupported/blocked fallback');
 console.log('PASS web existing-date click/edit/save/cancel/failure retry, original ID and original date retained, title/status preserved, no create request');dom.window.close();

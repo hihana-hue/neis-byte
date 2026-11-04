@@ -50,7 +50,10 @@ async function saveStatus(status){
 }
 function openDateEditor(){
  const x=detailItem;if(!x||saving.has(x.id))return;
- $('detail-date-input').value=x.due?.slice(0,10)||'';$('detail-date-form').hidden=false;$('detail-date-open').setAttribute('aria-expanded','true');$('detail-error').hidden=true;$('detail-date-input').focus();
+ $('detail-date-input').value=x.due?.slice(0,10)||'';$('detail-date-form').hidden=false;$('detail-date-open').setAttribute('aria-expanded','true');$('detail-error').hidden=true;const input=$('detail-date-input');input.focus({preventScroll:true});
+ // Open synchronously inside the original click, while browser user activation is available.
+ if(typeof input.showPicker==='function'){try{input.showPicker();return;}catch{}}
+ input.click();
 }
 $('detail-date-open').onclick=openDateEditor;$('detail-due').onclick=openDateEditor;
 $('detail-date-cancel').onclick=()=>{$('detail-date-form').hidden=true;$('detail-date-open').setAttribute('aria-expanded','false');$('detail-date-open').focus();};
