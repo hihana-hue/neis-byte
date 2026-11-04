@@ -418,6 +418,22 @@ async function rpFetch(request,env){
    const pages=[];let cursor;do{const data=await notion(`data_sources/${env.SCHOOL_DATA_SOURCE_ID}/query`,'POST',{page_size:100,...(cursor?{start_cursor:cursor}:{})});pages.push(...data.results);cursor=data.has_more?data.next_cursor:null;}while(cursor);
    const items=pages.filter(p=>p.object==='page'&&!p.in_trash&&!p.archived).map(p=>{const a=p.properties;return {id:p.id,title:(a['주제']?.title||[]).map(x=>x.plain_text??x.text?.content??'').join('')||'제목 없음',subjects:(a['과목']?.multi_select||[]).map(x=>x.name),subjectColors:Object.fromEntries((a['과목']?.multi_select||[]).map(x=>[x.name,subjectColors[x.name]||x.color||'default'])),due:a['기한']?.date?.start||null,status:a['상태']?.status?.name||'',completedAt:a['완료일']?.date?.start||null,submission:a['제출처']?.select?.name||'',taskName:(a['과제명']?.rich_text||[]).map(x=>x.plain_text??x.text?.content??'').join(''),url:p.url};});return reply({student:env.STUDENT||null,items:items.filter(x=>['시작전','진행 중','진행 2차','작성 완료','봉사완료','완료'].includes(x.status)&&(!['완료','봉사완료'].includes(x.status)||Date.parse(x.completedAt)>=Date.now()-7*86400000))});
   }
+  const dueMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/due$/i);
+  if(dueMatch&&request.method==='PATCH'){
+   const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);
+   let input;try{input=JSON.parse(raw);}catch{return reply({error:'날짜 변경 내용을 확인해 주세요.'},400);}
+   const due=input?.due;
+   if(!input||typeof input!=='object'||Array.isArray(input)||typeof due!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(due)||!Number.isFinite(Date.parse(due+'T00:00:00Z'))||new Date(due+'T00:00:00Z').toISOString().slice(0,10)!==due||!Object.hasOwn(input,'from')||(input.from!==null&&typeof input.from!=='string'))return reply({error:'올바른 날짜를 선택해 주세요.'},400);
+   const page=await notion('pages/'+dueMatch[1]);
+   if(page.archived||page.in_trash||page.parent?.type!=='data_source_id'||normalized(page.parent.data_source_id)!==normalized(env.SCHOOL_DATA_SOURCE_ID))return reply({error:'이 일정표에 속한 항목이 아닙니다.'},403);
+   const current=page.properties?.['기한']?.date||null,old=current?.start||null;
+   if(input.from!==old)return reply({error:'기한이 다른 곳에서 변경됐어요. 새로고침 후 다시 수정해 주세요.'},409);
+   if(old?.slice(0,10)===due)return reply({ok:true,id:page.id,due:old,unchanged:true});
+   const start=due+(old?.includes('T')?old.slice(10):'');
+   if(current?.end&&Date.parse(start)>Date.parse(current.end))return reply({error:'선택한 날짜가 기존 기간의 종료일보다 늦습니다. 기간은 노션에서 확인해 주세요.'},400);
+   await notion('pages/'+dueMatch[1],'PATCH',{properties:{'기한':{date:{...(current||{}),start}}}});
+   return reply({ok:true,id:page.id,due:start});
+  }
   const statusMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/status$/i);
   if(statusMatch&&request.method==='PATCH'){
    const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);

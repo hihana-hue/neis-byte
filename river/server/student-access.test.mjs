@@ -29,6 +29,7 @@ const req=(path,code,method='GET',body)=>new Request('https://api.test'+path,{me
 let r=await worker.fetch(req('/tasks','student-a'),env);assert.equal(r.status,200);let data=await r.json();assert.equal(data.student.id,a);assert.equal(data.student.widgetTitle,a+" Fighting");assert.deepEqual(data.items.map(x=>x.id),[ta.id]);
 r=await worker.fetch(req('/tasks','student-b'),env);assert.deepEqual((await r.json()).items.map(x=>x.id),[tb.id]);
 r=await worker.fetch(req('/tasks/'+tb.id+'/status','student-a','PATCH',{status:'완료',from:'시작전'}),env);assert.equal(r.status,403);assert.equal(mutations.length,0);
+r=await worker.fetch(req('/tasks/'+tb.id+'/due','student-a','PATCH',{due:'2026-11-07',from:null}),env);assert.equal(r.status,403);assert.equal(mutations.length,0);
 r=await worker.fetch(req('/academy','student-a'),env);assert.deepEqual((await r.json()).items,[]);
 r=await worker.fetch(req('/widget/pair','','POST',{mode:'student',code:'student-a'}),env);assert.equal(r.status,200);const token=(await r.json()).deviceToken;assert.match(token,/^[A-Za-z0-9_-]{43}$/);
 r=await worker.fetch(req('/widget/feed',token),env);data=await r.json();assert.equal(data.student.id,a);assert.equal(data.school[0].id,ta.id);assert.equal(data.academy.length,0);

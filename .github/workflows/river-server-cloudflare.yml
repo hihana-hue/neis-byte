@@ -13,6 +13,9 @@ on:
     paths:
       - 'river/server/**'
       - '.github/workflows/river-server-cloudflare.yml'
+      - 'river/app.mjs'
+      - 'river/index.html'
+      - 'river/school-date-edit.ui.test.mjs'
 permissions:
   contents: read
 concurrency:
@@ -41,8 +44,14 @@ jobs:
           node river/server/academy-create.test.mjs
           node river/server/personal-schedules.test.mjs
           node river/server/schedule-kind.test.mjs
+          node river/server/school-due.test.mjs
+      - name: Test school date editor and existing personal schedule interactions
+        run: |
+          npm install --prefix "$RUNNER_TEMP/river-ui" --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/school-date-edit.ui.test.mjs
+          NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/personal-ui.test.mjs
   cloudflare:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Edit school due dates in place from the web app')
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -57,7 +66,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          DEPLOY_MODE: ${{ inputs.mode }}
+          DEPLOY_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy' }}
         run: |
           export WRANGLER_BIN="$RUNNER_TEMP/river-wrangler/node_modules/.bin/wrangler"
           node river/server/deploy-cloudflare.mjs "$DEPLOY_MODE"
