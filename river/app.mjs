@@ -28,49 +28,44 @@ const notifications=createSettings(api,()=>Boolean(token));
 function connectionSettings(connected){for(const id of ['school-add','academy-add']){const action=$(id);action.hidden=!connected;action.style.display=connected?'':'none';}if(!connected){widgetDownload.reset();setBrandTitle('나의 일정');}const button=$('notifications-open');button.hidden=connected;button.style.display=connected?'none':'';if(connected&&$('notify-dialog').open)$('notify-dialog').close();}
 $('notifications-open').onclick=()=>{if(!loaded)notifications.open();};
 if(new URL(location.href).searchParams.get('settings')==='notifications')notifications.open();
-const saving=new Set();let detailItem=null;
+const saving=new Set();let detailItem=null, draftStatus=null;
 function safeNotionUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&['app.notion.com','www.notion.so','notion.so'].includes(u.hostname)?u.href:null;}catch{return null;}}
 function dueLabel(x){if(!x.due)return '기한 미정';const d=dayNumber(x.due)-dayNumber(todayKey());return `${compact(dayNumber(x.due))} · ${d<0?Math.abs(d)+'일 지남':d===0?'오늘 마감':'D−'+d}`;}
 function reminder(x){if(demo)return '디자인 확인용 샘플이에요. 실제 일정은 노션 연결 후 표시됩니다.';if(!x.due)return '기한을 정하면 마감일까지 남은 시간을 확인할 수 있어.';const d=dayNumber(x.due)-dayNumber(todayKey());if(d<0)return '기한이 지났어. 제출 여부와 변경된 기한을 확인해 줘.';if(d===0)return '오늘 제출이야. 파일과 제출처를 마지막으로 확인해!';if(d===1)return '내일 제출이야. 제출할 파일과 제출처를 확인해!';if(d<=2)return '이틀 안에 제출이야. 남은 부분을 확인해!';return '다가오는 제출일을 확인하고 이번 주말에 준비해 둬!';}
-function openDetail(x){detailItem=x;$('detail-date-form').hidden=true;$('detail-date-open').setAttribute('aria-expanded','false');$('detail-date-open').disabled=saving.has(x.id);$('detail-due').disabled=saving.has(x.id);$('detail-subject').textContent=x.subjects.join(' · ')||'일정';$('detail-title').textContent=x.title;$('detail-task').textContent=x.taskName||'';$('detail-task').hidden=!x.taskName;$('detail-due').textContent=dueLabel(x);$('detail-status').textContent=displayStatus(x.status);$('detail-submission').textContent=x.submission||'미지정';$('detail-reminder').textContent=reminder(x);$('detail-error').hidden=true;const link=safeNotionUrl(x.url);$('detail-notion').hidden=!link;if(link)$('detail-notion').href=link;else $('detail-notion').removeAttribute('href');for(const [id,status] of [['detail-start','시작전'],['detail-progress','진행 중'],['detail-done','완료']]){const b=$(id);b.disabled=saving.has(x.id);b.setAttribute('aria-pressed',String(displayStatus(x.status)===displayStatus(status)));}if(!$('detail').open)$('detail').showModal();}
-async function saveStatus(status){
- const x=detailItem;if(!x||saving.has(x.id))return;
- saving.add(x.id);for(const id of ['detail-start','detail-progress','detail-done'])$(id).disabled=true;
- $('detail-error').hidden=true;render();
- try{
-  if(!demo){
-   // Persist all three transitions through the same status endpoint.
-   await api('/tasks/'+encodeURIComponent(x.id)+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status,from:x.status||''})});
-  }
-  x.status=status;x.completedAt=complete(status)?new Date().toISOString():null;
-  if(detailItem?.id===x.id)$('detail').close();
-  chips();render();toast(demo?'샘플 상태를 변경했어요.':status+' 상태로 노션에 저장했어요.');
- }catch(e){const error=$('detail-error');error.textContent=e.message;error.hidden=false;}
- finally{saving.delete(x.id);for(const id of ['detail-start','detail-progress','detail-done'])$(id).disabled=false;render();}
+function openDetail(x){detailItem=x;draftStatus=x.status;$('detail-date-input').value=x.due?.slice(0,10)||'';$('detail-date-form').hidden=true;$('detail-date-open').setAttribute('aria-expanded','false');$('detail-date-open').disabled=saving.has(x.id);$('detail-due').disabled=saving.has(x.id);$('detail-subject').textContent=x.subjects.join(' · ')||'일정';$('detail-title').textContent=x.title;$('detail-task').textContent=x.taskName||'';$('detail-task').hidden=!x.taskName;$('detail-due').textContent=dueLabel(x);$('detail-submission').textContent=x.submission||'미지정';$('detail-reminder').textContent=reminder(x);$('detail-error').hidden=true;const link=safeNotionUrl(x.url);$('detail-notion').hidden=!link;if(link)$('detail-notion').href=link;else $('detail-notion').removeAttribute('href');for(const [id,status] of [['detail-start','시작전'],['detail-progress','진행 중'],['detail-done','완료']]){const b=$(id);b.disabled=saving.has(x.id);b.setAttribute('aria-pressed',String(displayStatus(x.status)===displayStatus(status)));}if(!$('detail').open)$('detail').showModal();}
+function selectStatus(status){
+ if(!detailItem||saving.has(detailItem.id))return;draftStatus=status;
+ for(const [id,value] of [['detail-start','시작전'],['detail-progress','진행 중'],['detail-done','완료']])$(id).setAttribute('aria-pressed',String(displayStatus(value)===displayStatus(status)));
 }
+function cancelDetail(){if(detailItem&&saving.has(detailItem.id))return;$('detail').close();toast('취소되었습니다');}
 function openDateEditor(){
  const x=detailItem;if(!x||saving.has(x.id))return;
- $('detail-date-input').value=x.due?.slice(0,10)||'';$('detail-date-form').hidden=false;$('detail-date-open').setAttribute('aria-expanded','true');$('detail-error').hidden=true;const input=$('detail-date-input');input.focus({preventScroll:true});
+ $('detail-date-form').hidden=false;$('detail-date-open').setAttribute('aria-expanded','true');$('detail-error').hidden=true;const input=$('detail-date-input');input.focus({preventScroll:true});
  // Open synchronously inside the original click, while browser user activation is available.
  if(typeof input.showPicker==='function'){try{input.showPicker();return;}catch{}}
  input.click();
 }
 $('detail-date-open').onclick=openDateEditor;$('detail-due').onclick=openDateEditor;
-$('detail-date-cancel').onclick=()=>{$('detail-date-form').hidden=true;$('detail-date-open').setAttribute('aria-expanded','false');$('detail-date-open').focus();};
+$('detail-date-cancel').onclick=cancelDetail;
 $('detail-date-form').onsubmit=async e=>{
  e.preventDefault();const x=detailItem;if(!x||saving.has(x.id))return;
- const due=$('detail-date-input').value,from=x.due||null;
- if(!/^\d{4}-\d{2}-\d{2}$/.test(due)||!Number.isFinite(dayNumber(due))||new Date(dayNumber(due)*86400000).toISOString().slice(0,10)!==due){$('detail-error').textContent='변경할 날짜를 선택해 주세요.';$('detail-error').hidden=false;return;}
- if(due===from?.slice(0,10)){$('detail-date-form').hidden=true;$('detail-date-open').setAttribute('aria-expanded','false');return;}
+ const due=$('detail-date-input').value,from=x.due||null,dateChanged=due!==(from?.slice(0,10)||'');
+ if(dateChanged&&(!/^\d{4}-\d{2}-\d{2}$/.test(due)||!Number.isFinite(dayNumber(due))||new Date(dayNumber(due)*86400000).toISOString().slice(0,10)!==due)){$('detail-error').textContent='변경할 날짜를 선택해 주세요.';$('detail-error').hidden=false;return;}
  saving.add(x.id);$('detail-error').hidden=true;
- const controls=['detail-date-input','detail-date-save','detail-date-cancel','detail-date-open','detail-due','detail-start','detail-progress','detail-done'];for(const id of controls)$(id).disabled=true;render();
+ const controls=['detail-date-input','detail-date-save','detail-date-cancel','detail-date-open','detail-due','detail-start','detail-progress','detail-done','detail-close'];for(const id of controls)$(id).disabled=true;render();
  try{
-  const data=demo?{ok:true,id:x.id,due}:await api('/tasks/'+encodeURIComponent(x.id)+'/due',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({due,from})});
-  if(!data.ok||data.id!==x.id||typeof data.due!=='string'||data.due.slice(0,10)!==due)throw Error('날짜 저장 결과를 확인하지 못했어요.');
-  x.due=data.due;const current=items.find(item=>item.id===x.id);if(current)current.due=data.due;
-  chips();render();if(detailItem?.id===x.id)openDetail(current||x);toast(demo?'샘플 날짜를 변경했어요.':'기존 일정의 날짜를 노션에 저장했어요.');
- }catch(error){if(detailItem?.id===x.id){$('detail-error').textContent=error.message;$('detail-error').hidden=false;}}
- finally{saving.delete(x.id);for(const id of controls)$(id).disabled=!!detailItem&&saving.has(detailItem.id);render();}
+  if(dateChanged){
+   const data=demo?{ok:true,id:x.id,due}:await api('/tasks/'+encodeURIComponent(x.id)+'/due',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({due,from})});
+   if(!data.ok||data.id!==x.id||typeof data.due!=='string'||data.due.slice(0,10)!==due)throw Error('날짜 저장 결과를 확인하지 못했어요.');
+   x.due=data.due;$('detail-due').textContent=dueLabel(x);
+  }
+  if(draftStatus!==x.status){
+   if(!demo)await api('/tasks/'+encodeURIComponent(x.id)+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:draftStatus,from:x.status||''})});
+   x.status=draftStatus;x.completedAt=complete(draftStatus)?new Date().toISOString():null;
+  }
+  chips();render();if(detailItem?.id===x.id)$('detail').close();toast(demo?'샘플 변경 내용을 저장했어요.':'변경 내용을 저장했어요.');
+ }catch(error){if(detailItem?.id===x.id){$('detail-error').textContent=(x.due!==from?'날짜는 저장되었습니다. 상태 저장을 다시 시도해 주세요. ':'')+error.message;$('detail-error').hidden=false;}}
+ finally{saving.delete(x.id);for(const id of controls)$(id).disabled=false;render();}
 };
 function card(x){const el=text('article','','card'+(!complete(x.status)&&x.due&&dayNumber(x.due)<=dayNumber(todayKey())?' needs-attention':'')),b=text('button','✓','done');
  b.title='상태 변경';b.setAttribute('aria-label',x.title+' 상태 변경');b.disabled=saving.has(x.id);b.onclick=()=>openDetail(x);
@@ -94,11 +89,12 @@ $('connect').onclick=()=>{if(!base){message('실제 일정 연결은 준비 중�
 $('login-form').onsubmit=async e=>{e.preventDefault();reconnectWeb=true;token=$('password').value.trim();$('password').value='';$('login').close();try{await load();remember();}catch(e){token='';toast(e.message);}};$('cancel').onclick=()=>$('login').close();
 $('logout').onclick=()=>{$('detail').close();detailItem=null;$('notify-dialog').close();academy.reset();connectionSettings(false);forget();token='';items=[];loaded=false;selected='';$('logout').hidden=true;$('student-notion').hidden=true;$('student-notion').style.display='none';$('student-notion').removeAttribute('href');refreshControl(false);$('connect').title='연결하기';$('connect').setAttribute('aria-label','일정 불러오기');message('학생코드를 연결하세요');chips();render();};
 function showSamples(){demo=true;loaded=true;const w=weekBounds(todayKey()), key=n=>new Date(n*86400000).toISOString().slice(0,10);items=[{id:'sample-1',title:'에세이 초안 다듬기',subjects:['영어 · 샘플'],due:todayKey(),status:'진행 중',submission:'리로스쿨'},{id:'sample-2',title:'탐구 보고서 자료 정리',subjects:['과학 · 샘플'],due:key(w.end+2),status:'시작전',submission:'서면제출'},{id:'sample-3',title:'새로운 멜로디 스케치',subjects:['개인 · 샘플'],due:null,status:'진행 중'}];selected='';message('샘플 화면 · 노션 연결 전');chips();render();};
-$('detail-close').onclick=()=>$('detail').close();
-$('detail-start').onclick=()=>saveStatus('시작전');
-$('detail-progress').onclick=()=>saveStatus('진행 중');
-$('detail-done').onclick=()=>saveStatus('완료');
-$('detail').addEventListener('click',e=>{if(e.target!==$('detail'))return;const r=$('detail').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('detail').close();});
+$('detail-close').onclick=cancelDetail;
+$('detail').addEventListener('cancel',e=>{e.preventDefault();cancelDetail();});
+$('detail-start').onclick=()=>selectStatus('시작전');
+$('detail-progress').onclick=()=>selectStatus('진행 중');
+$('detail-done').onclick=()=>selectStatus('완료');
+$('detail').addEventListener('click',e=>{if(e.target!==$('detail'))return;const r=$('detail').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)cancelDetail();});
 setInterval(()=>{if(loaded)render();},60000);message('학생코드를 연결하세요');chips();render();
 if(!base)showSamples();
 

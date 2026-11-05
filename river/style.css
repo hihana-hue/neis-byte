@@ -236,3 +236,20 @@ main:not(.write-page),main.write-page{width:100%;max-width:480px;display:block;p
 .school-date-actions button{border:1px solid #c5d9e2;border-radius:5px;padding:4px 12px;background:#e0f0f9;color:#17688c;font:600 12px/1.3 system-ui;box-shadow:none}
 .school-date-actions button:last-child{background:#edf0f5;color:#58687c}
 .card.needs-attention .meta .school-date-trigger{color:var(--muted)!important;font-weight:700}
+
+/* Compact school editor: keep final actions outside the scrolling body. */
+#detail{height:auto;max-height:82dvh;width:calc(100vw - 28px)}
+#detail .detail-shell{height:auto;max-height:82dvh}
+#detail .detail-top,#detail .detail-actions{flex-shrink:0}
+#detail .detail-body{flex:1 1 auto;padding-bottom:8px}
+#detail .detail-body h2{font-size:19px;line-height:1.3;margin:6px 0 9px}
+#detail .detail-body dl{grid-template-columns:40px minmax(0,1fr);align-items:center;gap:8px}
+#detail .detail-status-buttons{justify-content:flex-start;gap:4px}
+#detail .detail-status-buttons button{min-height:32px;padding:4px 6px!important;font-size:11px!important}
+#detail .school-date-editor{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:6px;padding:7px;margin:9px 0 0}
+#detail .school-date-editor label{margin:0;font-size:11px;white-space:nowrap}
+#detail .school-date-editor input{width:100%;min-width:0;font-size:14px}
+#detail .detail-shell .detail-actions{display:flex;gap:6px;padding:8px 12px 10px;border-top:1px solid #e0e7f0}
+#detail .detail-actions button{min-height:36px;border:1px solid #c5d9e2;border-radius:6px;background:#e0f0f9;color:#17688c;box-shadow:none}
+#detail #detail-date-cancel{background:#edf0f5;color:#58687c}
+#detail .detail-reminder{font-size:11px;line-height:1.4;margin-top:9px;padding:7px 9px}
