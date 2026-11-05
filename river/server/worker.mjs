@@ -438,7 +438,7 @@ async function rpFetch(request,env){
   if(statusMatch&&request.method==='PATCH'){
    const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);
    let input;try{input=JSON.parse(raw);}catch{return reply({error:'변경 내용을 확인해 주세요.'},400);}
-   if(!['시작전','진행 중','완료'].includes(input.status)||typeof input.from!=='string')return reply({error:'변경할 상태를 확인해 주세요.'},400);
+   if(!['시작전','진행 중','진행 2차','작성 완료','완료'].includes(input.status)||typeof input.from!=='string')return reply({error:'변경할 상태를 확인해 주세요.'},400);
    const page=await notion('pages/'+statusMatch[1]);
    if(page.archived||page.in_trash||page.parent?.type!=='data_source_id'||normalized(page.parent.data_source_id)!==normalized(env.SCHOOL_DATA_SOURCE_ID))return reply({error:'이 일정표에 속한 항목이 아닙니다.'},403);
    const current=page.properties?.['상태']?.status?.name||'';

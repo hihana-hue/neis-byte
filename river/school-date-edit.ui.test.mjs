@@ -26,10 +26,10 @@ assert.ok($('detail-status').contains($('detail-progress')));
 $('detail-start').click();$('detail-date-input').value='2026-11-07';assert.equal(writes.length,0);
 $('detail-date-cancel').click();assert.equal($('detail').open,false);assert.equal($('toast').textContent,'취소되었습니다');assert.equal(writes.length,0);
 open();assert.equal($('detail-date-input').value,'2026-11-05');assert.equal($('detail-progress').getAttribute('aria-pressed'),'true');
-$('detail-done').click();$('detail-date-input').value='2026-11-07';await $('detail-date-form').onsubmit({preventDefault(){}});
-assert.equal(writes.length,2);assert.deepEqual(writes[0].body,{due:'2026-11-07',from:'2026-11-05'});assert.deepEqual(writes[1].body,{status:'완료',from:'진행 중'});assert.equal($('detail').open,false);
+$('detail-second').click();assert.equal(writes.length,0);$('detail-written').click();$('detail-date-input').value='2026-11-07';await $('detail-date-form').onsubmit({preventDefault(){}});
+assert.equal(writes.length,2);assert.deepEqual(writes[0].body,{due:'2026-11-07',from:'2026-11-05'});assert.deepEqual(writes[1].body,{status:'작성 완료',from:'진행 중'});assert.equal($('detail').open,false);
 // Reopen from the completed list and verify failure keeps the draft available.
-document.querySelector('.completed-row button').click();$('detail-date-open').click();$('detail-date-input').value='2026-11-08';fail=true;
+document.querySelector('.card .title').click();$('detail-date-open').click();$('detail-date-input').value='2026-11-08';fail=true;
 await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal($('detail').open,true);assert.match($('detail-error').textContent,/저장 실패/);assert.equal($('detail-date-save').disabled,false);
 fail=false;await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.at(-1).body.from,'2026-11-07');assert.equal($('detail').open,false);
 console.log('PASS staged date/status, cancellation without writes, combined save and close, failure retry on original record');dom.window.close();
