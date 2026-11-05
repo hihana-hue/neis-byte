@@ -270,3 +270,8 @@ main:not(.write-page),main.write-page{width:100%;max-width:480px;display:block;p
 #detail .detail-actions button{min-height:32px;padding:5px}
 #detail #detail-task{margin:0 0 6px;font-size:11px}
 @media(max-height:600px){#detail .detail-body h2{font-size:16px;margin:3px 0 5px}#detail .detail-reminder{font-size:9px;padding:3px 5px;margin-top:4px}#detail .detail-top{padding-top:3px}}
+
+/* Keep the modal at its content height rather than stretching between insets. */
+dialog#detail{height:fit-content;min-height:0;block-size:fit-content;min-block-size:0;inset:0;margin:auto;max-height:calc(100dvh - 90px)}
+dialog#detail .detail-shell{height:auto;min-height:0;flex:0 0 auto}
+dialog#detail .detail-body{flex:0 1 auto}
