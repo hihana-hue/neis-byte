@@ -28,3 +28,5 @@ https://developer.android.com/develop/ui/views/appwidgets/collections
 ## Read-only connection
 Deploy the current river/server/worker.mjs to Cloudflare first (same RIVER_KV). Dashboard admin authentication generates a temporary pairing code. Pairing returns a distinct device token, whose hash and widget:read scope are stored in KV. It is accepted only by /widget/feed and /widget/disconnect; it cannot authenticate /tasks or /academy mutations. The feed omits completed lessons/tasks and unrelated Notion properties. Revoke devices from the dashboard. Pair codes are removed on redemption, but KV is eventually consistent: repeated redemption may briefly return the same device credential, never admin permissions. Tokens are not URL parameters or build secrets.
 
+
+Current release: 1.30.56 (versionCode 56). Academy round counts have reserved width; makeup titles use the original lesson day.
