@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
+import worker from './worker.mjs';
+if(!globalThis.crypto)globalThis.crypto=webcrypto;
+const ds='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',options=['리로스쿨','패들렛','직접 제출'];let writes=[];
+globalThis.fetch=async(url,opts={})=>{if(String(url).includes('/data_sources/'))return Response.json({properties:{'과목':{multi_select:{options:[{name:'과학'}]}},'제출처':{select:{options:options.map(name=>({name}))}}}});assert.ok(String(url).endsWith('/pages'));writes.push(JSON.parse(opts.body));return Response.json({id:'new-page',url:'https://notion.so/new-page'});};
+const env={NOTION_TOKEN:'test',RIVER_ACCESS_KEY:'admin',SCHOOL_DATA_SOURCE_ID:ds};
+const call=(path,body)=>worker.fetch(new Request('https://test.invalid'+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer admin'},...(body?{body:JSON.stringify(body)}:{})}),env);
+let r=await call('/options');assert.deepEqual((await r.json()).submissions,options);
+const task={subject:'과학',due:'2026-11-07',title:'보고서'};
+r=await call('/tasks',task);assert.equal(r.status,201);assert.equal(writes.at(-1).properties['제출처'].select.name,'리로스쿨');
+r=await call('/tasks',{...task,submission:'패들렛'});assert.equal(r.status,201);assert.equal(writes.at(-1).properties['제출처'].select.name,'패들렛');
+r=await call('/tasks',{...task,submission:'새 임의 항목'});assert.equal(r.status,400);assert.equal(writes.length,2);
+console.log('PASS Notion submission options, default new submission, explicit selection and unknown-option rejection');

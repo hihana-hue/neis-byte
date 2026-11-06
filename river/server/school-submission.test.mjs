@@ -4,7 +4,7 @@ import worker from './worker.mjs';
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const ds='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 let page={id,parent:{type:'data_source_id',data_source_id:ds},properties:{'제출처':{type:'select',select:{name:'리로스쿨'}}}},writes=[];
-globalThis.fetch=async(url,opts={})=>{assert.equal(String(url).split('/v1/')[1],'pages/'+id);if(opts.method==='PATCH'){const body=JSON.parse(opts.body);writes.push(body);page.properties['제출처']={type:'select',...body.properties['제출처']};}return Response.json(page);};
+globalThis.fetch=async(url,opts={})=>{if(String(url).includes('/data_sources/'))return Response.json({properties:{'제출처':{select:{options:[{name:'리로스쿨'},{name:'패들렛'}]}}}});assert.equal(String(url).split('/v1/')[1],'pages/'+id);if(opts.method==='PATCH'){const body=JSON.parse(opts.body);writes.push(body);page.properties['제출처']={type:'select',...body.properties['제출처']};}return Response.json(page);};
 const env={NOTION_TOKEN:'test',RIVER_ACCESS_KEY:'admin',SCHOOL_DATA_SOURCE_ID:ds};
 const call=body=>worker.fetch(new Request('https://test.invalid/tasks/'+id+'/submission',{method:'PATCH',headers:{Authorization:'Bearer admin'},body:JSON.stringify(body)}),env);
 let r=await call({submission:'패들렛',from:'리로스쿨'});assert.equal(r.status,200);assert.equal((await r.json()).submission,'패들렛');assert.deepEqual(Object.keys(writes[0].properties),['제출처']);

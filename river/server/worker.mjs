@@ -400,7 +400,7 @@ async function rpFetch(request,env){
 
   if(path==='/options'&&request.method==='GET'){
    const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
-   return reply({student:env.STUDENT||null,subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name)});
+   return reply({student:env.STUDENT||null,subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name),submissions:(source.properties?.['제출처']?.select?.options||[]).map(x=>x.name)});
   }
   if(path==='/tasks'&&request.method==='POST'){
    if(Number(request.headers.get('Content-Length')||0)>4096)return reply({error:'입력 내용이 너무 깁니다.'},413);
@@ -410,7 +410,8 @@ async function rpFetch(request,env){
    if(!title||title.length>200||typeof subject!=='string'||typeof due!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(due)||!Number.isFinite(Date.parse(due+'T00:00:00Z'))||new Date(due+'T00:00:00Z').toISOString().slice(0,10)!==due)return reply({error:'과목·마감일·주제를 확인해 주세요.'},400);
    const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
    if(!(source.properties?.['과목']?.multi_select?.options||[]).some(x=>x.name===subject))return reply({error:'현재 노션에 있는 과목을 선택해 주세요.'},400);
-   const page=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:env.SCHOOL_DATA_SOURCE_ID},properties:{'주제':{title:[{text:{content:title}}]},'과목':{multi_select:[{name:subject}]},'기한':{date:{start:due}},'상태':{status:{name:'시작전'}}}});
+   const submission=input.submission??'리로스쿨';if(typeof submission!=='string'||!(source.properties?.['제출처']?.select?.options||[]).some(x=>x.name===submission))return reply({error:'현재 노션에 있는 제출처를 선택해 주세요.'},400);
+   const page=await notion('pages','POST',{parent:{type:'data_source_id',data_source_id:env.SCHOOL_DATA_SOURCE_ID},properties:{'제출처':{select:{name:submission}},'주제':{title:[{text:{content:title}}]},'과목':{multi_select:[{name:subject}]},'기한':{date:{start:due}},'상태':{status:{name:'시작전'}}}});
    return reply({ok:true,id:page.id,url:page.url},201);
   }
   if(path==='/tasks'&&request.method==='GET'){
@@ -445,6 +446,8 @@ async function rpFetch(request,env){
    if(current?.type&&current.type!=='select')return reply({error:'노션 제출처 속성의 선택 형식을 확인해 주세요.'},409);
    if((current?.select?.name||'')!==input.from)return reply({error:'제출처가 다른 곳에서 변경됐어요. 새로고침 후 다시 수정해 주세요.'},409);
    const submission=input.submission.trim();
+   const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
+   if(submission&&!(source.properties?.['제출처']?.select?.options||[]).some(x=>x.name===submission))return reply({error:'현재 노션에 있는 제출처를 선택해 주세요.'},400);
    await notion('pages/'+submissionMatch[1],'PATCH',{properties:{'제출처':{select:submission?{name:submission}:null}}});
    return reply({ok:true,id:page.id,submission});
   }

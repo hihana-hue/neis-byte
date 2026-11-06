@@ -12,6 +12,7 @@ const id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',record={id,title:'날짜 변경 
 const writes=[];let fail=false;
 globalThis.fetch=async(url,options={})=>{
  const path=String(url);
+ if(path.endsWith('/options'))return Response.json({subjects:['과학'],submissions:['리로스쿨','패들렛','서면제출']});
  if(path.endsWith('/dashboard'))return Response.json({student:{id:'test-student',name:'학생'},items:[record],academy:{items:[],kinds:['과학']}});
  if(path.includes('widget-release.json'))return Response.json({ready:false});
  if(path.endsWith('/tasks/'+id+'/submission')){writes.push({path,body:JSON.parse(options.body)});return Response.json({ok:true});}
@@ -33,5 +34,5 @@ assert.equal(writes.length,2);assert.deepEqual(writes[0].body,{due:'2026-11-07',
 document.querySelector('.card .title').click();$('detail-date-open').click();$('detail-date-input').value='2026-11-08';fail=true;
 await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal($('detail').open,true);assert.match($('detail-error').textContent,/저장 실패/);assert.equal($('detail-date-save').disabled,false);
 fail=false;await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.at(-1).body.from,'2026-11-07');assert.equal($('detail').open,false);
-document.querySelector('.card .title').click();$('detail-submission').value='패들렛';$('detail-date-cancel').click();const beforeSubmission=writes.length;document.querySelector('.card .title').click();assert.equal($('detail-submission').value,'');$('detail-submission').value='패들렛';await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.length,beforeSubmission+1);assert.deepEqual(writes.at(-1).body,{submission:'패들렛',from:''});assert.equal(document.querySelector('.card .done'),null);
+document.querySelector('.card .title').click();await flush();$('detail-submission').value='패들렛';$('detail-date-cancel').click();const beforeSubmission=writes.length;document.querySelector('.card .title').click();await flush();assert.equal($('detail-submission').value,'');$('detail-submission').value='패들렛';await $('detail-date-form').onsubmit({preventDefault(){}});assert.equal(writes.length,beforeSubmission+1);assert.deepEqual(writes.at(-1).body,{submission:'패들렛',from:''});assert.equal(document.querySelector('.card .done'),null);
 console.log('PASS staged date/status, cancellation without writes, combined save and close, failure retry on original record');dom.window.close();
