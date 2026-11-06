@@ -35,7 +35,7 @@ export function createWidgetDownload(notify){
   inFlight=true;lastCheck=Date.now();
   try{const r=await fetch('./widget-release.json',{cache:'no-store'});if(r.ok){const m=await r.json();manifest=validDownload(m)?m:{...m,ready:false};}}catch{}finally{inFlight=false;render();}
  }
- document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkRelease();});
- setInterval(()=>{if(document.visibilityState==='visible')void checkRelease();},5*60000);
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void checkRelease(true);});
+ setInterval(()=>{if(document.visibilityState==='visible')void checkRelease(true);},5*60000);
  return {async connect(id){student=id||'connected';render();await checkRelease(true);},reset(){student='';if(confirmDialog.open)confirmDialog.close();render();}};
 }

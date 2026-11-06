@@ -1,6 +1,6 @@
 import {mountPicker} from './compact-picker.mjs?v=1';
 import {fillSubmissionSelect} from './submission-select.mjs?v=1';
-import {createWidgetDownload} from './widget-download.mjs?v=7';
+import {createWidgetDownload} from './widget-download.mjs?v=8';
 import {paintSubject} from './subject-palette.mjs?v=2';
 import {createSettings} from './settings-popup.mjs?v=6';
 import {createAcademy} from './main-academy.mjs?v=52-notion-link';
