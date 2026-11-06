@@ -1,8 +1,10 @@
-import {mountAcademyCalendar} from './academy-calendar.mjs?v=3';
+import {mountPicker} from './compact-picker.mjs?v=1';
+import {mountAcademyCalendar} from './academy-calendar.mjs?v=4';
 import {weekday} from './date-weekday.mjs?v=1';
 import {toStart,localInput,lessonRounds,packSize,scheduleCategory,scheduleKindLabel,scheduleTitle} from './academy-model.mjs?v=7';
 export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
+ mountPicker($('academy-kind'),{title:'일정구분 선택'});mountPicker($('academy-type'),{title:'수업 구분 선택'});
  let rows=[],current=null,mode='',busy=false,connected=false,expanded=false,opening=false,connectionEpoch=0;
  const category=x=>x.category||scheduleCategory(x.kind),name=scheduleTitle,kindLabel=scheduleKindLabel;
  const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');const allOption=el('option','전체');allOption.value='__all';categoryFilter.append(allOption);$('message').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};

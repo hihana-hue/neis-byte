@@ -24,5 +24,5 @@ export function mountPicker(input,{title,date=false}={}){
  }
  function open(){if(input.disabled)return;if(active?.open)active.close();active=dialog;if(date){const value=input.value||seoulDate();year=Number(value.slice(0,4));month=Number(value.slice(5,7))-1;drawCalendar();}else drawOptions();dialog.showModal();trigger.setAttribute('aria-expanded','true');body.querySelector('[aria-pressed=true]')?.focus({preventScroll:true});}
  trigger.onclick=open;close.onclick=()=>dialog.close();dialog.addEventListener('close',()=>{trigger.setAttribute('aria-expanded','false');trigger.focus({preventScroll:true});});dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
- new MutationObserver(refresh).observe(input,{childList:true,subtree:true,attributes:true});input.addEventListener('change',refresh);refresh();return {open,refresh};
+ new input.ownerDocument.defaultView.MutationObserver(refresh).observe(input,{childList:true,subtree:true,attributes:true});input.addEventListener('change',refresh);refresh();return {open,refresh};
 }

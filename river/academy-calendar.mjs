@@ -22,7 +22,7 @@ export function mountAcademyCalendar(input){
    const b=document.createElement('button');b.type='button';b.textContent=String(Number(date.slice(-2)));b.setAttribute('aria-label',selectedLabel(date));b.setAttribute('aria-pressed',String(date===selected));if(date===today)b.setAttribute('aria-current','date');
    b.onclick=()=>{selected=date;setValue();draw();};grid.append(b);
   }
-  find('.calendar-selection').textContent=selectedLabel(selected);
+  find('.calendar-selection').textContent=selected?selectedLabel(selected):'';find('.calendar-selection').hidden=!selected;
  }
  find('[data-prev]').onclick=()=>{if(month===0){year--;month=11;}else month--;draw();};
  find('[data-next]').onclick=()=>{if(month===11){year++;month=0;}else month++;draw();};
