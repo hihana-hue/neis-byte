@@ -1,3 +1,4 @@
+import {mountPicker} from './compact-picker.mjs?v=1';
 import {fillSubmissionSelect} from './submission-select.mjs?v=1';
 import {createWidgetDownload} from './widget-download.mjs?v=7';
 import {paintSubject} from './subject-palette.mjs?v=2';
@@ -49,10 +50,10 @@ function cancelDetail(){if(detailItem&&saving.has(detailItem.id))return;$('detai
 function openDateEditor(){
  const x=detailItem;if(!x||saving.has(x.id))return;
  $('detail-date-form').hidden=false;$('detail-date-open').setAttribute('aria-expanded','true');$('detail-error').hidden=true;const input=$('detail-date-input');input.focus({preventScroll:true});
- // Open synchronously inside the original click, while browser user activation is available.
- if(typeof input.showPicker==='function'){try{input.showPicker();return;}catch{}}
- input.click();
+ datePicker.open();
 }
+const datePicker=mountPicker($('detail-date-input'),{title:'날짜 수정',date:true});
+mountPicker($('detail-submission'),{title:'제출처 선택'});
 $('detail-date-open').onclick=openDateEditor;$('detail-due').onclick=openDateEditor;
 $('detail-date-cancel').onclick=cancelDetail;
 $('detail-date-form').onsubmit=async e=>{

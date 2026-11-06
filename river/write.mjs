@@ -1,3 +1,4 @@
+import {mountPicker} from './compact-picker.mjs?v=1';
 import {fillSubmissionSelect} from './submission-select.mjs?v=1';
 import {previewSubjects} from './subjects.mjs';
 const $=id=>document.getElementById(id),base=(window.RIVER_CONFIG?.apiBase||'').replace(/\/$/,'');
@@ -18,3 +19,5 @@ $('write-form').onsubmit=async e=>{e.preventDefault();if(busy||!connected||!base
 
 if(base&&(token=saved())){busy=true;api('/options').then(data=>{if(!Array.isArray(data.subjects))throw Error('과목 목록을 확인해 주세요.');options(data.subjects);fillSubmissionSelect($('submission'),data.submissions||[],'리로스쿨');connected=true;$('save').disabled=false;$('unlock').textContent='연결됨';$('write-note').textContent=(data.student?.name?data.student.name+'의 ':'연결된 ')+'학교 DB에 새 일정으로 저장됩니다.';}).catch(e=>result(e.message,true)).finally(()=>{busy=false;});}
 
+
+mountPicker($('subject'),{title:'과목 선택'});mountPicker($('submission'),{title:'제출처 선택'});mountPicker($('due'),{title:'마감일 선택',date:true});

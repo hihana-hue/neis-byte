@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const {JSDOM}=createRequire(import.meta.url)('jsdom');const dom=new JSDOM('<select id="subject"><option value="">과목 선택</option><option>통합과학2</option></select><input id="date" type="date" value="2026-11-06">');
+for(const k of ['document','Event','MutationObserver'])globalThis[k]=dom.window[k];
+dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new Event('close'));};
+const {mountPicker}=await import('./compact-picker.mjs');const subject=document.getElementById('subject'),date=document.getElementById('date');
+const a=mountPicker(subject,{title:'과목 선택'}),b=mountPicker(date,{title:'마감일 선택',date:true});
+a.open();let dialog=document.querySelector('dialog[open]');assert.equal(dialog.querySelectorAll('.compact-picker-option').length,2);dialog.querySelectorAll('.compact-picker-option')[1].click();assert.equal(subject.value,'통합과학2');assert.equal(dialog.open,false);
+b.open();dialog=document.querySelector('dialog[open]');assert.equal(dialog.querySelector('[aria-pressed=true]').textContent,'6');dialog.querySelector('[aria-label="2026-11-09"]').click();assert.equal(date.value,'2026-11-09');assert.equal(dialog.open,false);assert.equal(date.type,'hidden');assert.match(date.nextElementSibling.textContent,/2026. 11. 09/);
+b.open();dialog=document.querySelector('dialog[open]');dialog.querySelector('.compact-picker-close').click();assert.equal(date.value,'2026-11-09');
+console.log('PASS compact select/date dialogs, selection, date prefill, labels, close without changes');dom.window.close();

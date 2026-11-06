@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import fs from 'node:fs';
 const require=createRequire(import.meta.url),{JSDOM}=require('jsdom');
 const dom=new JSDOM(fs.readFileSync(new URL('./index.html',import.meta.url),'utf8'),{url:'https://test.invalid/river/'});
-for(const key of ['window','document','Event','location','history','localStorage','sessionStorage'])globalThis[key]=dom.window[key];
+for(const key of ['window','document','Event','location','history','localStorage','sessionStorage','MutationObserver'])globalThis[key]=dom.window[key];
 globalThis.setInterval=()=>0;globalThis.setTimeout=()=>0;
 dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;};
 const pickerDates=[];dom.window.HTMLInputElement.prototype.showPicker=function(){pickerDates.push(this.value);};
@@ -23,7 +23,7 @@ globalThis.fetch=async(url,options={})=>{
 await import('./app.mjs');const flush=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve));};await flush();
 const $=id=>document.getElementById(id);
 const open=()=>document.querySelector('.card .school-date-trigger').click();
-open();assert.equal($('detail').open,true);assert.equal(pickerDates.at(-1),'2026-11-05');
+open();assert.equal($('detail').open,true);assert.ok(document.querySelector('.compact-picker[open]'));document.querySelector('.compact-picker[open] .compact-picker-close').click();
 assert.ok($('detail-status').contains($('detail-progress')));
 $('detail-start').click();$('detail-date-input').value='2026-11-07';assert.equal(writes.length,0);
 $('detail-date-cancel').click();assert.equal($('detail').open,false);assert.equal($('toast').textContent,'취소되었습니다');assert.equal(writes.length,0);
