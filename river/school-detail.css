@@ -1,0 +1,37 @@
+/* School detail: content-sized modal with a single responsive rule set. */
+#detail{--detail-muted:#526d81;width:min(440px,calc(100vw - 20px));max-width:440px;height:fit-content;min-height:0;max-height:calc(100dvh - 80px);inset:0;margin:auto;padding:0;overflow:visible;border:1px solid #dbe5ed;border-radius:16px;background:linear-gradient(130deg,#fff,#faf7fb 60%,#f3f9fc);box-shadow:0 12px 32px #263c5126}
+#detail::backdrop{background:#687d9355;backdrop-filter:blur(4px)}
+#detail .detail-shell{height:auto;max-height:calc(100dvh - 80px);min-height:0;display:flex;flex-direction:column;position:relative}
+#detail .detail-eyes{position:absolute;top:-30px;left:50%;transform:translateX(-50%);display:flex;gap:7px;padding:7px 10px;background:linear-gradient(#fdfcff,#eae4ee);border:2px solid white;border-radius:12px;box-shadow:0 5px 12px #263c5126}
+#detail .detail-eyes i{width:20px;height:24px}
+#detail .detail-top{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px 0 12px;flex:none}
+#detail .detail-subject{max-width:calc(100% - 44px);font-size:11px;line-height:1.3;padding:4px 8px;border:1px solid #d5e8f4;border-radius:4px;background:#e3f1f8;color:#186a92;overflow-wrap:anywhere}
+#detail .detail-close{width:40px;height:40px;flex:none;border:0;background:transparent;color:#526d81;font-size:26px;padding:0}
+#detail .detail-body{flex:0 1 auto;min-height:0;overflow:auto;padding:0 12px 7px}
+#detail h2{font-size:18px;line-height:1.3;margin:3px 0 8px;font-weight:700;overflow-wrap:anywhere;letter-spacing:-.3px}
+#detail-task{font-size:11px;line-height:1.4;color:var(--detail-muted);margin:0 0 7px}
+#detail dl{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:6px;font-size:12px;line-height:1.4;margin:0}
+#detail dt{color:var(--detail-muted)}
+#detail dd{margin:0;min-width:0;overflow-wrap:anywhere}
+#detail .detail-due-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#detail-due{color:#146e98;font-weight:700;min-height:32px}
+#detail .school-date-edit-button,#detail-notion{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:4px 6px;border:1px solid #c5d9e2;border-radius:5px;background:#edf3f6;color:#285b72;font:600 11px/1.3 system-ui;white-space:nowrap;box-shadow:none}
+#detail .detail-status-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:100%}
+#detail .detail-status-buttons button{width:100%;min-width:0;min-height:36px;padding:4px 1px;border:1px solid #c5d9e2;border-radius:5px;font:600 11px/1.3 system-ui;letter-spacing:-.2px;white-space:nowrap;box-shadow:none;background:#e0f0f9;color:#205d78}
+#detail-start{background:#edf0f5!important;color:#46566a!important}
+#detail-second{background:#e2eff8!important;color:#24617b!important}
+#detail-written{background:#eee8f6!important;color:#684581!important}
+#detail-done{background:#e0f2e9!important;color:#276348!important}
+#detail .detail-status-buttons button[aria-pressed=true]{border:2px solid #19799f;box-shadow:inset 0 -2px #19799f;font-weight:800}
+#detail button:focus-visible,#detail a:focus-visible{outline:2px solid #19799f;outline-offset:2px}
+#detail .school-date-editor{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:6px;margin:8px 0 0;padding:7px;border:1px solid #d3e2ea;border-radius:7px;background:#f5fafc}
+#detail .school-date-editor label{font-size:11px;margin:0}
+#detail .school-date-editor input{width:100%;min-width:0;min-height:36px;margin:0;padding:5px;font-size:16px}
+#detail .detail-reminder{background:#e7f2f8;color:#315b72;border-radius:7px;font-size:11px;line-height:1.4;margin:7px 0 0;padding:6px 8px}
+#detail .detail-actions{display:flex;flex:none;gap:6px;border-top:1px solid #e0e7f0;padding:7px 12px 9px}
+#detail .detail-actions button{flex:1;min-width:0;min-height:40px;padding:6px;border:1px solid #c5d9e2;border-radius:6px;font:700 12px/1.3 system-ui;box-shadow:none}
+#detail-date-save{background:#19799f;color:white;border-color:#19799f!important}
+#detail-date-cancel{background:#edf0f5;color:#46566a}
+#detail-error{margin:0;padding:0 12px 9px;color:#96374c;font-size:12px;line-height:1.4;flex:none}
+@media(max-width:360px){#detail dl{grid-template-columns:30px minmax(0,1fr);gap:4px}#detail .detail-body{padding-inline:9px}#detail .detail-status-buttons{gap:2px}}
+@media(max-height:600px){#detail h2{font-size:16px;margin-bottom:5px}#detail .detail-reminder{padding:4px 6px;margin-top:4px}}

@@ -51,21 +51,21 @@ $('detail-date-form').onsubmit=async e=>{
  e.preventDefault();const x=detailItem;if(!x||saving.has(x.id))return;
  const due=$('detail-date-input').value,from=x.due||null,dateChanged=due!==(from?.slice(0,10)||'');
  if(dateChanged&&(!/^\d{4}-\d{2}-\d{2}$/.test(due)||!Number.isFinite(dayNumber(due))||new Date(dayNumber(due)*86400000).toISOString().slice(0,10)!==due)){$('detail-error').textContent='변경할 날짜를 선택해 주세요.';$('detail-error').hidden=false;return;}
- saving.add(x.id);$('detail-error').hidden=true;
+ saving.add(x.id);$('detail-error').hidden=true;$('detail-date-save').textContent='저장 중…';
  const controls=['detail-date-input','detail-date-save','detail-date-cancel','detail-date-open','detail-due','detail-start','detail-progress','detail-second','detail-written','detail-done','detail-close'];for(const id of controls)$(id).disabled=true;render();
  try{
   if(dateChanged){
    const data=demo?{ok:true,id:x.id,due}:await api('/tasks/'+encodeURIComponent(x.id)+'/due',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({due,from})});
    if(!data.ok||data.id!==x.id||typeof data.due!=='string'||data.due.slice(0,10)!==due)throw Error('날짜 저장 결과를 확인하지 못했어요.');
-   x.due=data.due;$('detail-due').textContent=dueLabel(x);
+   x.due=data.due;const listed=items.find(item=>item.id===x.id);if(listed)listed.due=data.due;$('detail-due').textContent=dueLabel(x);
   }
   if(draftStatus!==x.status){
    if(!demo)await api('/tasks/'+encodeURIComponent(x.id)+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:draftStatus,from:x.status||''})});
-   x.status=draftStatus;x.completedAt=complete(draftStatus)?new Date().toISOString():null;
+   x.status=draftStatus;x.completedAt=complete(draftStatus)?new Date().toISOString():null;const listed=items.find(item=>item.id===x.id);if(listed)Object.assign(listed,{status:x.status,completedAt:x.completedAt});
   }
   chips();render();if(detailItem?.id===x.id)$('detail').close();toast(demo?'샘플 변경 내용을 저장했어요.':'변경 내용을 저장했어요.');
- }catch(error){if(detailItem?.id===x.id){$('detail-error').textContent=(x.due!==from?'날짜는 저장되었습니다. 상태 저장을 다시 시도해 주세요. ':'')+error.message;$('detail-error').hidden=false;}}
- finally{saving.delete(x.id);for(const id of controls)$(id).disabled=false;render();}
+ }catch(error){if(detailItem?.id===x.id){$('detail-error').textContent=(x.due!==from?'날짜는 저장되었지만 상태는 저장하지 못했습니다. 다시 저장하면 상태만 재시도합니다. ':'')+error.message;$('detail-error').hidden=false;}}
+ finally{saving.delete(x.id);$('detail-date-save').textContent='저장';for(const id of controls)$(id).disabled=false;render();}
 };
 function card(x){const el=text('article','','card'+(!complete(x.status)&&x.due&&dayNumber(x.due)<=dayNumber(todayKey())?' needs-attention':'')),b=text('button','✓','done');
  b.title='상태 변경';b.setAttribute('aria-label',x.title+' 상태 변경');b.disabled=saving.has(x.id);b.onclick=()=>openDetail(x);
@@ -79,7 +79,7 @@ function render(){const shown=items.filter(x=>visibleStatus(x.status)&&(!selecte
  
  $('left').replaceChildren();$('right').replaceChildren();if(g.overdue.length)panel('left','기한 지난 미완료',g.overdue,'먼저 확인해 주세요.',true);panel('left','이번 주 할 일',g.thisWeek,`${compact(w.start)} — ${compact(w.end-1)} · 오늘부터 남은 일정`);panel('left','다음 주 할 일',g.nextWeek,`${compact(w.end)} — ${compact(w.nextEnd-1)}`);panel('right','진행 중',g.active,'작성 완료는 제출 확인 전까지 표시합니다.');panel('right','시작 전',g.planned);if(g.undated.length)panel('right','기한을 정해주세요',g.undated);if(g.later.length)panel('left','그 이후 일정',g.later);completedList(shown.filter(x=>complete(x.status)&&Date.parse(x.completedAt||'')>=Date.now()-7*86400000).sort((a,b)=>Date.parse(b.completedAt)-Date.parse(a.completedAt)));}
 async function api(path,opts={}){const r=await fetch(base+path,{...opts,cache:'no-store',headers:{Authorization:'Bearer '+token,...webHeaders(),...opts.headers}});let data;try{data=await r.json();}catch{throw Error('일정 서버의 응답을 확인하지 못했어요.');}if(r.status===401){$('logout').click();}if(!r.ok){const error=Error(r.status===401?'연결코드를 확인해 주세요.':data.error||'저장하지 못했어요. 다시 시도해 주세요.');error.status=r.status;throw error;}saveRevision(data);return data;}
-async function load(){if(loading)return;loading=true;$('connect').disabled=true;try{let data;try{data=await api('/dashboard');}catch(e){if(e.status!==404)throw e;data=await api('/tasks');}if(!Array.isArray(data.items))throw Error('일정 데이터 형식을 확인해 주세요.');items=data.items.filter(x=>visibleStatus(x.status));loaded=true;demo=false;selected='';
+async function load(){if(loading||$('detail').open||$('academy-dialog').open)return;loading=true;$('connect').disabled=true;try{let data;try{data=await api('/dashboard');}catch(e){if(e.status!==404)throw e;data=await api('/tasks');}if(!Array.isArray(data.items))throw Error('일정 데이터 형식을 확인해 주세요.');if($('detail').open||$('academy-dialog').open)return;items=data.items.filter(x=>visibleStatus(x.status));loaded=true;demo=false;selected='';
  const expected=new URL(location.href).searchParams.get('student');
  if(expected&&expected.replaceAll('-','')!==(data.student?.id||'').replaceAll('-','')){items=[];loaded=false;forget();token='';academy.reset();chips();render();throw Error('이 위젯에 연결된 학생의 코드를 입력해 주세요.');}
  const studentName=data.student?.name?.trim(),commonTitle=data.student?.widgetTitle?.trim();setBrandTitle(commonTitle&&commonTitle!=='CHOI RIVER 포레버'&&commonTitle!==studentName+'의 일정'?commonTitle:studentName?studentName+' Fighting':'나의 일정');
@@ -97,7 +97,7 @@ $('detail-second').onclick=()=>selectStatus('진행 2차');
 $('detail-written').onclick=()=>selectStatus('작성 완료');
 $('detail-done').onclick=()=>selectStatus('완료');
 $('detail').addEventListener('click',e=>{if(e.target!==$('detail'))return;const r=$('detail').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)cancelDetail();});
-setInterval(()=>{if(loaded)render();},60000);message('학생코드를 연결하세요');chips();render();
+setInterval(()=>{if(loaded&&!document.querySelector('dialog[open]'))render();},60000);message('학생코드를 연결하세요');chips();render();
 if(!base)showSamples();
 
 if(base&&(token=remembered()))load().catch(e=>toast(e.message));
