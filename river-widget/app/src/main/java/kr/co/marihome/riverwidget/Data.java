@@ -7,7 +7,7 @@ import java.time.*;
 import java.util.*;
 final class Data {
  static final String API="https://choi-river-notion.hihana77.workers.dev";
- static final class Row {boolean today=false,attention=false;String auxiliary="",countdown="";String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="",detail="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
+ static final class Row {boolean today=false,attention=false;String auxiliary="",countdown="";String id,kind,caption,sort,subject="",subjectColor="default",title="",due="",date="",time="",detail="",round="";Row(String i,String k,String c,String s){id=i;kind=k;caption=c;sort=s;}}
  static JSONObject get(String path,String token) throws Exception {
   HttpURLConnection conn=(HttpURLConnection)new URL(API+path).openConnection();
   try{
@@ -53,7 +53,7 @@ final class Data {
     String round=!regular?"":"클리닉".equals(type)?"(클)":x.optString("round","");if(!"(클)".equals(round)&&!round.matches("[1-9][0-9]*/[1-9][0-9]*"))round="";
     String status=Schedule.academyStatus(start,now);if("예정".equals(status))status="";
     Row r=new Row(id,"lesson",name+" "+round+" · "+Schedule.lessonTime(start)+" · "+status,start);
-    r.subject=ScheduleLabels.heading(x.optString("title"),kind,regular);r.auxiliary="";r.title=status;r.detail=ScheduleLabels.detail(x.optString("title"),kind,type,round,category);r.caption=r.subject+" "+r.detail+" · "+Schedule.lessonTime(start);r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
+    r.subject=ScheduleLabels.heading(x.optString("title"),kind,regular);r.auxiliary="";r.round=regular&&round.matches("[1-9][0-9]*/[1-9][0-9]*")?round+"회":"";r.title=status;r.detail=ScheduleLabels.detail(x.optString("title"),kind,type,"",category);r.caption=r.subject+" "+r.detail+" "+r.round+" · "+Schedule.lessonTime(start);r.today=Schedule.isToday(start,now,true);r.attention=Schedule.needsAttention(start,now,true);
     r.date=Schedule.lessonDate(start);r.time=Schedule.lessonClock(start);academy.add(r);
    }
    if(ss!=null)for(int i=0;i<ss.length();i++){JSONObject x=ss.getJSONObject(i);String due=x.optString("due"),id=x.optString("id");
