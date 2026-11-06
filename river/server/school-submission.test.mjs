@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
+import worker from './worker.mjs';
+if(!globalThis.crypto)globalThis.crypto=webcrypto;
+const ds='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+let page={id,parent:{type:'data_source_id',data_source_id:ds},properties:{'제출처':{type:'select',select:{name:'리로스쿨'}}}},writes=[];
+globalThis.fetch=async(url,opts={})=>{assert.equal(String(url).split('/v1/')[1],'pages/'+id);if(opts.method==='PATCH'){const body=JSON.parse(opts.body);writes.push(body);page.properties['제출처']={type:'select',...body.properties['제출처']};}return Response.json(page);};
+const env={NOTION_TOKEN:'test',RIVER_ACCESS_KEY:'admin',SCHOOL_DATA_SOURCE_ID:ds};
+const call=body=>worker.fetch(new Request('https://test.invalid/tasks/'+id+'/submission',{method:'PATCH',headers:{Authorization:'Bearer admin'},body:JSON.stringify(body)}),env);
+let r=await call({submission:'패들렛',from:'리로스쿨'});assert.equal(r.status,200);assert.equal((await r.json()).submission,'패들렛');assert.deepEqual(Object.keys(writes[0].properties),['제출처']);
+r=await call({submission:'서면제출',from:'리로스쿨'});assert.equal(r.status,409);assert.equal(writes.length,1);
+r=await call({submission:'',from:'패들렛'});assert.equal(r.status,200);assert.equal(writes.at(-1).properties['제출처'].select,null);
+r=await call({submission:'x'.repeat(101),from:''});assert.equal(r.status,400);
+page.parent.data_source_id='cccccccc-cccc-cccc-cccc-cccccccccccc';r=await call({submission:'직접 제출',from:''});assert.equal(r.status,403);assert.equal(writes.length,2);
+console.log('PASS submission update/clear, stale protection, validation and foreign-page rejection');

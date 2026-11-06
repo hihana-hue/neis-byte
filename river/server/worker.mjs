@@ -434,6 +434,20 @@ async function rpFetch(request,env){
    await notion('pages/'+dueMatch[1],'PATCH',{properties:{'기한':{date:{...(current||{}),start}}}});
    return reply({ok:true,id:page.id,due:start});
   }
+  const submissionMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/submission$/i);
+  if(submissionMatch&&request.method==='PATCH'){
+   const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);
+   let input;try{input=JSON.parse(raw);}catch{return reply({error:'제출처 변경 내용을 확인해 주세요.'},400);}
+   if(!input||typeof input.submission!=='string'||input.submission.trim().length>100||typeof input.from!=='string')return reply({error:'제출처는 100자 이내로 입력해 주세요.'},400);
+   const page=await notion('pages/'+submissionMatch[1]);
+   if(page.archived||page.in_trash||page.parent?.type!=='data_source_id'||normalized(page.parent.data_source_id)!==normalized(env.SCHOOL_DATA_SOURCE_ID))return reply({error:'이 일정표에 속한 항목이 아닙니다.'},403);
+   const current=page.properties?.['제출처'];
+   if(current?.type&&current.type!=='select')return reply({error:'노션 제출처 속성의 선택 형식을 확인해 주세요.'},409);
+   if((current?.select?.name||'')!==input.from)return reply({error:'제출처가 다른 곳에서 변경됐어요. 새로고침 후 다시 수정해 주세요.'},409);
+   const submission=input.submission.trim();
+   await notion('pages/'+submissionMatch[1],'PATCH',{properties:{'제출처':{select:submission?{name:submission}:null}}});
+   return reply({ok:true,id:page.id,submission});
+  }
   const statusMatch=path.match(/^\/tasks\/([a-f0-9-]{32,36})\/status$/i);
   if(statusMatch&&request.method==='PATCH'){
    const raw=await request.text();if(raw.length>1000)return reply({error:'요청이 너무 깁니다.'},413);
