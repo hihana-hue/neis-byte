@@ -45,13 +45,15 @@ jobs:
           node river/server/personal-schedules.test.mjs
           node river/server/schedule-kind.test.mjs
           node river/server/school-due.test.mjs
+          node river/server/school-submission.test.mjs
+          node river/server/school-create-submission.test.mjs
       - name: Test school date editor and existing personal schedule interactions
         run: |
           npm install --prefix "$RUNNER_TEMP/river-ui" --no-audit --no-fund jsdom@26.1.0
           NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/school-date-edit.ui.test.mjs
           NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/personal-ui.test.mjs
   cloudflare:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Edit school due dates in place from the web app')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Edit school due dates in place from the web app' || github.event.head_commit.message == 'Deploy submission selection server update')
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
