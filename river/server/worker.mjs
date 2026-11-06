@@ -400,7 +400,9 @@ async function rpFetch(request,env){
 
   if(path==='/options'&&request.method==='GET'){
    const source=await notion('data_sources/'+env.SCHOOL_DATA_SOURCE_ID);
-   return reply({student:env.STUDENT||null,subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name),submissions:(source.properties?.['제출처']?.select?.options||[]).map(x=>x.name)});
+   const submissionProperty=source.properties?.['제출처'];
+   if(!Array.isArray(submissionProperty?.select?.options)||!submissionProperty.select.options.length)return reply({error:'노션 학교 DB의 제출처 선택 항목을 확인해 주세요.'},409);
+   return reply({student:env.STUDENT||null,subjects:(source.properties?.['과목']?.multi_select?.options||[]).map(x=>x.name),submissions:submissionProperty.select.options.map(x=>x.name)});
   }
   if(path==='/tasks'&&request.method==='POST'){
    if(Number(request.headers.get('Content-Length')||0)>4096)return reply({error:'입력 내용이 너무 깁니다.'},413);
