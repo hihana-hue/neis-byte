@@ -23,8 +23,8 @@ globalThis.fetch=async(url,options={})=>{
 await import('./app.mjs');const flush=async()=>{for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve));};await flush();
 const columns=[...document.querySelectorAll('.status-column')];
 assert.equal(columns.length,2);
-assert.match(columns[0].querySelector('h3').textContent,/시작 전/);
-assert.match(columns[1].querySelector('h3').textContent,/진행 중/);
+assert.match(columns[0].querySelector('h2').textContent,/시작 전/);
+assert.match(columns[1].querySelector('h2').textContent,/진행 중/);
 assert.equal(columns[0].querySelectorAll('.status').length,0);
 assert.deepEqual([...columns[1].querySelectorAll('.status')].map(x=>x.textContent).sort(),['작성 완료','진행 2차'].sort());
 assert.ok(document.querySelector('#left .status'));

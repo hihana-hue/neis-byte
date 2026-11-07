@@ -290,25 +290,14 @@ body,button,input,select,textarea{font-family:'Pretendard',system-ui,sans-serif}
 
 #academy-current .academy-notion-link{display:inline-flex;align-items:center;justify-content:center;min-height:26px;margin-top:6px;padding:3px 7px;border:1px solid #c5d9e2;border-radius:5px;background:#edf3f6;color:#286780;font:500 11px/1.3 'Pretendard',sans-serif;white-space:nowrap;box-shadow:none}
 
-/* Date and status are two views of the same school schedules. */
-.schedule-workspace #left>.panel,.schedule-workspace #right>.panel,
-.schedule-workspace .status-columns>.panel{background:transparent;border:0;border-radius:0;box-shadow:none;padding:0;margin:0 0 12px}
-.schedule-workspace .group-heading{margin:12px 0 8px;padding:0 0 6px;border-bottom:1px solid #b6cdd8;font-size:14px;line-height:1.35;font-weight:650;color:#29485e}
-.schedule-workspace #right>.group-heading{margin-top:16px;color:#665080}
-.schedule-workspace .panel>h3{display:flex;align-items:center;gap:5px;margin:0 0 4px;font-size:13px;line-height:1.35;font-weight:600;color:#29485e}
-.schedule-workspace .panel>h3 .badge{font-size:10px;line-height:1.3;padding:1px 4px}
-.schedule-workspace .panel>.range{margin:0 0 4px;font-size:11px;line-height:1.35}
-.schedule-workspace .status-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;align-items:start}
-.schedule-workspace .status-columns>.panel{min-width:0;padding:0 8px 0 0}
-.schedule-workspace .status-columns>.panel+ .panel{border-left:1px solid #d6dfe7;padding:0 0 0 8px}
-.schedule-workspace .status-column>h3{color:#665080}
-.schedule-workspace .status-column .badge{background:#eee8f3;color:#665080}
-.schedule-workspace .status-column .card .title{font-size:12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;text-align:left}
-.schedule-workspace .status-column .card-heading{gap:3px 5px}
-.schedule-workspace .status-column .card-heading .meta{flex-wrap:wrap;min-width:0}
-.schedule-workspace .status-column .tags{min-width:0;flex-wrap:wrap}
-.schedule-workspace .status-column .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:11px}
-.schedule-workspace .status-column .empty{padding:6px 0;font-size:11px;line-height:1.4}
-
-.schedule-workspace .status-column .card-heading .meta{font-size:11px}
-.schedule-workspace .panel.overdue>h3{color:#926875}
+/* Only the planned and active sections share a compact row. */
+#right>.status-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;align-items:start;margin-bottom:10px}
+#right>.status-columns>.panel{min-width:0;margin:0;padding:0 8px 0 0;background:transparent;border:0;border-radius:0;box-shadow:none}
+#right>.status-columns>.panel+.panel{padding:0 0 0 8px;border-left:1px solid #d6dfe7}
+#right>.status-columns h2{font-size:13px;line-height:1.35;gap:5px;margin:0 0 4px;color:#7956A3}
+#right>.status-columns h2>.badge{color:#7956A3;background:#EDE5F5}
+#right>.status-columns .card-heading{gap:3px 5px}
+#right>.status-columns .tags{min-width:0;flex-wrap:wrap}
+#right>.status-columns .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+#right>.status-columns .title{white-space:normal;overflow-wrap:anywhere}
+#right>.status-columns .empty{padding:6px 0;font-size:11px;line-height:1.4}
