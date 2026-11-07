@@ -7,8 +7,8 @@ final class ScheduleLabels {
   if(!academy)return "";
   String label=subject(kind),value=title==null?"":title.trim(),subtype="클리닉".equals(type)||"연습".equals(type)?"클리닉":"수업";
   String custom=value.isEmpty()||value.equals(label)||value.equals(kind)||value.equals(label+" 수업")||value.equals(label+" 클리닉")||value.equals(label+" 연습")?"":value;
-  String result=(custom.isEmpty()?"":custom+" · ")+subtype;
-  return "수업".equals(subtype)&&round!=null&&round.matches("[1-9][0-9]*/[1-9][0-9]*")?result+" · "+round+"회":result;
+  String result=custom.isEmpty()?subtype:custom;
+  return "수업".equals(subtype)&&round!=null&&round.matches("[1-9][0-9]*/[1-9][0-9]*")?result+" "+round:result;
  }
  static String category(String category,String kind){
   if("학원".equals(category)||"교회".equals(category)||"약속".equals(category)||"기타".equals(category))return category;
