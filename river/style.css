@@ -301,3 +301,7 @@ body,button,input,select,textarea{font-family:'Pretendard',system-ui,sans-serif}
 #right>.status-columns .tag{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 #right>.status-columns .title{white-space:normal;overflow-wrap:anywhere}
 #right>.status-columns .empty{padding:6px 0;font-size:11px;line-height:1.4}
+
+/* A quiet divider below each school section's heading and optional date range. */
+.schedule-workspace .panel>.range,
+.schedule-workspace .panel>h2:not(:has(+.range)){border-bottom:1px dashed #d6e1e8;padding-bottom:6px;margin-bottom:6px}
