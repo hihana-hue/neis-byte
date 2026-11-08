@@ -42,6 +42,7 @@ jobs:
           node river/server/widget-devices.test.mjs
           node river/server/makeup.test.mjs
           node river/server/academy-create.test.mjs
+          node river/server/no-web-fees.test.mjs
           node river/server/personal-schedules.test.mjs
           node river/server/schedule-kind.test.mjs
           node river/server/school-due.test.mjs
@@ -53,7 +54,7 @@ jobs:
           NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/school-date-edit.ui.test.mjs
           NODE_PATH="$RUNNER_TEMP/river-ui/node_modules" node river/personal-ui.test.mjs
   cloudflare:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Edit school due dates in place from the web app' || github.event.head_commit.message == 'Deploy submission selection server update' || github.event.head_commit.message == 'Pin widget rounds and shorten makeup titles (widget 55)')
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'Remove web tuition entry and preserve Notion billing' || github.event.head_commit.message == 'Edit school due dates in place from the web app' || github.event.head_commit.message == 'Deploy submission selection server update' || github.event.head_commit.message == 'Pin widget rounds and shorten makeup titles (widget 55)')
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
