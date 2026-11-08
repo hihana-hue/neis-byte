@@ -25,4 +25,9 @@ $('academy-dialog').close();sourceKinds=['과학','교회','My plans'];await $('
 assert.deepEqual([...$('academy-kind').options].map(x=>x.textContent),['과학','교회','My plans','＋ 새 학원']);
 assert.equal($('academy-kind').value,'교회');assert.ok(![...$('academy-kind').options].some(x=>['약속','기타','schedule'].includes(x.value)));
 console.log('PASS current Notion option names in registration/filter, rename refresh, no synthetic classifications');
+$('academy-dialog').close();
+const sample=(id,kind,subtype,title)=>({id,kind,category:'학원',subtype,title,start:'2026-11-12T19:00:00+09:00',originalStart:'2026-11-07T19:00:00+09:00',status:'예정',packSize:5});
+await controller.load({items:[sample('one','과학','수업','7일 보강'),sample('two','과학','클리닉','보충'),sample('three','운동','수업','7일 보강'),sample('four','바디PT','클리닉','PT 연습')],kinds:['과학','운동','바디PT']});
+assert.deepEqual([...document.querySelectorAll('.academy-line strong')].map(x=>x.textContent),['과학 수업','과학 클리닉','바디PT','바디PT']);
+assert.ok(!$('academy-rows').textContent.includes('7일 보강'));assert.match($('academy-rows').textContent,/원 수업/);assert.equal(document.querySelectorAll('.academy-line small').length,4);
 console.log('PASS actual title, one classification field, no tuition required or written, retained pack size, clinic omission, new academy, successful-save close/completion');dom.window.close();

@@ -6,7 +6,8 @@ export function createAcademy(api,notify){
  const $=id=>document.getElementById(id),el=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
  mountPicker($('academy-kind'),{title:'일정구분 선택'});mountPicker($('academy-type'),{title:'수업 구분 선택'});
  let rows=[],current=null,mode='',busy=false,connected=false,expanded=false,opening=false,connectionEpoch=0;
- const category=x=>x.category||scheduleCategory(x.kind),name=scheduleTitle,kindLabel=scheduleKindLabel;
+ const category=x=>x.category||scheduleCategory(x.kind),kindLabel=scheduleKindLabel;
+ const name=x=>{if(category(x)!=='학원')return scheduleTitle(x);const subject=kindLabel(x.kind);if(['운동','바디PT'].includes(subject))return '바디PT';return subject+' '+(['클리닉','연습'].includes(x.subtype)?'클리닉':'수업');};
  const categoryFilter=el('select','','personal-filter');categoryFilter.setAttribute('aria-label','개인 일정구분');const allOption=el('option','전체');allOption.value='__all';categoryFilter.append(allOption);$('message').before(categoryFilter);categoryFilter.hidden=true;categoryFilter.onchange=()=>{expanded=false;render();};
  const moreButton=el('button','more...','academy-more');moreButton.type='button';moreButton.hidden=true;moreButton.setAttribute('aria-controls','academy-rows');$('academy-rows').after(moreButton);moreButton.onclick=()=>{expanded=!expanded;render();};
  const calendar=mountAcademyCalendar($('academy-date'));
